@@ -1,5 +1,7 @@
 import math
 from dataclasses import dataclass
+
+import numpy as np
 import torch
 import torch.nn.modules as modules
 import ttg
@@ -22,17 +24,9 @@ class BinaryOutputNeuron:
 
 	def __post_init__(self):
 		self.fanIn = len(self.weight)
-		self.tt = self._generateTT()
-
-	def _generateTT(self):
-		# Create tt
-		inpTags = [str(i) for i in range(self.fanIn)]
-		tt = ttg.Truths(inpTags).as_pandas()
-
-		# For each entry, calculate output
-		tt['out'] = tt.apply(self._neuronAction, axis=1)
-
-		return tt
+		self.tt = pd.DataFrame()
+		self.importancePerClass = {}
+		self.importance = 0
 
 	def _neuronAction(self, row):
 		# Multiply per weights
@@ -43,6 +37,38 @@ class BinaryOutputNeuron:
 		a = (zNorm > 0).float().item()
 
 		return a
+
+	def giveImportance(self, importance: np.array, targets):
+		dictImportance = {}
+		nPerClass = {}
+		for n in targets:
+			dictImportance[n] = []
+			self.importancePerClass[n] = 0
+			nPerClass[n] = 0
+
+		for i in range(len(importance)):
+			nPerClass[targets[i]] += 1
+			if importance[i] > 10e-50:
+				dictImportance[targets[i]].append(importance[i])
+
+		for n in dictImportance:
+			self.importancePerClass[n] = len(dictImportance[n]) / nPerClass[n]
+			self.importance += len(dictImportance[n]) / nPerClass[n]
+
+	@staticmethod
+	def neuronsPerLayer(listNeurons, layer):
+		res = []
+		for neuron in listNeurons:
+			if neuron.nLayer == layer:
+				res.append(neuron)
+		return res
+
+	@staticmethod
+	def listImportance(listNeurons):
+		res = []
+		for neuron in listNeurons:
+			res.append(neuron.importance)
+		return res
 
 
 @dataclass
@@ -57,7 +83,7 @@ class TTGenerator:
 	def getAccLayers(model: torch.nn.Module):
 		# Count number of layers (by counting number of Linear)
 		n = 0
-		for layer in model.stack:
+		for layer in model.children():
 			if isinstance(layer, modules.linear.Linear):
 				n += 1
 
@@ -67,7 +93,7 @@ class TTGenerator:
 
 		for entry in model.state_dict():
 			param = model.state_dict()[entry]
-			if isinstance(model.stack[layer], modules.linear.Linear):
+			if entry.startswith('l'):  # Linear
 				if entry.endswith('weight'):
 					accLayers[accLayer].linear['weight'] = param
 					accLayers[accLayer].nNeurons = len(param)
@@ -75,7 +101,7 @@ class TTGenerator:
 					accLayers[accLayer].linear['bias'] = param
 					layer += 1
 
-			if isinstance(model.stack[layer], modules.batchnorm.BatchNorm1d):
+			if entry.startswith('bn'):  # batch normalization
 				if entry.endswith('weight'):
 					accLayers[accLayer].norm['weight'] = param
 				elif entry.endswith('bias'):
