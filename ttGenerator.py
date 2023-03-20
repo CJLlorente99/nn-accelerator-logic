@@ -1,6 +1,6 @@
 import math
 from dataclasses import dataclass
-
+from operator import itemgetter
 import numpy as np
 import torch
 import torch.nn.modules as modules
@@ -10,6 +10,7 @@ import pandas as pd
 '''
 This class should provide static methods so, when provided a binarized trained model, the TT per neuron can be retrieved
 '''
+
 
 @dataclass
 class BinaryOutputNeuron:
@@ -21,16 +22,20 @@ class BinaryOutputNeuron:
 	normVar: torch.Tensor
 	nNeuron: int
 	nLayer: int
+	nClass: int
 
 	def __post_init__(self):
 		self.fanIn = len(self.weight)
 		self.tt = pd.DataFrame()
 		self.importancePerClass = {}
 		self.importance = 0
+		self.activations = pd.DataFrame()
+		self.name = 'L' + str(self.nLayer) + 'N' + str(self.nNeuron)
 
 	def _neuronAction(self, row):
+		row = row[['n' + str(i) for i in range(self.fanIn)]].to_numpy(dtype=np.float32)
 		# Multiply per weights
-		z = row @ self.weight + self.bias
+		z = torch.from_numpy(row).type(torch.FloatTensor) @ self.weight + self.bias
 		# Batch normalization
 		zNorm = (z - self.normMean) / (math.sqrt(self.normVar + 1e-5)) * self.normWeight + self.normBias
 		# Activation layer
@@ -38,12 +43,22 @@ class BinaryOutputNeuron:
 
 		return a
 
+	def _importanceToTT(self, row):
+		row = row[['class' + str(i) for i in range(self.nClass)]]
+
+		imp = 0
+		for col in row.index:
+			if row[col] != 0:
+				imp += self.importancePerClass[col]
+
+		return imp
+
 	def giveImportance(self, importance: np.array, targets):
 		dictImportance = {}
 		nPerClass = {}
 		for n in targets:
 			dictImportance[n] = []
-			self.importancePerClass[n] = 0
+			self.importancePerClass['class' + str(n)] = 0
 			nPerClass[n] = 0
 
 		for i in range(len(importance)):
@@ -52,22 +67,32 @@ class BinaryOutputNeuron:
 				dictImportance[targets[i]].append(importance[i])
 
 		for n in dictImportance:
-			self.importancePerClass[n] = len(dictImportance[n]) / nPerClass[n]
+			self.importancePerClass['class' + str(n)] = len(dictImportance[n]) / nPerClass[n]
 			self.importance += len(dictImportance[n]) / nPerClass[n]
 
-	@staticmethod
-	def neuronsPerLayer(listNeurons, layer):
-		res = []
-		for neuron in listNeurons:
-			if neuron.nLayer == layer:
-				res.append(neuron)
-		return res
+	def createTT(self, activations: pd.DataFrame):
+		self.tt = activations
+		self.tt['output'] = self.tt.apply(self._neuronAction, axis=1)
+		self.tt['importance'] = self.tt.apply(self._importanceToTT, axis=1)
+
+		for col in self.tt:
+			if col.startswith('class'):
+				self.tt[col] = self.tt[col].apply(lambda column: float(column > 0))
 
 	@staticmethod
-	def listImportance(listNeurons):
-		res = []
-		for neuron in listNeurons:
-			res.append(neuron.importance)
+	def getDfLayer(neurons, layer):
+		res = pd.DataFrame()
+		for neuron in neurons['layer'+str(layer)]:
+			aux0 = pd.DataFrame()
+			for i in neuron.importancePerClass:
+				aux0['importanceClass' + str(i)] = [neuron.importancePerClass[i]]
+			aux = pd.DataFrame({
+				'name': neuron.name,
+				'importance': neuron.importance
+			}, index=[0])
+			aux = pd.concat([aux, aux0], axis=1)
+
+			res = pd.concat([res, aux], ignore_index=True)
 		return res
 
 
@@ -120,8 +145,9 @@ class TTGenerator:
 	@staticmethod
 	def getNeurons(accLayers: list):
 		layer = 0
-		neurons = []
+		neurons = {}
 		for accLayer in accLayers:
+			neuronsLayer = []
 			if layer == 0:
 				layer += 1
 				continue
@@ -135,9 +161,11 @@ class TTGenerator:
 					normMean=accLayer.norm['running_mean'][iNeuron],
 					normVar=accLayer.norm['running_var'][iNeuron],
 					nNeuron=iNeuron,
-					nLayer=layer
+					nLayer=layer,
+					nClass=10
 				)
-				neurons.append(neuron)
+				neuronsLayer.append(neuron)
+			neurons['layer' + str(layer)] = neuronsLayer
 			layer += 1
 		return neurons
 
