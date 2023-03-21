@@ -1,10 +1,8 @@
 import math
 from dataclasses import dataclass
-from operator import itemgetter
 import numpy as np
 import torch
 import torch.nn.modules as modules
-import ttg
 import pandas as pd
 
 '''
@@ -41,7 +39,7 @@ class BinaryOutputNeuron:
 		# Activation layer
 		a = (zNorm > 0).float().item()
 
-		return a
+		return np.uint8(a)
 
 	def _importanceToTT(self, row):
 		row = row[['class' + str(i) for i in range(self.nClass)]]
@@ -51,7 +49,7 @@ class BinaryOutputNeuron:
 			if row[col] != 0:
 				imp += self.importancePerClass[col]
 
-		return imp
+		return np.float32(imp)
 
 	def giveImportance(self, importance: np.array, targets):
 		dictImportance = {}
@@ -77,7 +75,8 @@ class BinaryOutputNeuron:
 
 		for col in self.tt:
 			if col.startswith('class'):
-				self.tt[col] = self.tt[col].apply(lambda column: float(column > 0))
+				self.tt[col] = self.tt[col].apply(lambda column: np.uint8(column > 0))
+				self.tt['importance' + col] = np.float32(self.tt[col] * self.importancePerClass[col])
 
 	@staticmethod
 	def getDfLayer(neurons, layer):
@@ -101,6 +100,8 @@ class AccLayer:
 	linear: dict
 	norm: dict
 	nNeurons: int
+	neurons: list
+	tt: pd.DataFrame
 
 
 class TTGenerator:
@@ -114,7 +115,7 @@ class TTGenerator:
 
 		layer = 0  # Layer (as PyTorch understands it)
 		accLayer = 0  # Layer (as neuron layer, Linear+Norm+Activation)
-		accLayers = [AccLayer({}, {}, 0) for _ in range(n)]
+		accLayers = [AccLayer({}, {}, 0, [], pd.DataFrame()) for _ in range(n)]
 
 		for entry in model.state_dict():
 			param = model.state_dict()[entry]
@@ -144,13 +145,10 @@ class TTGenerator:
 
 	@staticmethod
 	def getNeurons(accLayers: list):
-		layer = 0
+		layer = 1
 		neurons = {}
 		for accLayer in accLayers:
 			neuronsLayer = []
-			if layer == 0:
-				layer += 1
-				continue
 
 			for iNeuron in range(accLayer.nNeurons):
 				neuron = BinaryOutputNeuron(
