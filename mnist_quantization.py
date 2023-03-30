@@ -1,21 +1,21 @@
 import random
-
 import pandas as pd
 import torch
+from models.auxFunctions import trainAndTest
 from torchvision import datasets
 from torchvision.transforms import ToTensor
 from torch.utils.data import DataLoader
-from binaryNN import BinaryNeuralNetwork
-from fpNN import FPNeuralNetwork
-from hpNN import HPNeuralNetwork
-import torch.nn.functional as F
+from models.binaryNN import BinaryNeuralNetwork
 import torch.optim as optim
-from ttGenerator import TTGenerator
+from ttUtilities.ttGenerator import HelpGenerator
 from torch.autograd import Variable
 import numpy as np
-from plotly.subplots import make_subplots
-import plotly.graph_objects as go
-from ttGenerator import BinaryOutputNeuron
+
+batch_size = 64
+neuronPerLayer = 100
+nHiddenLayers = 3
+epochs = 10
+perGradientSampling = 1
 
 # Check mps maybe if working in MacOS
 device = 'cuda' if torch.cuda.is_available() else 'cpu'
@@ -55,8 +55,6 @@ print(f'Size of samples is {training_data[0][0].size()}')
 '''
 Create DataLoader
 '''
-batch_size = 64
-
 train_dataloader = DataLoader(training_data, batch_size=batch_size)
 test_dataloader = DataLoader(test_data, batch_size=batch_size)
 
@@ -64,153 +62,37 @@ test_dataloader = DataLoader(test_data, batch_size=batch_size)
 Instantiate NN models
 '''
 print(f'MODEL INSTANTIATION\n')
-neuronPerLayer = 30
-nHiddenLayers = 3
 
-fpNNModel = FPNeuralNetwork().to(device)
 binaryNNModel = BinaryNeuralNetwork(neuronPerLayer).to(device)
-hpNNModel = HPNeuralNetwork().to(device)
-
-'''
-Train and test functions
-'''
-
-
-def train(dataloader, model, optimizer):
-    size = len(dataloader.dataset)
-    model.train()
-    for batch, (X, y) in enumerate(dataloader):
-        X, y = X.to(device), y.to(device)
-
-        # Compute prediction error
-        pred = model(X)
-        loss = F.nll_loss(pred, y)
-
-        # Backpropagation
-        optimizer.zero_grad()
-        loss.backward()
-        optimizer.step()
-
-        if batch % 100 == 0:
-            loss, current = loss.item(), (batch + 1) * len(X)
-            print(f"loss: {loss:>7f}  [{current:>5d}/{size:>5d}]")
-
-
-def test(dataloader, model):
-    size = len(dataloader.dataset)
-    num_batches = len(dataloader)
-    model.eval()
-    test_loss, correct = 0, 0
-    with torch.no_grad():
-        for X, y in dataloader:
-            X, y = X.to(device), y.to(device)
-            pred = model(X)
-            test_loss += F.nll_loss(pred, y).item()
-            correct += (pred.argmax(1) == y).type(torch.float).sum().item()
-    test_loss /= num_batches
-    correct /= size
-    print(f"Test Error: \n Accuracy: {(100*correct):>0.1f}%, Avg loss: {test_loss:>8f} \n")
-
 
 '''
 Train and test
 '''
 print(f'TRAINING\n')
 
-optFP = optim.Adamax(fpNNModel.parameters(), lr=3e-3, weight_decay=1e-4)
-optHP = optim.Adamax(hpNNModel.parameters(), lr=3e-3, weight_decay=1e-4)
 optBinary = optim.Adamax(binaryNNModel.parameters(), lr=3e-3, weight_decay=1e-4)
 
-epochs = 10
-
-# print('Train and test FP NN')
-# for t in range(epochs):
-#     print(f"Epoch {t+1}\n-------------------------------")
-#     train(train_dataloader, fpNNModel, optFP)
-#     test(test_dataloader, fpNNModel)
-#
-# print('Train and test HP NN')
-# for t in range(epochs):
-#     print(f"Epoch {t+1}\n-------------------------------")
-#     train(train_dataloader, hpNNModel, optHP)
-#     test(test_dataloader, hpNNModel)
-
 print('Train and test binary NN')
-for t in range(epochs):
-    print(f"Epoch {t+1}\n-------------------------------")
-    train(train_dataloader, binaryNNModel, optBinary)
-    test(test_dataloader, binaryNNModel)
+trainAndTest(epochs, train_dataloader, test_dataloader, binaryNNModel, optBinary)
 
 '''
 Generate TT
 '''
 
-accLayers = TTGenerator.getAccLayers(binaryNNModel)
+accLayers = HelpGenerator.getAccLayers(binaryNNModel)
 accLayers.pop(0)  # Pop first element
 accLayers.pop()  # Pop last element
-neurons = TTGenerator.getNeurons(accLayers)
-
-# Assign list of neurons to each layer
-i = 0
-for layer in neurons:
-    accLayers[i] = neurons[layer]
-    i += 1
+HelpGenerator.getNeurons(accLayers)
 
 '''
 Calculate importance per class per neuron
 '''
 
-# Create backward hook to get gradients
-gradientsSTE1 = []
-gradientsSTE2 = []
-gradientsSTE3 = []
-
-
-def backward_hook_ste1(module, grad_input, grad_output):
-    gradientsSTE1.append(grad_input[0].cpu().detach().numpy()[0])
-
-
-def backward_hook_ste2(module, grad_input, grad_output):
-    gradientsSTE2.append(grad_input[0].cpu().detach().numpy()[0])
-
-
-def backward_hook_ste3(module, grad_input, grad_output):
-    gradientsSTE3.append(grad_input[0].cpu().detach().numpy()[0])
-
-
-# Create forward hook to get values per neuron
-valueSTE1 = []
-valueSTE2 = []
-valueSTE3 = []
-
-
-def forward_hook_ste1(module, val_input, val_output):
-    valueSTE1.append(val_output[0].cpu().detach().numpy())
-
-
-def forward_hook_ste2(module, val_input, val_output):
-    valueSTE2.append(val_output[0].cpu().detach().numpy())
-
-
-def forward_hook_ste3(module, val_input, val_output):
-    valueSTE3.append(val_output[0].cpu().detach().numpy())
-
-
-# Register hooks
-
-binaryNNModel.ste1.register_full_backward_hook(backward_hook_ste1)
-binaryNNModel.ste2.register_full_backward_hook(backward_hook_ste2)
-binaryNNModel.ste3.register_full_backward_hook(backward_hook_ste3)
-
-binaryNNModel.ste1.register_forward_hook(forward_hook_ste1)
-binaryNNModel.ste2.register_forward_hook(forward_hook_ste2)
-binaryNNModel.ste3.register_forward_hook(forward_hook_ste3)
-
-
 # Input samples and get gradients and values in each neuron
 print(f'GET GRADIENTS AND ACTIVATION VALUES\n')
 
-sampleSize = int(0.25 * len(training_data.data))  # sample size to be used for importance calculation
+sampleSize = int(perGradientSampling * len(training_data.data))  # sample size to be used for importance calculation
+binaryNNModel.registerHooks()
 binaryNNModel.eval()
 
 for i in range(sampleSize):
@@ -226,57 +108,57 @@ for i in range(sampleSize):
 
 # Compute importance
 
-gradientsSTE1 = np.array(gradientsSTE1).squeeze().reshape(len(gradientsSTE1), neuronPerLayer)
-gradientsSTE2 = np.array(gradientsSTE2).squeeze().reshape(len(gradientsSTE2), neuronPerLayer)
-gradientsSTE3 = np.array(gradientsSTE3).squeeze().reshape(len(gradientsSTE3), neuronPerLayer)
-
-valueSTE1 = np.array(valueSTE1).squeeze().reshape(len(valueSTE1), neuronPerLayer)
-valueSTE2 = np.array(valueSTE2).squeeze().reshape(len(valueSTE2), neuronPerLayer)
-valueSTE3 = np.array(valueSTE3).squeeze().reshape(len(valueSTE3), neuronPerLayer)
-
-importanceSTE1 = abs(np.multiply(gradientsSTE1, valueSTE1))
-importanceSTE2 = abs(np.multiply(gradientsSTE2, valueSTE2))
-importanceSTE3 = abs(np.multiply(gradientsSTE3, valueSTE3))
+importanceSTE1, importanceSTE2, importanceSTE3 = binaryNNModel.computeImportance(neuronPerLayer)
 
 # Give each neuron its importance values
 for i in range(neuronPerLayer):
-    neurons['layer1'][i].giveImportance(importanceSTE1[:, i], training_data.targets.tolist())
-    neurons['layer2'][i].giveImportance(importanceSTE2[:, i], training_data.targets.tolist())
-    neurons['layer3'][i].giveImportance(importanceSTE3[:, i], training_data.targets.tolist())
+    accLayers[0].neurons[i].giveImportance(importanceSTE1[:, i], training_data.targets.tolist())
+    accLayers[1].neurons[i].giveImportance(importanceSTE2[:, i], training_data.targets.tolist())
+    accLayers[2].neurons[i].giveImportance(importanceSTE3[:, i], training_data.targets.tolist())
 
 # Get activations-class per layer
 neuronTags = ['n' + str(i) for i in range(neuronPerLayer)]
 classTags = ['class' + str(i) for i in range(nClasses)]
 
-valueSTE1 = np.hstack((valueSTE1, training_data.targets[:sampleSize].detach().numpy().reshape((sampleSize, 1))))
+valueSTE1 = np.hstack((binaryNNModel.valueSTE1, training_data.targets[:sampleSize].detach().numpy().reshape((sampleSize, 1))))
 valueSTE1 = np.hstack((valueSTE1, np.zeros((sampleSize, nClasses))))
-valueSTE2 = np.hstack((valueSTE2, training_data.targets[:sampleSize].detach().numpy().reshape((sampleSize, 1))))
+valueSTE2 = np.hstack((binaryNNModel.valueSTE2, training_data.targets[:sampleSize].detach().numpy().reshape((sampleSize, 1))))
 valueSTE2 = np.hstack((valueSTE2, np.zeros((sampleSize, nClasses))))
-valueSTE3 = np.hstack((valueSTE3, training_data.targets[:sampleSize].detach().numpy().reshape((sampleSize, 1))))
+valueSTE3 = np.hstack((binaryNNModel.valueSTE3, training_data.targets[:sampleSize].detach().numpy().reshape((sampleSize, 1))))
 valueSTE3 = np.hstack((valueSTE3, np.zeros((sampleSize, nClasses))))
 
 dfLayer1 = pd.DataFrame(valueSTE1, columns=neuronTags + ['class'] + ['class' + str(n) for n in range(nClasses)])
 dfLayer2 = pd.DataFrame(valueSTE2, columns=neuronTags + ['class'] + ['class' + str(n) for n in range(nClasses)])
 dfLayer3 = pd.DataFrame(valueSTE3, columns=neuronTags + ['class'] + ['class' + str(n) for n in range(nClasses)])
 
-for index, row in dfLayer1.iterrows():
+
+def classToClassesUnpack(row):
     row['class' + str(int(row['class']))] = 1
+
+
+dfLayer1.apply(classToClassesUnpack, axis=1)
 dfLayer1 = dfLayer1.drop(['class'], axis=1)
-for index, row in dfLayer2.iterrows():
-    row['class' + str(int(row['class']))] = 1
+
+dfLayer2.apply(classToClassesUnpack, axis=1)
 dfLayer2 = dfLayer2.drop(['class'], axis=1)
-for index, row in dfLayer3.iterrows():
-    row['class' + str(int(row['class']))] = 1
+
+dfLayer3.apply(classToClassesUnpack, axis=1)
 dfLayer3 = dfLayer3.drop(['class'], axis=1)
 
 # Group by neuron activations and sum class columns
 dfLayer1 = dfLayer1.groupby(neuronTags).aggregate('sum').reset_index()
 dfLayer1 = dfLayer1.astype('uint8')
+
 dfLayer2 = dfLayer2.groupby(neuronTags).aggregate('sum').reset_index()
 dfLayer2 = dfLayer2.astype('uint8')
+
 dfLayer3 = dfLayer3.groupby(neuronTags).aggregate('sum').reset_index()
 dfLayer3 = dfLayer3.astype('uint8')
 
+# Assign to each layer object
+accLayers[0].tt = dfLayer1
+accLayers[1].tt = dfLayer2
+accLayers[2].tt = dfLayer3
 
 # Some data over the activation performed
 
@@ -285,150 +167,31 @@ print(f'In layer 2, there are a total of {len(dfLayer2)} input combinations from
 print(f'In layer 3, there are a total of {len(dfLayer3)} input combinations from the {2**neuronPerLayer} possible')
 
 # Create the TT per neuron
-# TODO. Create the TT per layer (computationally less expensive)
 
-i = 0
-for layer in neurons:
-    for neuron in neurons[layer]:
-        i += 1
-        if (i + 1) % 25 == 0:
-            print(f"Neuron TT [{i + 1:>4d}/{neuronPerLayer * nHiddenLayers:>4d}]")
-
-        if layer == 'layer1':
-            neuron.createTT(dfLayer1)
-        elif layer == 'layer2':
-            neuron.createTT(dfLayer2)
-        elif layer == 'layer3':
-            neuron.createTT(dfLayer3)
+for layer in accLayers:
+    layer.fillTT()
 
 # Plot importance per entry of a neuron as an example
 
 # Example belonging to layer 1
-fig = make_subplots(rows=1, cols=1,
-                    subplot_titles=('Example Importance per TT Entry', 'Example Importance per Class per TT Entry'))
 
-exampleNeuron = neurons['layer1'][random.randint(0, len(neurons['layer1']) - 1)]
-tt = exampleNeuron.tt.sort_values(['importance'])
-fig.add_trace(go.Scatter(name='totalImportance', x=tt.index, y=tt.importance),
-              row=1, col=1)
-
-fig.update_xaxes(type='category')
-fig.update_layout(
-    barmode='stack',
-    title=f'Neuron L{exampleNeuron.nLayer}N{exampleNeuron.nNeuron}',
-    hovermode="x unified"
-)
-fig.show()
-
-fig = make_subplots(rows=3, cols=4)
-
-i = 0
-for col in tt:
-    if col.startswith('importanceclass'):
-        fig.add_trace(go.Scatter(name=col, x=tt.index, y=tt[col]),
-                      row=(i // 4) + 1, col=(i % 4) + 1)
-        i += 1
-
-fig.update_xaxes(type='category')
-fig.update_layout(
-    barmode='stack',
-    title=f'Neuron L{exampleNeuron.nLayer}N{exampleNeuron.nNeuron}',
-    hovermode="x unified"
-)
-fig.show()
+exampleNeuron = accLayers[0].neurons[random.randint(0, len(accLayers[0].neurons) - 1)]
+exampleNeuron.showImportancePerEntry()
+exampleNeuron.showImportancePerClassPerEntry()
 
 # Example belonging to layer 2
-fig = make_subplots(rows=1, cols=1,
-                    subplot_titles=('Example Importance per TT Entry', 'Example Importance per Class per TT Entry'))
 
-exampleNeuron = neurons['layer2'][random.randint(0, len(neurons['layer2']) - 1)]
-tt = exampleNeuron.tt.sort_values(['importance'])
-fig.add_trace(go.Scatter(name='totalImportance', x=tt.index, y=tt.importance),
-              row=1, col=1)
-
-fig.update_xaxes(type='category')
-fig.update_layout(
-    barmode='stack',
-    title=f'Neuron L{exampleNeuron.nLayer}N{exampleNeuron.nNeuron}',
-    hovermode="x unified"
-)
-fig.show()
-
-fig = make_subplots(rows=3, cols=4)
-
-i = 0
-for col in tt:
-    if col.startswith('importanceclass'):
-        fig.add_trace(go.Scatter(name=col, x=tt.index, y=tt[col]),
-                      row=(i // 4) + 1, col=(i % 4) + 1)
-        i += 1
-
-fig.update_xaxes(type='category')
-fig.update_layout(
-    barmode='stack',
-    title=f'Neuron L{exampleNeuron.nLayer}N{exampleNeuron.nNeuron}',
-    hovermode="x unified"
-)
-fig.show()
+exampleNeuron = accLayers[1].neurons[random.randint(0, len(accLayers[0].neurons) - 1)]
+exampleNeuron.showImportancePerEntry()
+exampleNeuron.showImportancePerClassPerEntry()
 
 # Plot importance of neurons per layer
 
-dfNeuronsL1 = BinaryOutputNeuron.getDfLayer(neurons, 1).sort_values(['importance'])
-dfNeuronsL2 = BinaryOutputNeuron.getDfLayer(neurons, 2).sort_values(['importance'])
-dfNeuronsL3 = BinaryOutputNeuron.getDfLayer(neurons, 3).sort_values(['importance'])
+accLayers[0].plotImportancePerNeuron()
+accLayers[0].plotImportancePerClass()
 
-fig = make_subplots(rows=1, cols=2,
-                    subplot_titles=('Layer 1 Importance', 'Layer 1 Importance per Class'))
+accLayers[1].plotImportancePerNeuron()
+accLayers[1].plotImportancePerClass()
 
-fig.add_trace(
-    go.Bar(name='totalImportance', x=dfNeuronsL1['name'], y=dfNeuronsL1['importance']),
-    row=1, col=1
-)
-
-for col in dfNeuronsL1:
-    if col.startswith('importanceClass'):
-        fig.add_trace(
-            go.Bar(name=col, x=dfNeuronsL1['name'], y=dfNeuronsL1[col]),
-            row=1, col=2
-        )
-
-fig.update_layout(barmode='stack', hovermode="x unified")
-fig.show()
-
-fig = make_subplots(rows=1, cols=2,
-                    subplot_titles=('Layer 2 Importance', 'Layer 2 Importance per Class'))
-
-fig.add_trace(
-    go.Bar(name='totalImportance', x=dfNeuronsL2['name'], y=dfNeuronsL2['importance']),
-    row=1, col=1
-)
-
-for col in dfNeuronsL2:
-    if col.startswith('importanceClass'):
-        fig.add_trace(
-            go.Bar(name=col, x=dfNeuronsL2['name'], y=dfNeuronsL2[col]),
-            row=1, col=2
-        )
-
-fig.update_layout(barmode='stack', hovermode="x unified")
-fig.show()
-
-fig = make_subplots(rows=1, cols=2,
-                    subplot_titles=('Layer 3 Importance', 'Layer 3 Importance per Class'))
-
-fig.add_trace(
-    go.Bar(name='totalImportance', x=dfNeuronsL3['name'], y=dfNeuronsL3['importance']),
-    row=1, col=1
-)
-for col in dfNeuronsL3:
-    if col.startswith('importanceClass'):
-        fig.add_trace(
-            go.Bar(name=col, x=dfNeuronsL3['name'], y=dfNeuronsL3[col]),
-            row=1, col=2
-        )
-
-fig.update_layout(barmode='stack', hovermode="x unified")
-fig.show()
-
-
-
+accLayers[2].plotImportancePerNeuron()
+accLayers[2].plotImportancePerClass()
