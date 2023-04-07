@@ -12,9 +12,9 @@ from ttUtilities.helpLayerNeuronGenerator import HelpGenerator
 from torch.autograd import Variable
 import numpy as np
 
+modelFilename = '../models/savedModels/fullNN100Epoch100NPLBlackAndWhite'
 batch_size = 64
 neuronPerLayer = 100
-epochs = 10
 perGradientSampling = 1
 
 # Check mps maybe if working in MacOS
@@ -52,7 +52,7 @@ train_dataloader = DataLoader(training_data, batch_size=batch_size)
 test_dataloader = DataLoader(test_data, batch_size=batch_size)
 
 model = FPNeuralNetwork(neuronPerLayer)
-model.load_state_dict(torch.load('models/savedModels/fullNN100Epoch100NPLBlackAndWhite'))
+model.load_state_dict(torch.load(modelFilename))
 
 # model = BinaryNeuralNetwork(neuronPerLayer)
 # model.load_state_dict(torch.load('models/savedModels/binaryNN100Epoch100NPLBlackAndWhite'))
@@ -60,11 +60,11 @@ model.load_state_dict(torch.load('models/savedModels/fullNN100Epoch100NPLBlackAn
 '''
 Generate AccLayers and Neuron objects
 '''
-# TODO: After input is converted into binary, importance analysis of the first layer is also usable
 
 accLayers = HelpGenerator.getAccLayers(model)
-accLayers.pop(0)  # Pop first element
-accLayers.pop()  # Pop last element
+accLayers.pop(0)  # Pop first element (float-float)
+accLayers.pop(0)  # Pop second element (float-binary
+accLayers.pop()  # Pop last element (binary-float)
 HelpGenerator.getNeurons(accLayers)
 
 '''
@@ -75,23 +75,30 @@ Calculate importance per class per neuron
 print(f'GET GRADIENTS AND ACTIVATION VALUES\n')
 
 sampleSize = int(perGradientSampling * len(training_data.data))  # sample size to be used for importance calculation
+model.legacyImportance = True
 model.registerHooks()
 model.eval()
 
-for i in range(sampleSize):
-    X = training_data.data[i]
-    y = training_data.targets[i]
-    x = torch.reshape(Variable(X).type(torch.FloatTensor), (1, 28, 28))
-    model.zero_grad()
-    pred = model(x)
-    pred[0, y.item()].backward()
+importance = {}  # dict with one entry per layer, each layer is represented through a matrix (one row per sample,
+# one column per neuron)
+for layer in range(len(accLayers)):
+    impMatrix = np.zeros((sampleSize, neuronPerLayer))
+    for i in range(sampleSize):
+        aux = []
+        X = training_data.data[i]
+        y = training_data.targets[i]
+        x = torch.reshape(Variable(X).type(torch.FloatTensor), (1, 28, 28))
+        for n in range(neuronPerLayer):
+            pred_withoutTurnedOff = model(x).detach().squeeze().numpy()
+            model.neuronSwitchedOff = (layer + 2, n)
+            pred_withTurnedOff = model(x).detach().squeeze().numpy()
+            aux.append(abs(pred_withoutTurnedOff - pred_withTurnedOff).sum())
+        impMatrix[i, :] = np.array(aux)
 
-    if (i+1) % 500 == 0:
-        print(f"Get Gradients and Activation Values [{i+1:>5d}/{sampleSize:>5d}]")
-
-# Compute importance
-
-importance = model.computeImportance(neuronPerLayer)
+        if (i+1) % 500 == 0:
+            print(f"Get Gradients and Activation Values. Layer [{layer+1:>2d}/{len(accLayers):>2d}] "
+                  f"Sample [{i+1:>5d}/{sampleSize:>5d}]")
+    importance[layer] = impMatrix
 
 # Give each neuron its importance values
 for j in range(len(importance)):
@@ -183,9 +190,3 @@ for j in range(len(importance)):
 for i in range(len(accLayers)):
     accLayers[i].plotImportancePerNeuron('FP')
     accLayers[i].plotImportancePerClass('FP')
-
-# Save each layer tt into feather file
-
-# accLayers[0].tt.to_feather('layer1Importances')
-# accLayers[1].tt.to_feather('layer2Importances')
-# accLayers[2].tt.to_feather('layer3Importances')

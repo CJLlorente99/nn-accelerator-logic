@@ -7,7 +7,6 @@ Train and test functions
 
 # Check mps maybe if working in MacOS
 device = 'cuda' if torch.cuda.is_available() else 'cpu'
-print(f'Using {device} device')
 
 
 def train(dataloader, model, optimizer):
@@ -51,3 +50,12 @@ def trainAndTest(epochs, train_dataloader, test_dataloader, model, opt):
 		print(f"Epoch {t + 1}\n-------------------------------")
 		train(train_dataloader, model, opt)
 		test(test_dataloader, model)
+
+# Transform to black (1) and white (0)
+
+
+class ToBlackAndWhite(object):
+
+	def __call__(self, sample):
+		sample = (sample > 0).float()
+		return sample

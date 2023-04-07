@@ -13,16 +13,23 @@ class AccLayer:
 	tt: pd.DataFrame
 
 	def fillTT(self):
+		"""
+		Method that calls each neuron in the layer recurrently and creates the TT per each
+		"""
 		i = 0
 		n = len(self.neurons)
 		for neuron in self.neurons:
 			neuron.createTT()
 
-			i += 1
-			if (i + 1) % 25 == 0:
+			if (i + 1) % 1 == 0:
 				print(f"{self.name} Neuron TT [{i + 1:>4d}/{n:>4d}]")
+			i += 1
 
-	def plotImportancePerNeuron(self):
+	def plotImportancePerNeuron(self, name):
+		"""
+		Method that plots the importance per neuron
+		:param name:
+		"""
 		# Get neuron name and importance
 		aux = pd.DataFrame()
 		for neuron in self.neurons:
@@ -35,9 +42,15 @@ class AccLayer:
 
 		fig.add_trace(go.Bar(name='totalImportance', x=aux['name'], y=aux['importance']))
 
+		fig.update_layout(title=name + ' ' + self.name)
+
 		fig.show()
 
-	def plotImportancePerClass(self):
+	def plotImportancePerClass(self, name):
+		"""
+		Method that plots the importance per neuron per layer
+		:param name:
+		"""
 		# Get neuron name and importance per class
 		aux = pd.DataFrame()
 		for neuron in self.neurons:
@@ -54,7 +67,15 @@ class AccLayer:
 			if col not in ['name', 'importance']:
 				fig.add_trace(go.Bar(name=col, x=aux['name'], y=aux[col]))
 
-		fig.update_layout(barmode='stack', hovermode="x unified")
+		fig.update_layout(title=name + ' ' + self.name, barmode='stack', hovermode="x unified")
 		fig.show()
 
+	def saveTT(self, filename):
+		"""
+		Method that saves the TT into a feather file
+		:param filename:
+		"""
+		outputTags = [col for col in self.tt if col.startswith('output')]
+		activationTags = [col for col in self.tt if col.startswith('activation')]
 
+		self.tt[outputTags + activationTags].to_feather(filename)

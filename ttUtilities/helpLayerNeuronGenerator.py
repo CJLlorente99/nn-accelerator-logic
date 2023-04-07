@@ -20,7 +20,7 @@ class HelpGenerator:
 
 		layer = 0  # Layer (as PyTorch understands it)
 		accLayer = 0  # Layer (as neuron layer, Linear+Norm+Activation)
-		accLayers = [AccLayer(f'Layer {i}',{}, {}, 0, [], pd.DataFrame()) for i in range(n)]
+		accLayers = [AccLayer(f'Layer {i}', {}, {}, 0, [], pd.DataFrame()) for i in range(n)]
 
 		for entry in model.state_dict():
 			param = model.state_dict()[entry]
@@ -67,7 +67,7 @@ class HelpGenerator:
 					nClass=10,
 					accLayer=accLayer
 				)
-				layer += 1
 				neuronsLayer.append(neuron)
 
+			layer += 1
 			accLayer.neurons = neuronsLayer

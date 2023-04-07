@@ -1,8 +1,9 @@
 import torch
-from torch import nn
 import torch.nn.functional as F
 
-class STEFunction(torch.autograd.Function):
+
+class StraightThroughEstimator(torch.autograd.Function):
+
 	@staticmethod
 	def forward(ctx, input):
 		return (input > 0).float()
@@ -12,10 +13,9 @@ class STEFunction(torch.autograd.Function):
 		return F.hardtanh(grad_output)
 
 
-class StraightThroughEstimator(nn.Module):
+class STEFunction(torch.nn.Module):
 	def __init__(self):
-		super(StraightThroughEstimator, self).__init__()
+		super(STEFunction, self).__init__()
 
-	def forward(self, x):
-		x = STEFunction.apply(x)
-		return x
+	def forward(self, input):
+		return StraightThroughEstimator.apply(input)
