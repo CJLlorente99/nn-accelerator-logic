@@ -57,5 +57,4 @@ def trainAndTest(epochs, train_dataloader, test_dataloader, model, opt):
 class ToBlackAndWhite(object):
 
 	def __call__(self, sample):
-		sample = (sample > 0).float()
-		return sample
+		return sample.convert('1')

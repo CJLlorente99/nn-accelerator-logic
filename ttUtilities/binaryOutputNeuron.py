@@ -138,7 +138,8 @@ class BinaryOutputNeuron:
 		:return:
 		"""
 		tags = [col for col in row.index if col.startswith('activation')]
-		row = np.array(integerToBinaryArray(row[tags].values))
+		lengthsTags = [col for col in row.index if col.startswith('lengthActivation')]
+		row = np.array(integerToBinaryArray(row[tags].values, row[lengthsTags].values))
 		# Pad zeros at the beginning for length consistency
 		row = np.pad(row.squeeze(), (len(self.weight) - len(row), 0))
 		# Multiply per weights

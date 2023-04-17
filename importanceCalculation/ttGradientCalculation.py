@@ -13,10 +13,16 @@ from torch.autograd import Variable
 import numpy as np
 
 neuronPerLayer = 100
-modelFilename = f'../models/savedModels/binaryNN100Epoch{neuronPerLayer}NPLBlackAndWhite'
+modelUsed = f'binaryNN100Epoch{neuronPerLayer}NPLBlackAndWhite'
+modelFilename = f'../models/savedModels/{modelUsed}'
 batch_size = 64
 perGradientSampling = 1
 nClasses = 10
+
+
+def layerFilename(name):
+	return f'C:/Users/carlo/OneDrive/Documentos/Universidad/MUIT/Segundo/TFM/Code/data/layersTT/{name}{modelUsed}'
+
 
 # Check mps maybe if working in MacOS
 device = 'cuda' if torch.cuda.is_available() else 'cpu'
@@ -31,8 +37,8 @@ training_data = datasets.MNIST(
 	train=True,
 	download=False,
 	transform=Compose([
-		ToTensor(),
-		ToBlackAndWhite()
+		ToBlackAndWhite(),
+		ToTensor()
 	])
 )
 
@@ -41,8 +47,8 @@ test_data = datasets.MNIST(
 	train=False,
 	download=False,
 	transform=Compose([
-		ToTensor(),
-		ToBlackAndWhite()
+		ToBlackAndWhite(),
+		ToTensor()
 	])
 )
 
@@ -100,6 +106,7 @@ for j in range(len(importance)):
 model.individualActivationsToUniqueValue()
 
 neuronTags = ['activation' + str(i) for i in range(model.activationSize)]
+neuronTags = neuronTags + ['lengthActivation' + str(i) for i in range(model.activationSize)]
 classTags = ['class' + str(i) for i in range(nClasses)]
 
 # valueSTE1 = np.hstack((model.valueSTE1, training_data.targets[:sampleSize].detach().numpy().reshape((sampleSize, 1))))
@@ -168,3 +175,8 @@ exampleNeuron.showImportancePerClassPerEntry()
 exampleNeuron = accLayers[1].neurons[random.randint(0, len(accLayers[0].neurons) - 1)]
 exampleNeuron.showImportancePerEntry()
 exampleNeuron.showImportancePerClassPerEntry()
+
+# Save the layers
+
+for i in range(len(df)):
+	accLayers[i].saveTT(layerFilename(f'2023_04_15_layer{i}_'))

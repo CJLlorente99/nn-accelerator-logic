@@ -12,7 +12,7 @@ from ttUtilities.helpLayerNeuronGenerator import HelpGenerator
 from torch.autograd import Variable
 import numpy as np
 
-modelFilename = '../models/savedModels/binaryNN100Epoch400NPLBlackAndWhite'
+modelFilename = '../models/savedModels/fullNN100Epoch400NPLBlackAndWhite'
 batch_size = 64
 neuronPerLayer = 400
 perGradientSampling = 1
@@ -51,11 +51,11 @@ Create DataLoader
 train_dataloader = DataLoader(training_data, batch_size=batch_size)
 test_dataloader = DataLoader(test_data, batch_size=batch_size)
 
-# model = FPNeuralNetwork(neuronPerLayer)
-# model.load_state_dict(torch.load(modelFilename))
-
-model = BinaryNeuralNetwork(neuronPerLayer)
+model = FPNeuralNetwork(neuronPerLayer)
 model.load_state_dict(torch.load(modelFilename))
+
+# model = BinaryNeuralNetwork(neuronPerLayer)
+# model.load_state_dict(torch.load(modelFilename))
 
 '''
 Generate AccLayers and Neuron objects

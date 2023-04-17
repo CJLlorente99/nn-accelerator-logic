@@ -110,16 +110,16 @@ class FPNeuralNetwork(nn.Module):
 				val_output[0][self.neuronSwitchedOff[1]] = 0
 
 	def computeImportance(self, neuronPerLayer):
-		self.gradientsReLU1 = np.array(self.gradientsReLU1)
+		# self.gradientsReLU1 = np.array(self.gradientsReLU1)
 		self.gradientsReLU2 = np.array(self.gradientsReLU2)
 		self.gradientsReLU3 = np.array(self.gradientsReLU3)
 
-		self.valueReLU1 = np.array(self.valueReLU1)
+		# self.valueReLU1 = np.array(self.valueReLU1)
 		self.valueReLU2 = np.array(self.valueReLU2)
 		self.valueReLU3 = np.array(self.valueReLU3)
 
-		importanceReLU1 = abs(np.multiply(self.gradientsReLU1, self.valueReLU1))
+		# importanceReLU1 = abs(np.multiply(self.gradientsReLU1, self.valueReLU1))
 		importanceReLU2 = abs(np.multiply(self.gradientsReLU2, self.valueReLU2))
 		importanceReLU3 = abs(np.multiply(self.gradientsReLU3, self.valueReLU3))
 
-		return [importanceReLU1, importanceReLU2, importanceReLU3]
+		return [importanceReLU2, importanceReLU3]

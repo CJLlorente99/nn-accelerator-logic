@@ -77,5 +77,6 @@ class AccLayer:
 		"""
 		outputTags = [col for col in self.tt if col.startswith('output')]
 		activationTags = [col for col in self.tt if col.startswith('activation')]
+		lengthActivationTags = [col for col in self.tt if col.startswith('lengthActivation')]
 
-		self.tt[outputTags + activationTags].to_feather(filename)
+		self.tt[outputTags + activationTags + lengthActivationTags].to_feather(filename)

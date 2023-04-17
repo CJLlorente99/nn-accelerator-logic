@@ -18,27 +18,27 @@ device = 'cuda' if torch.cuda.is_available() else 'cpu'
 
 
 def train(config, checkpoint_dir='checkpoint_dir'):
-	model = BinaryNeuralNetwork(100).to(device)
+	model = BinaryNeuralNetwork(4000).to(device)
 
-	optimizer = optim.Adamax(model.parameters(), lr=3e-3, weight_decay=config['weight_decay'])
+	optimizer = optim.Adamax(model.parameters(), lr=3e-3, weight_decay=1e-5)
 
 	training_data = datasets.MNIST(
-		root='C:/Users/carlo/OneDrive/Documentos/Universidad/MUIT/Segundo/TFM/Code/hpo/data',
+		root='C:/Users/carlo/OneDrive/Documentos/Universidad/MUIT/Segundo/TFM/Code/data',
 		train=True,
 		download=False,
 		transform=Compose([
+			ToBlackAndWhite(),
 			ToTensor()
-			# ToBlackAndWhite()
 		])
 	)
 
 	test_data = datasets.MNIST(
-		root='C:/Users/carlo/OneDrive/Documentos/Universidad/MUIT/Segundo/TFM/Code/hpo/data',
+		root='C:/Users/carlo/OneDrive/Documentos/Universidad/MUIT/Segundo/TFM/Code/data',
 		train=False,
 		download=False,
 		transform=Compose([
+			ToBlackAndWhite(),
 			ToTensor()
-			# ToBlackAndWhite()
 		])
 	)
 

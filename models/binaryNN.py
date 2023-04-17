@@ -144,4 +144,4 @@ class BinaryNeuralNetwork(nn.Module):
 			aux.append(binaryArrayToSingleValue(activation))
 		self.valueSTE3 = np.array(aux)
 
-		self.activationSize = self.valueSTE3.shape[1]
+		self.activationSize = int(self.valueSTE3.shape[1] / 2)  # It has the info of the lengths too

@@ -2,12 +2,12 @@
 This file contains the methods needed to realize the NN into a HW compatible realization
 '''
 import pandas as pd
-import ttg
 import itertools
 from sklearn.neighbors import NearestNeighbors
 from sympy.logic import SOPform
 from sympy import symbols
 from ttUtilities.auxFunctions import integerToBinaryArray, binaryArrayToSingleValue
+import numpy as np
 
 
 class DNFRealization:
@@ -16,6 +16,8 @@ class DNFRealization:
 		self.nNeurons = nNeurons
 		self.outputTags = []
 		self.activationTags = []
+		self.lengthActivationTags = []
+		self.tag = [f'N{i}' for i in range(self.nNeurons)]
 
 	def loadTT(self, filename):
 		"""
@@ -25,32 +27,55 @@ class DNFRealization:
 		self.tt = pd.read_feather(filename)
 		self.outputTags = [col for col in self.tt if col.startswith('output')]
 		self.activationTags = [col for col in self.tt if col.startswith('activation')]
+		self.lengthActivationTags = [col for col in self.tt if col.startswith('lengthActivation')]
 
 	def assignOutputBasedOnDistance(self, df: pd.DataFrame):
+		"""
+		This method receives a df with the ON-set and OFF-set and calculated the values of the DC-set based on the
+		nearest distance
+		:param df:
+		:return:
+		"""
+		print(f'Unrolling to binary array')
+		setOnOff = df.drop(['output'], axis=1).apply(self._toBinaryArray, axis=1)
+		setOnOff = np.array([np.array(i) for i in setOnOff])
+		outputsOnOff = df['output']
+
 		# 1NN (maybe try with different distance definitions)
 		# P=2 euclidean, P=1 manhattan_distance
-		setOnOff = df.drop(['output'], axis=1).apply(self._toBinaryArray, axis=1)
-		outputsOnOff = df['output']
-		nbrs = NearestNeighbors(n_neighbors=1, metric='minkowski', p=2).fit(setOnOff.to_numpy())
+		print(f'Fitting Nearest Neighbor')
+		nbrs = NearestNeighbors(n_neighbors=1, metric='minkowski', p=2).fit(setOnOff)
+		setOnOff = pd.DataFrame(setOnOff, columns=self.tag)
 
 		# Find nearest neighbor of each entry in DC-set and add it to tt
 		# Leverage generator so whole DC-set is not created
 		gen = itertools.product([0, 1], repeat=self.nNeurons)
+		i = len(setOnOff)
 		while True:
 			try:
 				entry = next(gen)
-				if entry not in setOnOff:
-					aux = pd.DataFrame([binaryArrayToSingleValue(entry) + outputsOnOff[nbrs.kneighbors(entry).squeeze()]],
+				y = pd.DataFrame(np.array(entry).reshape((1, self.nNeurons)), columns=self.tag, index=[0])
+				if not (setOnOff == y.values).sum(axis=1).sum() == self.nNeurons:
+					# TODO. Check it is correctly done
+					aux = pd.DataFrame([binaryArrayToSingleValue(entry) + [outputsOnOff[nbrs.kneighbors(y.values)[1].squeeze().tolist()]]],
 									   columns=df.columns, index=[0])
 					df = pd.concat([df, aux], ignore_index=True)
+				if (i + 1) % 500 == 0:
+					print(f"AssignOutputsBasedOnDistance [{i + 1:>5d}/{2**self.nNeurons:>5d}]")
+				i += 1
 			except StopIteration:
 				break
 
 		return df
 
 	def generateSoP(self, df: pd.DataFrame):
+		"""
+		Method that generated the SoP expression making use of the SymPy library
+		:param df:
+		:return:
+		"""
 		# Get only ON-set
-		df.drop(self.tt[self.tt['output'] != 1].index, inplace=True).drop(['output'], axis=1)
+		df = df.drop(df[df['output'] != 1].index).drop(['output'], axis=1)
 
 		# Generate symbols
 		symb = []
@@ -58,18 +83,123 @@ class DNFRealization:
 			symb.append(symbols(f'n{n}'))
 
 		# Generate SoP
-		return SOPform(symb, df.to_numpy())
+		return SOPform(symb, df.to_numpy().tolist())
+
+	def generateEspressoInput(self, df: pd.DataFrame, filename: str):
+		"""
+		Method that parses an ON-set and OFF-set defined TT into a PLA file that can be processed by Espresso SW
+		:param df:
+		:param filename:
+		"""
+		with open(f'{filename}.pla', 'w') as f:
+			# Write header of PLA file
+			f.write(f'.i {self.nNeurons}\n')  # Number of input neurons
+			f.write(f'.o {1}\n')  # Number of output per neuron (just 1)
+			tags = [f'N{i}' for i in range(self.nNeurons)]
+			tags = ' '.join(tags)
+			f.write(f'.ilb {tags}\n')  # Names of the input variables
+			f.write(f'.ob output\n')  # Name of the output variable
+			f.write(f'.type fr\n')  # .pla contains ON-Set and OFF-Set
+			for index, row in df.iterrows():
+				text = ''.join(row[self.tag].to_string(header=False, index=False).split('\n'))
+				f.write(f'{text} {row.output}\n')
+			f.write(f'.e')
+
+		with open(f'{filename}.sh', 'w') as f:
+			# Write executable that triggers Espresso SW
+			# f.write(f'espresso -Dexact -t -x')
+			# f.write(f'espresso -Dso -S1 -t -x')
+			# f.write(f'espresso -t -x')
+			f.write(f'espresso -efast -t -x')
+			f.write(f'{filename}.pla > {filename}.sol')
+
+	def generateABCInput(self, df: pd.DataFrame, filename: str):
+		"""
+		Method that parses an ON-set and OFF-set defined TT into a file that can be processed by ABC SW
+		:param df:
+		:param filename;
+		"""
+		# ABC only assumes fd type in pla file. This means, the data in pla represents the ON-Set (1) and the
+		# DC-Set (-). As DC-Set is not supported, PLA file should only contain (1)
+
+		with open(f'{filename}.pla', 'w') as f:
+			# Write header of PLA file
+			f.write(f'.i {self.nNeurons}\n')  # Number of input neurons
+			f.write(f'.o {1}\n')  # Number of output per neuron (just 1)
+			tags = [f'N{i}' for i in range(self.nNeurons)]
+			tags = ' '.join(tags)
+			f.write(f'.ilb {tags}\n')  # Names of the input variables
+			f.write(f'.ob output\n')  # Name of the output variable
+			for index, row in df.iterrows():
+				text = ''.join(row[self.tag].to_string(header=False, index=False).split('\n'))
+				f.write(f'{text} {row.output}\n')
+			f.write(f'.e')
 
 	def realizeNeurons(self):
 		realizations = []
+		i = 0
 		for neuron in self.outputTags:
-			df = self.tt[self.activationTags + neuron].copy()
+			df = self.tt[self.activationTags + self.lengthActivationTags + [neuron]].copy()
 			df.rename(columns={neuron: 'output'}, inplace=True)
-			df = self.assignOutputBasedOnDistance(df)
+
+			print(f'Unrolling to binary array')
+			setOnOff = df.drop(['output'], axis=1).apply(self._toBinaryArray, axis=1)
+			setOnOff = np.array([np.array(i) for i in setOnOff])
+			outputsOnOff = df['output']
+			df = pd.concat([pd.DataFrame(setOnOff, columns=self.tag), outputsOnOff], axis=1)
+
+			# df = self.assignOutputBasedOnDistance(df)
 			realizations.append(self.generateSoP(df))
 			del df  # caring about memory
+			print(f"Realize neurons [{i + 1:>5d}/{len(self.outputTags):>5d}]")
+			i += 1
 		return realizations
 
+	def createPLAFileEspresso(self, baseFilename: str):
+		i = 0
+		for neuron in self.outputTags:
+			df = self.tt[self.activationTags + self.lengthActivationTags + [neuron]].copy()
+			df.rename(columns={neuron: 'output'}, inplace=True)
+
+			print(f'Unrolling to binary array')
+			setOnOff = df.drop(['output'], axis=1).apply(self._toBinaryArray, axis=1)
+			setOnOff = np.array([np.array(i) for i in setOnOff])
+			outputsOnOff = df['output']
+			df = pd.concat([pd.DataFrame(setOnOff, columns=self.tag), outputsOnOff], axis=1)
+			df = df.astype('int')
+
+			self.generateEspressoInput(df, f'{baseFilename}/{neuron}')
+			del df  # caring about memory
+			print(f"Realize Espresso neurons [{i + 1:>5d}/{len(self.outputTags):>5d}]")
+			i += 1
+
+	def createPLAFileABC(self, baseFilename: str):
+		i = 0
+		for neuron in self.outputTags:
+			df = self.tt[self.activationTags + self.lengthActivationTags + [neuron]].copy()
+			df.rename(columns={neuron: 'output'}, inplace=True)
+
+			# Take out entries out of the ON-Set
+			# Select only ON-Set
+			df = df[df['output'] == 1]
+
+			print(f'Unrolling to binary array')
+			setOnOff = df.drop(['output'], axis=1).apply(self._toBinaryArray, axis=1)
+			setOnOff = np.array([np.array(i) for i in setOnOff])
+			outputsOnOff = df['output']
+			df = pd.DataFrame(setOnOff, columns=self.tag, index=outputsOnOff.index)
+			df['output'] = outputsOnOff
+			df = df.astype('int')
+
+			self.generateABCInput(df, f'{baseFilename}/{neuron}')
+			del df  # caring about memory
+			print(f"Realize ABC neurons [{i + 1:>5d}/{len(self.outputTags):>5d}]")
+			i += 1
+
 	def _toBinaryArray(self, row):
-		row = row[self.activationTags]
-		return integerToBinaryArray(row)
+		"""
+		Private method
+		:param row:
+		:return:
+		"""
+		return integerToBinaryArray(row[self.activationTags], row[self.lengthActivationTags])

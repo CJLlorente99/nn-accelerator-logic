@@ -18,9 +18,7 @@ def main(num_samples=10, max_num_epochs=10):
     # Check mps maybe if working in MacOS
     device = 'cuda' if torch.cuda.is_available() else 'cpu'
 
-    config = {
-        "weight_decay": tune.choice([1e-5])
-    }
+    config = {}
 
     scheduler = ASHAScheduler(
         metric="accuracy",
@@ -30,7 +28,7 @@ def main(num_samples=10, max_num_epochs=10):
         reduction_factor=2)
 
     reporter = CLIReporter(
-        parameter_columns=["weight_decay"],
+        # parameter_columns=["signPoint"],
         metric_columns=["loss", "accuracy", "training_iteration"])
 
     result = tune.run(

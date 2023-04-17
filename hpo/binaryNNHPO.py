@@ -1,4 +1,5 @@
 from models.steFunction import STEFunction
+from hpo.quantizier import STEFunctionQuant
 from torch import nn
 import torch.nn.functional as F
 import numpy as np
@@ -12,7 +13,7 @@ class BinaryNeuralNetwork(nn.Module):
 
 		self.l0 = nn.Linear(28 * 28, neuronPerLayer)
 		self.bn0 = nn.BatchNorm1d(neuronPerLayer)
-		self.ste0 = nn.ReLU()
+		self.ste0 = STEFunction()
 
 		self.l1 = nn.Linear(neuronPerLayer, neuronPerLayer)
 		self.bn1 = nn.BatchNorm1d(neuronPerLayer)

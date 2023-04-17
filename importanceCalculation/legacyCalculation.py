@@ -12,7 +12,7 @@ from ttUtilities.helpLayerNeuronGenerator import HelpGenerator
 from torch.autograd import Variable
 import numpy as np
 
-modelFilename = '../models/savedModels/fullNN100Epoch100NPLBlackAndWhite'
+modelFilename = '../models/savedModels/binaryNN100Epoch100NPLBlackAndWhite'
 batch_size = 64
 neuronPerLayer = 100
 perGradientSampling = 1
@@ -89,6 +89,7 @@ for layer in range(len(accLayers)):
         y = training_data.targets[i]
         x = torch.reshape(Variable(X).type(torch.FloatTensor), (1, 28, 28))
         for n in range(neuronPerLayer):
+            model.neuronSwitchedOff = (-1, -1)  # So no output is short to 0
             pred_withoutTurnedOff = model(x).detach().squeeze().numpy()
             model.neuronSwitchedOff = (layer + 2, n)
             pred_withTurnedOff = model(x).detach().squeeze().numpy()
@@ -104,86 +105,6 @@ for layer in range(len(accLayers)):
 for j in range(len(importance)):
     for i in range(neuronPerLayer):
         accLayers[j].neurons[i].giveImportance(importance[j][:, i], training_data.targets.tolist())
-
-# Get activations-class per layer
-# neuronTags = ['n' + str(i) for i in range(neuronPerLayer)]
-# Instead of storing one 8bit word per activation, decompose as sum of products of 2
-# binaryNNModel.individualActivationsToUniqueValue()
-#
-# neuronTags = ['activation' + str(i) for i in range(binaryNNModel.valueSTE1.shape[1])]
-# classTags = ['class' + str(i) for i in range(nClasses)]
-#
-# valueSTE1 = np.hstack((binaryNNModel.valueSTE1, training_data.targets[:sampleSize].detach().numpy().reshape((sampleSize, 1))))
-# valueSTE1 = np.hstack((valueSTE1, np.zeros((sampleSize, nClasses))))
-# valueSTE2 = np.hstack((binaryNNModel.valueSTE2, training_data.targets[:sampleSize].detach().numpy().reshape((sampleSize, 1))))
-# valueSTE2 = np.hstack((valueSTE2, np.zeros((sampleSize, nClasses))))
-# valueSTE3 = np.hstack((binaryNNModel.valueSTE3, training_data.targets[:sampleSize].detach().numpy().reshape((sampleSize, 1))))
-# valueSTE3 = np.hstack((valueSTE3, np.zeros((sampleSize, nClasses))))
-#
-# dfLayer1 = pd.DataFrame(valueSTE1, columns=neuronTags + ['class'] + classTags)
-# dfLayer2 = pd.DataFrame(valueSTE2, columns=neuronTags + ['class'] + classTags)
-# dfLayer3 = pd.DataFrame(valueSTE3, columns=neuronTags + ['class'] + classTags)
-
-
-# def classToClassesUnpack(row):
-#     row['class' + str(int(row['class']))] = 1
-#
-#
-# dfLayer1.apply(classToClassesUnpack, axis=1)
-# dfLayer1 = dfLayer1.drop(['class'], axis=1)
-#
-# dfLayer2.apply(classToClassesUnpack, axis=1)
-# dfLayer2 = dfLayer2.drop(['class'], axis=1)
-#
-# dfLayer3.apply(classToClassesUnpack, axis=1)
-# dfLayer3 = dfLayer3.drop(['class'], axis=1)
-#
-# # Group by neuron activations and sum class columns
-# typeDict = {}
-# for tag in classTags:
-#     typeDict[tag] = 'uint8'
-#
-# # for tag in neuronTags:
-# #     typeDict[tag] = 'float64'
-#
-# dfLayer1 = dfLayer1.groupby(neuronTags).aggregate('sum').reset_index().copy()
-# dfLayer1 = dfLayer1.astype(typeDict)
-#
-# dfLayer2 = dfLayer2.groupby(neuronTags).aggregate('sum').reset_index().copy()
-# dfLayer2 = dfLayer2.astype(typeDict)
-#
-# dfLayer3 = dfLayer3.groupby(neuronTags).aggregate('sum').reset_index().copy()
-# dfLayer3 = dfLayer3.astype(typeDict)
-#
-# # Assign to each layer object
-# accLayers[0].tt = dfLayer1
-# accLayers[1].tt = dfLayer2
-# accLayers[2].tt = dfLayer3
-#
-# # Some data over the activation performed
-#
-# print(f'In layer 1, there are a total of {len(dfLayer1)} input combinations from the {2**neuronPerLayer} possible')
-# print(f'In layer 2, there are a total of {len(dfLayer2)} input combinations from the {2**neuronPerLayer} possible')
-# print(f'In layer 3, there are a total of {len(dfLayer3)} input combinations from the {2**neuronPerLayer} possible')
-#
-# # Create the TT per neuron
-#
-# for layer in accLayers:
-#     layer.fillTT()
-
-# Plot importance per entry of a neuron as an example
-
-# Example belonging to layer 1
-
-# exampleNeuron = accLayers[0].neurons[random.randint(0, len(accLayers[0].neurons) - 1)]
-# exampleNeuron.showImportancePerEntry()
-# exampleNeuron.showImportancePerClassPerEntry()
-#
-# # Example belonging to layer 2
-#
-# exampleNeuron = accLayers[1].neurons[random.randint(0, len(accLayers[0].neurons) - 1)]
-# exampleNeuron.showImportancePerEntry()
-# exampleNeuron.showImportancePerClassPerEntry()
 
 # Plot importance of neurons per layer
 
