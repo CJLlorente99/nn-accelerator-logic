@@ -12,7 +12,7 @@ from ttUtilities.helpLayerNeuronGenerator import HelpGenerator
 from torch.autograd import Variable
 import numpy as np
 
-modelFilename = '../models/savedModels/binaryNN100Epoch100NPLBlackAndWhite'
+modelFilename = '../models/savedModels/fullNN20Epoch100NPLBlackAndWhite'
 batch_size = 64
 neuronPerLayer = 100
 perGradientSampling = 1
@@ -30,8 +30,8 @@ training_data = datasets.MNIST(
     train=True,
     download=False,
     transform=Compose([
-            ToTensor(),
-            ToBlackAndWhite()
+            ToBlackAndWhite(),
+            ToTensor()
         ])
 )
 
@@ -40,8 +40,8 @@ test_data = datasets.MNIST(
     train=False,
     download=False,
     transform=Compose([
-        ToTensor(),
-        ToBlackAndWhite()
+        ToBlackAndWhite(),
+        ToTensor()
     ])
 )
 
@@ -51,19 +51,17 @@ Create DataLoader
 train_dataloader = DataLoader(training_data, batch_size=batch_size)
 test_dataloader = DataLoader(test_data, batch_size=batch_size)
 
-model = FPNeuralNetwork(neuronPerLayer)
-model.load_state_dict(torch.load(modelFilename))
+# model = FPNeuralNetwork(neuronPerLayer)
+# model.load_state_dict(torch.load(modelFilename))
 
-# model = BinaryNeuralNetwork(neuronPerLayer)
-# model.load_state_dict(torch.load('models/savedModels/binaryNN100Epoch100NPLBlackAndWhite'))
+model = BinaryNeuralNetwork(neuronPerLayer)
+model.load_state_dict(torch.load(modelFilename))
 
 '''
 Generate AccLayers and Neuron objects
 '''
 
 accLayers = HelpGenerator.getAccLayers(model)
-accLayers.pop(0)  # Pop first element (float-float)
-accLayers.pop(0)  # Pop second element (float-binary
 accLayers.pop()  # Pop last element (binary-float)
 HelpGenerator.getNeurons(accLayers)
 
@@ -109,5 +107,6 @@ for j in range(len(importance)):
 # Plot importance of neurons per layer
 
 for i in range(len(accLayers)):
-    accLayers[i].plotImportancePerNeuron('FP')
-    accLayers[i].plotImportancePerClass('FP')
+    # accLayers[i].plotImportancePerNeuron('FP')
+    # accLayers[i].plotImportancePerClass('FP')
+    accLayers[i].saveImportance(f'../data/layersImportance/2023_04_18_layer{i}ImportanceLegacyFull20epoch100nnpl')

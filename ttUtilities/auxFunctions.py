@@ -9,14 +9,18 @@ def combine(x, y):
 	return 2 * x + y
 
 
-def binaryArrayToSingleValue(arrayList):
-	n = 50  # TODO. Max number that can be represented with float64 might be higher
+def binaryArrayToSingleValue(arrayList, n=50):
+	# TODO. Max number that can be represented with float64 might be higher
 	res = []
 	lengths = []
 	# if value is bigger than what can be represented with a single uint64, return various values
 	for i in range(0, len(arrayList), n):
-		res.append(reduce(combine, arrayList[i:i + n]))
-		lengths.append(len(arrayList[i:i + n]))
+		aux = reduce(combine, arrayList[i:i + n])
+		assert aux >= 0
+		res.append(aux)
+		aux = len(arrayList[i:i + n])
+		assert aux > 0
+		lengths.append(aux)
 	return res + lengths
 
 
@@ -31,7 +35,7 @@ def integerToBinaryArray(value, lengths):
 			aux.append(i % 2)
 			i //= 2
 		aux.reverse()
-		aux = np.pad(np.array(aux).squeeze(), (int(lengths[j]) - len(aux), 0))
+		aux = np.pad(np.array(aux), (int(lengths[j]) - len(aux), 0))
 		res.append(aux)
 		j += 1
 	res = [item for sublist in res for item in sublist]

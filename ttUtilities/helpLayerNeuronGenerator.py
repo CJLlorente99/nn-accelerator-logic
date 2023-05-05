@@ -18,7 +18,6 @@ class HelpGenerator:
 			if isinstance(layer, modules.linear.Linear):
 				n += 1
 
-		layer = 0  # Layer (as PyTorch understands it)
 		accLayer = 0  # Layer (as neuron layer, Linear+Norm+Activation)
 		accLayers = [AccLayer(f'Layer {i}', {}, {}, 0, [], pd.DataFrame()) for i in range(n)]
 
@@ -27,10 +26,9 @@ class HelpGenerator:
 			if entry.startswith('l'):  # Linear
 				if entry.endswith('weight'):
 					accLayers[accLayer].linear['weight'] = param
-					accLayers[accLayer].nNeurons = len(param)
+					accLayers[accLayer].nNeurons = min(param.shape)
 				elif entry.endswith('bias'):
 					accLayers[accLayer].linear['bias'] = param
-					layer += 1
 
 			if entry.startswith('bn'):  # batch normalization
 				if entry.endswith('weight'):
@@ -43,8 +41,10 @@ class HelpGenerator:
 					accLayers[accLayer].norm['running_var'] = param
 				elif entry.endswith('num_batches_tracked'):
 					accLayers[accLayer].norm['num_batches_tracked'] = param
-					layer += 2
 					accLayer += 1
+
+			if (accLayer + 1) % 1 == 0:
+				print(f"Layer creation [{accLayer + 1:>2d}/{n:>2d}]")
 
 		return accLayers
 
@@ -54,7 +54,7 @@ class HelpGenerator:
 		for accLayer in accLayers:
 			neuronsLayer = []
 
-			for iNeuron in range(accLayer.nNeurons):
+			for iNeuron in range(accLayer.linear['weight'].shape[0]):
 				neuron = BinaryOutputNeuron(
 					weight=accLayer.linear['weight'][iNeuron, :],
 					bias=accLayer.linear['bias'][iNeuron],
@@ -68,6 +68,9 @@ class HelpGenerator:
 					accLayer=accLayer
 				)
 				neuronsLayer.append(neuron)
+
+				if (iNeuron + 1) % 250 == 0:
+					print(f"Layer {layer} Neuron creation [{iNeuron + 1:>2d}/{accLayer.nNeurons:>2d}]")
 
 			layer += 1
 			accLayer.neurons = neuronsLayer

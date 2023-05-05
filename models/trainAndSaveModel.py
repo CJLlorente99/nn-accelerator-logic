@@ -8,11 +8,15 @@ from torch.utils.data import DataLoader
 from models.binaryNN import BinaryNeuralNetwork
 from models.fpNN import FPNeuralNetwork
 import torch.optim as optim
+import torch.nn as nn
 
 batch_size = 64
 neuronPerLayer = 100
 epochs = 100
-perGradientSampling = 1
+criterionName = 'nll'
+# criterionName = 'cel'
+precision = 'bin'
+# precision = 'full'
 
 # Check mps maybe if working in MacOS
 device = 'cuda' if torch.cuda.is_available() else 'cpu'
@@ -53,23 +57,29 @@ Instantiate NN models
 '''
 print(f'MODEL INSTANTIATION\n')
 
-# model = FPNeuralNetwork(neuronPerLayer).to(device)
-model = BinaryNeuralNetwork(neuronPerLayer).to(device)
+if precision == 'full':
+    model = FPNeuralNetwork(neuronPerLayer).to(device)
+elif precision == 'bin':
+    model = BinaryNeuralNetwork(neuronPerLayer).to(device)
 
 '''
 Train and test
 '''
 print(f'TRAINING\n')
 
-opt = optim.Adamax(model.parameters(), lr=3e-3, weight_decay=1e-5)
+opt = optim.Adamax(model.parameters(), lr=3e-3, weight_decay=1e-6)
 
-trainAndTest(epochs, train_dataloader, test_dataloader, model, opt)
+if criterionName == 'nll':
+    criterion = nn.NLLLoss()
+elif criterionName == 'cel':
+    criterion = nn.CrossEntropyLoss()
+
+trainAndTest(epochs, train_dataloader, test_dataloader, model, opt, criterion)
 
 '''
 Save
 '''
 
-# torch.save(model.state_dict(), 'savedModels/fullNN100Epoch400NPLBlackAndWhite')
-torch.save(model.state_dict(), 'savedModels/binaryNN100Epoch100NPLBlackAndWhite')
+torch.save(model.state_dict(), f'savedModels/MNIST{precision}NN{epochs}Epoch{neuronPerLayer}NPL{criterionName}Criterion')
 
 

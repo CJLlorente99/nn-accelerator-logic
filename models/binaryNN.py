@@ -12,7 +12,7 @@ class BinaryNeuralNetwork(nn.Module):
 
 		self.l0 = nn.Linear(28 * 28, neuronPerLayer)
 		self.bn0 = nn.BatchNorm1d(neuronPerLayer)
-		self.ste0 = nn.ReLU()
+		self.ste0 = STEFunction()
 
 		self.l1 = nn.Linear(neuronPerLayer, neuronPerLayer)
 		self.bn1 = nn.BatchNorm1d(neuronPerLayer)
@@ -30,10 +30,12 @@ class BinaryNeuralNetwork(nn.Module):
 		self.bn4 = nn.BatchNorm1d(10)
 
 		# Lists for hook data
+		self.gradientsSTE0 = []
 		self.gradientsSTE1 = []
 		self.gradientsSTE2 = []
 		self.gradientsSTE3 = []
 
+		self.valueSTE0 = []
 		self.valueSTE1 = []
 		self.valueSTE2 = []
 		self.valueSTE3 = []
@@ -65,15 +67,18 @@ class BinaryNeuralNetwork(nn.Module):
 
 		x = self.l4(x)
 		x = self.bn4(x)
+
 		return F.log_softmax(x, dim=1)
 
 	def registerHooks(self):
 		if not self.legacyImportance:
 			# Register hooks
+			self.ste0.register_full_backward_hook(self.backward_hook_ste0)
 			self.ste1.register_full_backward_hook(self.backward_hook_ste1)
 			self.ste2.register_full_backward_hook(self.backward_hook_ste2)
 			self.ste3.register_full_backward_hook(self.backward_hook_ste3)
 
+			self.ste0.register_forward_hook(self.forward_hook_ste0)
 			self.ste1.register_forward_hook(self.forward_hook_ste1)
 			self.ste2.register_forward_hook(self.forward_hook_ste2)
 			self.ste3.register_forward_hook(self.forward_hook_ste3)
@@ -81,6 +86,9 @@ class BinaryNeuralNetwork(nn.Module):
 			self.ste1.register_forward_hook(self.forward_hook_ste1)
 			self.ste2.register_forward_hook(self.forward_hook_ste2)
 			self.ste3.register_forward_hook(self.forward_hook_ste3)
+
+	def backward_hook_ste0(self, module, grad_input, grad_output):
+		self.gradientsSTE0.append(grad_input[0].cpu().detach().numpy()[0])
 
 	def backward_hook_ste1(self, module, grad_input, grad_output):
 		self.gradientsSTE1.append(grad_input[0].cpu().detach().numpy()[0])
@@ -90,6 +98,13 @@ class BinaryNeuralNetwork(nn.Module):
 
 	def backward_hook_ste3(self, module, grad_input, grad_output):
 		self.gradientsSTE3.append(grad_input[0].cpu().detach().numpy()[0])
+
+	def forward_hook_ste0(self, module, val_input, val_output):
+		if not self.legacyImportance:
+			self.valueSTE0.append(val_output[0].cpu().detach().numpy())
+		else:
+			if self.neuronSwitchedOff[0] == 0:
+				val_output[0][self.neuronSwitchedOff[1]] = 0
 
 	def forward_hook_ste1(self, module, val_input, val_output):
 		if not self.legacyImportance:
@@ -113,26 +128,34 @@ class BinaryNeuralNetwork(nn.Module):
 				val_output[0][self.neuronSwitchedOff[1]] = 0
 
 	def computeImportance(self, neuronPerLayer):
-		# self.gradientsSTE1 = np.array(self.gradientsSTE1).squeeze().reshape(len(self.gradientsSTE1), neuronPerLayer)
+		self.gradientsSTE0 = np.array(self.gradientsSTE0).squeeze().reshape(len(self.gradientsSTE0), neuronPerLayer)
+		self.gradientsSTE1 = np.array(self.gradientsSTE1).squeeze().reshape(len(self.gradientsSTE1), neuronPerLayer)
 		self.gradientsSTE2 = np.array(self.gradientsSTE2).squeeze().reshape(len(self.gradientsSTE2), neuronPerLayer)
 		self.gradientsSTE3 = np.array(self.gradientsSTE3).squeeze().reshape(len(self.gradientsSTE3), neuronPerLayer)
 
-		# self.valueSTE1 = np.array(self.valueSTE1).squeeze().reshape(len(self.valueSTE1), neuronPerLayer)
+		self.valueSTE0 = np.array(self.valueSTE0).squeeze().reshape(len(self.valueSTE0), neuronPerLayer)
+		self.valueSTE1 = np.array(self.valueSTE1).squeeze().reshape(len(self.valueSTE1), neuronPerLayer)
 		self.valueSTE2 = np.array(self.valueSTE2).squeeze().reshape(len(self.valueSTE2), neuronPerLayer)
 		self.valueSTE3 = np.array(self.valueSTE3).squeeze().reshape(len(self.valueSTE3), neuronPerLayer)
 
-		# importanceSTE1 = abs(np.multiply(self.gradientsSTE1, self.valueSTE1))
+		importanceSTE0 = abs(np.multiply(self.gradientsSTE0, self.valueSTE0))
+		importanceSTE1 = abs(np.multiply(self.gradientsSTE1, self.valueSTE1))
 		importanceSTE2 = abs(np.multiply(self.gradientsSTE2, self.valueSTE2))
 		importanceSTE3 = abs(np.multiply(self.gradientsSTE3, self.valueSTE3))
 
 		# return importanceSTE1, importanceSTE2, importanceSTE3
-		return [importanceSTE2, importanceSTE3]
+		return [importanceSTE0, importanceSTE1, importanceSTE2, importanceSTE3]
 
 	def individualActivationsToUniqueValue(self):
-		# aux = []
-		# for activation in self.valueSTE1:
-		# 	aux.append(binaryArrayToSingleValue(activation))
-		# self.valueSTE1 = np.array(aux)
+		aux = []
+		for activation in self.valueSTE0:
+			aux.append(binaryArrayToSingleValue(activation))
+		self.valueSTE0 = np.array(aux)
+
+		aux = []
+		for activation in self.valueSTE1:
+			aux.append(binaryArrayToSingleValue(activation))
+		self.valueSTE1 = np.array(aux)
 
 		aux = []
 		for activation in self.valueSTE2:

@@ -17,9 +17,13 @@ class DNFRealization:
 		self.outputTags = []
 		self.activationTags = []
 		self.lengthActivationTags = []
+		self.discriminationTags = []
+		self.lengthDiscriminationTags = []
 		self.tag = [f'N{i}' for i in range(self.nNeurons)]
+		self.discrimData = None
+		self.setOnOff = None
 
-	def loadTT(self, filename):
+	def loadTT(self, filename: str):
 		"""
 		Method that loads a TT from a feather file
 		:param filename:
@@ -28,6 +32,22 @@ class DNFRealization:
 		self.outputTags = [col for col in self.tt if col.startswith('output')]
 		self.activationTags = [col for col in self.tt if col.startswith('activation')]
 		self.lengthActivationTags = [col for col in self.tt if col.startswith('lengthActivation')]
+		self.discriminationTags = [col for col in self.tt if col.startswith('discriminator')]
+		self.lengthDiscriminationTags = [col for col in self.tt if col.startswith('lengthDiscriminator')]
+
+		print(f'Unrolling to binary array')
+		setOnOff = self.tt.drop(self.outputTags + self.discriminationTags + self.lengthDiscriminationTags, axis=1).apply(self._toBinaryArrayActivations, axis=1)
+		self.setOnOff = np.array([np.array(i) for i in setOnOff])
+		self.setOnOff = pd.DataFrame(self.setOnOff, columns=self.tag)
+		print(f'Unrolled to binary array')
+
+		if self.discriminationTags:
+			print(f'Unrolling discriminator')
+			discrimData = self.tt.drop(self.outputTags + self.activationTags + self.lengthActivationTags, axis=1).apply(self._toBinaryArrayDiscriminator, axis=1)
+			self.discrimData = np.array([np.array(i) for i in discrimData])
+			print(f'Unrolled discriminator')
+
+		self.tt = self.tt[self.outputTags]
 
 	def assignOutputBasedOnDistance(self, df: pd.DataFrame):
 		"""
@@ -37,7 +57,7 @@ class DNFRealization:
 		:return:
 		"""
 		print(f'Unrolling to binary array')
-		setOnOff = df.drop(['output'], axis=1).apply(self._toBinaryArray, axis=1)
+		setOnOff = df.drop(['output'], axis=1).apply(self._toBinaryArrayActivations, axis=1)
 		setOnOff = np.array([np.array(i) for i in setOnOff])
 		outputsOnOff = df['output']
 
@@ -85,6 +105,55 @@ class DNFRealization:
 		# Generate SoP
 		return SOPform(symb, df.to_numpy().tolist())
 
+	def createBinaryOutput(self, df: pd.DataFrame, filename: str):
+		"""
+		This method receives a df with the ON-set and OFF-set and calculated the values of the DC-set based on the
+		nearest distance
+		:param df:
+		:param filename:
+		:return:
+		"""
+		dcSymbol = '~'
+		dcCounter = 0
+
+		gen = itertools.product([0, 1], repeat=self.nNeurons)
+		i = 0
+		with open(f'{filename}.binout', 'w') as f:
+			while True:
+				try:
+					entry = next(gen)
+					entry = -(np.array(entry) - 1)
+					if not ((entry == df[self.tag]).all(1)).any():
+						dcCounter += 1
+					else:
+						f.write(dcSymbol * dcCounter)
+						dcCounter = 0
+						f.write(df[df[self.tag] == entry]['output'])  # TODO. Probably bugged
+
+					if (i + 1) % 500 == 0:
+						print(f"binaryOutput [{i + 1:>5d}/{2 ** self.nNeurons:>5d}]")
+					i += 1
+				except StopIteration:
+					break
+
+	def createBinaryOutputRepresentation(self, baseFilename: str):
+		i = 0
+		for neuron in self.outputTags:
+			df = self.tt[self.activationTags + self.lengthActivationTags + [neuron]].copy()
+			df.rename(columns={neuron: 'output'}, inplace=True)
+
+			print(f'Unrolling to binary array')
+			setOnOff = df.drop(['output'], axis=1).apply(self._toBinaryArrayActivations, axis=1)
+			setOnOff = np.array([np.array(i) for i in setOnOff])
+			outputsOnOff = df['output']
+			df = pd.concat([pd.DataFrame(setOnOff, columns=self.tag), outputsOnOff], axis=1)
+			df = df.astype('int')
+
+			self.createBinaryOutput(df, f'{baseFilename}/{neuron}')
+			del df  # caring about memory
+			print(f"Realize Espresso neurons [{i + 1:>5d}/{len(self.outputTags):>5d}]")
+			i += 1
+
 	def generateEspressoInput(self, df: pd.DataFrame, filename: str):
 		"""
 		Method that parses an ON-set and OFF-set defined TT into a PLA file that can be processed by Espresso SW
@@ -104,14 +173,6 @@ class DNFRealization:
 				text = ''.join(row[self.tag].to_string(header=False, index=False).split('\n'))
 				f.write(f'{text} {row.output}\n')
 			f.write(f'.e')
-
-		with open(f'{filename}.sh', 'w') as f:
-			# Write executable that triggers Espresso SW
-			# f.write(f'espresso -Dexact -t -x')
-			# f.write(f'espresso -Dso -S1 -t -x')
-			# f.write(f'espresso -t -x')
-			f.write(f'espresso -efast -t -x')
-			f.write(f'{filename}.pla > {filename}.sol')
 
 	def generateABCInput(self, df: pd.DataFrame, filename: str):
 		"""
@@ -143,7 +204,7 @@ class DNFRealization:
 			df.rename(columns={neuron: 'output'}, inplace=True)
 
 			print(f'Unrolling to binary array')
-			setOnOff = df.drop(['output'], axis=1).apply(self._toBinaryArray, axis=1)
+			setOnOff = df.drop(['output'], axis=1).apply(self._toBinaryArrayActivations, axis=1)
 			setOnOff = np.array([np.array(i) for i in setOnOff])
 			outputsOnOff = df['output']
 			df = pd.concat([pd.DataFrame(setOnOff, columns=self.tag), outputsOnOff], axis=1)
@@ -155,17 +216,19 @@ class DNFRealization:
 			i += 1
 		return realizations
 
-	def createPLAFileEspresso(self, baseFilename: str):
+	def createPLAFileEspresso(self, baseFilename: str, discriminated: bool = False):
 		i = 0
 		for neuron in self.outputTags:
-			df = self.tt[self.activationTags + self.lengthActivationTags + [neuron]].copy()
+			df = self.tt[neuron].copy()
+			df = pd.concat([df, self.setOnOff], axis=1)
 			df.rename(columns={neuron: 'output'}, inplace=True)
 
-			print(f'Unrolling to binary array')
-			setOnOff = df.drop(['output'], axis=1).apply(self._toBinaryArray, axis=1)
-			setOnOff = np.array([np.array(i) for i in setOnOff])
-			outputsOnOff = df['output']
-			df = pd.concat([pd.DataFrame(setOnOff, columns=self.tag), outputsOnOff], axis=1)
+			if discriminated:
+				print(f'Applying discriminator')
+				discrimData = self.discrimData[:, i]
+				df['drop'] = discrimData
+				df = df[df['drop'] == 1]
+
 			df = df.astype('int')
 
 			self.generateEspressoInput(df, f'{baseFilename}/{neuron}')
@@ -173,22 +236,23 @@ class DNFRealization:
 			print(f"Realize Espresso neurons [{i + 1:>5d}/{len(self.outputTags):>5d}]")
 			i += 1
 
-	def createPLAFileABC(self, baseFilename: str):
+	def createPLAFileABC(self, baseFilename: str, discriminated: bool = False):
 		i = 0
 		for neuron in self.outputTags:
-			df = self.tt[self.activationTags + self.lengthActivationTags + [neuron]].copy()
+			df = self.tt[neuron].copy()
+			df = pd.concat([df, self.setOnOff], axis=1)
 			df.rename(columns={neuron: 'output'}, inplace=True)
+
+			if discriminated:
+				print(f'Applying discriminator')
+				discrimData = self.discrimData[:, i]
+				df['drop'] = discrimData
+				df = df[df['drop'] == 1]
 
 			# Take out entries out of the ON-Set
 			# Select only ON-Set
 			df = df[df['output'] == 1]
 
-			print(f'Unrolling to binary array')
-			setOnOff = df.drop(['output'], axis=1).apply(self._toBinaryArray, axis=1)
-			setOnOff = np.array([np.array(i) for i in setOnOff])
-			outputsOnOff = df['output']
-			df = pd.DataFrame(setOnOff, columns=self.tag, index=outputsOnOff.index)
-			df['output'] = outputsOnOff
 			df = df.astype('int')
 
 			self.generateABCInput(df, f'{baseFilename}/{neuron}')
@@ -196,10 +260,18 @@ class DNFRealization:
 			print(f"Realize ABC neurons [{i + 1:>5d}/{len(self.outputTags):>5d}]")
 			i += 1
 
-	def _toBinaryArray(self, row):
+	def _toBinaryArrayActivations(self, row):
 		"""
 		Private method
 		:param row:
 		:return:
 		"""
 		return integerToBinaryArray(row[self.activationTags], row[self.lengthActivationTags])
+
+	def _toBinaryArrayDiscriminator(self, row):
+		"""
+		Private method
+		:param row:
+		:return:
+		"""
+		return integerToBinaryArray(row[self.discriminationTags], row[self.lengthDiscriminationTags])

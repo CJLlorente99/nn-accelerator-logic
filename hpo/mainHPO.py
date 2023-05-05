@@ -1,3 +1,5 @@
+import random
+
 import torch
 from torchvision import datasets
 from torchvision.transforms import ToTensor
@@ -18,7 +20,10 @@ def main(num_samples=10, max_num_epochs=10):
     # Check mps maybe if working in MacOS
     device = 'cuda' if torch.cuda.is_available() else 'cpu'
 
-    config = {}
+    config = {'hiddenLayers': tune.randint(3, 4),
+              'npl': tune.choice([4096]),
+              'lr': tune.uniform(3e-3, 3e-6),
+              'wd': tune.uniform(0, 1e-6)}
 
     scheduler = ASHAScheduler(
         metric="accuracy",
@@ -28,13 +33,13 @@ def main(num_samples=10, max_num_epochs=10):
         reduction_factor=2)
 
     reporter = CLIReporter(
-        # parameter_columns=["signPoint"],
+        # parameter_columns=["npl", 'hiddenLayers'],
         metric_columns=["loss", "accuracy", "training_iteration"])
 
     result = tune.run(
         partial(train),
         config=config,
-        resources_per_trial={"cpu": 1},
+        resources_per_trial={"cpu": 6},
         num_samples=num_samples,
         scheduler=scheduler,
         progress_reporter=reporter)
@@ -48,5 +53,5 @@ def main(num_samples=10, max_num_epochs=10):
 
 
 if __name__ == "__main__":
-    main(num_samples=1, max_num_epochs=20)
+    main(num_samples=20, max_num_epochs=20)
 

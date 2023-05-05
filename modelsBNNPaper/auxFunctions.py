@@ -1,5 +1,7 @@
 import torch
 import torch.nn.functional as F
+from torchmetrics.functional import hinge_loss
+import numpy as np
 
 '''
 Train and test functions
@@ -18,7 +20,7 @@ def train(dataloader, model, optimizer, criterion):
 		# Compute prediction error
 		pred = model(X)
 		# loss = F.nll_loss(pred, y)
-		loss = criterion(pred, y)
+		loss = criterion(pred, y).mean()
 
 		# Backpropagation
 		optimizer.zero_grad()
@@ -41,7 +43,7 @@ def test(dataloader, dataloader2, model, criterion):
 		for X, y in dataloader:
 			X, y = X.to(device), y.to(device)
 			pred = model(X)
-			test_loss += criterion(pred, y).item()
+			test_loss += criterion(pred, y).mean().item()
 			correct += (pred.argmax(1) == y).type(torch.float).sum().item()
 
 		print(f"Test Error Test: \n Accuracy: {(100 * correct / size):>0.2f}%, Avg loss: {test_loss / num_batches:>8f} \n")
@@ -49,18 +51,25 @@ def test(dataloader, dataloader2, model, criterion):
 		for X, y in dataloader2:
 			X, y = X.to(device), y.to(device)
 			pred = model(X)
-			test_loss += criterion(pred, y).item()
+			test_loss += criterion(pred, y).mean().item()
 			correct += (pred.argmax(1) == y).type(torch.float).sum().item()
 	test_loss /= num_batchesTotal
 	correct /= sizeTotal
 	print(f"Test Error Total: \n Accuracy: {(100*correct):>0.2f}%, Avg loss: {test_loss:>8f} \n")
 
 
-def trainAndTest(epochs, train_dataloader, test_dataloader, model, opt, criterion):
+def trainAndTest(epochs, train_dataloader, test_dataloader, model, opt, criterion, stepSize):
 	for t in range(epochs):
 		print(f"Epoch {t + 1}\n-------------------------------")
+		# Scale the learning rates
+		opt.param_groups[0]['lr'] = opt.param_groups[0]['lr']
+		opt.param_groups[1]['lr'] = opt.param_groups[0]['lr'] / (np.sqrt(1.5 / (2 * len(opt.param_groups[1]['params'][0]))))
+		opt.param_groups[2]['lr'] = opt.param_groups[0]['lr'] / (np.sqrt(1.5 / (10 + len(opt.param_groups[2]['params'][0]))))
+
 		train(train_dataloader, model, opt, criterion)
 		test(test_dataloader, train_dataloader, model, criterion)
+
+		opt.param_groups[0]['lr'] = opt.param_groups[0]['lr'] * stepSize  # Change the lr of the base one
 
 
 # Transform to black (1) and white (0)
@@ -69,4 +78,12 @@ class ToBlackAndWhite(object):
 	def __call__(self, sample):
 		sample[sample > 0] = 1
 		sample[sample == 0] = 0
+		return sample
+
+
+# Transform to black (1) and white (-1)
+class ToSign(object):
+
+	def __call__(self, sample):
+		sample[sample == 0] = -1
 		return sample

@@ -30,7 +30,7 @@ class BinaryOutputNeuron:
 		self.name = 'L' + str(self.nLayer) + 'N' + str(self.nNeuron)
 		self.sopForm = ''
 
-	def giveImportance(self, importance: np.array, targets):
+	def giveImportance(self, importance: np.array, targets, threshold=10e-4):
 		"""
 		Method that provides the neuron with the importance values
 		:param importance:
@@ -45,7 +45,7 @@ class BinaryOutputNeuron:
 
 		for i in range(len(importance)):
 			nPerClass[targets[i]] += 1
-			if importance[i] > 10e-3:
+			if importance[i] > threshold:
 				dictImportance[targets[i]].append(importance[i])
 
 		for n in dictImportance:
@@ -73,22 +73,6 @@ class BinaryOutputNeuron:
 		# Return distribution of number of importances per entry
 		numImportances = self.accLayer.tt.apply(self._countImportances, axis=1)
 		return self.name[1], self.name, numImportances.mean(), len(numImportances)
-
-	def reduceTTByImportance(self, importanceThreshold):
-		"""
-		Method that return a reduced truth table given an importance threshold
-		:param importanceThreshold:
-		"""
-		# TODO
-		self.tt = self.tt.query('importance >= @importanceThreshold')
-
-	def ttPCA(self):
-		"""
-		Method that performs a PCA decomposition on the truth table (non-DC-set)
-		"""
-		# TODO
-		inputs = torch.Tensor(self.tt[['n' + str(i) for i in range(self.fanIn)]])
-		U, S, V = torch.pca_lowrank(inputs)
 
 	def showImportancePerEntry(self):
 		"""
