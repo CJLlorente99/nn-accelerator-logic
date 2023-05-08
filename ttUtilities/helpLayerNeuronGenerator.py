@@ -43,7 +43,7 @@ class HelpGenerator:
 					accLayers[accLayer].norm['num_batches_tracked'] = param
 					accLayer += 1
 
-			if (accLayer + 1) % 1 == 0:
+			if accLayer % 1 == 0:
 				print(f"Layer creation [{accLayer + 1:>2d}/{n:>2d}]")
 
 		return accLayers

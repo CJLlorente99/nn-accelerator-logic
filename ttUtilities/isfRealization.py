@@ -221,7 +221,7 @@ class DNFRealization:
 		for neuron in self.outputTags:
 			df = self.tt[neuron].copy()
 			df = pd.concat([df, self.setOnOff], axis=1)
-			df.rename(columns={neuron: 'output'}, inplace=True)
+			# df.rename(columns={neuron: 'output'}, inplace=True)
 
 			if discriminated:
 				print(f'Applying discriminator')
@@ -231,7 +231,7 @@ class DNFRealization:
 
 			df = df.astype('int')
 
-			self.generateEspressoInput(df, f'{baseFilename}/{neuron}')
+			self.generateEspressoInput(df, f'{baseFilename}{neuron}')
 			del df  # caring about memory
 			print(f"Realize Espresso neurons [{i + 1:>5d}/{len(self.outputTags):>5d}]")
 			i += 1
@@ -241,7 +241,7 @@ class DNFRealization:
 		for neuron in self.outputTags:
 			df = self.tt[neuron].copy()
 			df = pd.concat([df, self.setOnOff], axis=1)
-			df.rename(columns={neuron: 'output'}, inplace=True)
+			# df.rename(columns={neuron: 'output'}, inplace=True)
 
 			if discriminated:
 				print(f'Applying discriminator')
@@ -251,11 +251,11 @@ class DNFRealization:
 
 			# Take out entries out of the ON-Set
 			# Select only ON-Set
-			df = df[df['output'] == 1]
+			df = df[df[neuron] == 1]
 
 			df = df.astype('int')
 
-			self.generateABCInput(df, f'{baseFilename}/{neuron}')
+			self.generateABCInput(df, f'{baseFilename}{neuron}')
 			del df  # caring about memory
 			print(f"Realize ABC neurons [{i + 1:>5d}/{len(self.outputTags):>5d}]")
 			i += 1

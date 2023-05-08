@@ -1,6 +1,4 @@
-import random
 import numpy as np
-import pandas as pd
 import torch
 from modelsBNNPaper.auxFunctions import trainAndTest, ToBlackAndWhite, ToSign
 from torchvision import datasets
@@ -8,7 +6,6 @@ from torchvision.transforms import ToTensor, Compose
 from torch.utils.data import DataLoader
 from modelsBNNPaper.binaryNN import BNNBinaryNeuralNetwork
 import torch.optim as optim
-import torch.nn as nn
 from torchmetrics.classification import MulticlassHingeLoss
 
 batch_size = 200

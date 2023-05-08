@@ -1,7 +1,5 @@
-import random
-import pandas as pd
 import torch
-from models.auxFunctions import trainAndTest, ToBlackAndWhite
+from models.auxFunctions import trainAndTest, ToBlackAndWhite, ToSign
 from torchvision import datasets
 from torchvision.transforms import ToTensor, Compose
 from torch.utils.data import DataLoader
@@ -32,7 +30,8 @@ training_data = datasets.MNIST(
     download=False,
     transform=Compose([
             ToTensor(),
-            ToBlackAndWhite()
+            ToBlackAndWhite(),
+            ToSign()
         ])
 )
 
@@ -42,7 +41,8 @@ test_data = datasets.MNIST(
     download=False,
     transform=Compose([
         ToTensor(),
-        ToBlackAndWhite()
+        ToBlackAndWhite(),
+        ToSign()
     ])
 )
 
@@ -80,6 +80,6 @@ trainAndTest(epochs, train_dataloader, test_dataloader, model, opt, criterion)
 Save
 '''
 
-torch.save(model.state_dict(), f'savedModels/MNIST{precision}NN{epochs}Epoch{neuronPerLayer}NPL{criterionName}Criterion')
+torch.save(model.state_dict(), f'savedModels/MNISTSign{precision}NN{epochs}Epoch{neuronPerLayer}NPL{criterionName}Criterion')
 
 

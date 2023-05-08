@@ -1,20 +1,20 @@
-import random
-import numpy as np
-import pandas as pd
 import torch
-from modelsBNNPaper.auxFunctions import trainAndTest, ToBlackAndWhite, test
+from models.auxFunctions import trainAndTest, ToBlackAndWhite, test, ToSign
 from torchvision import datasets
 from torchvision.transforms import ToTensor, Compose
 from torch.utils.data import DataLoader
-from modelsBNNPaper.binaryNN import BNNBinaryNeuralNetwork
-import torch.optim as optim
+from models.binaryNN import BinaryNeuralNetwork
+from models.fpNN import FPNeuralNetwork
 import torch.nn as nn
-from torchmetrics.classification import MulticlassHingeLoss
 
 batch_size = 100
-neuronPerLayer = 4096
+neuronPerLayer = 100
 mod = True  # Change accordingly in modelFilename too
-modelFilename = f'../modelsBNNPaper/savedModels/MNISTbinNNMod50Epoch{neuronPerLayer}NPLhingeCriterion'
+modelFilename = f'../models/savedModels/MNISTbinNN100Epoch{neuronPerLayer}NPLnllCriterion'
+criterionName = 'nll'
+# criterionName = 'cel'
+precision = 'bin'
+# precision = 'full'
 
 
 # Check mps maybe if working in MacOS
@@ -30,8 +30,9 @@ training_data = datasets.MNIST(
     train=True,
     download=False,
     transform=Compose([
+            ToTensor(),
             ToBlackAndWhite(),
-            ToTensor()
+            ToSign()
         ])
 )
 
@@ -40,8 +41,9 @@ test_data = datasets.MNIST(
     train=False,
     download=False,
     transform=Compose([
+        ToTensor(),
         ToBlackAndWhite(),
-        ToTensor()
+        ToSign()
     ])
 )
 
@@ -56,7 +58,10 @@ Instantiate NN models
 '''
 print(f'MODEL INSTANTIATION\n')
 
-model = BNNBinaryNeuralNetwork(neuronPerLayer, mod).to(device)
+if precision == 'full':
+    model = FPNeuralNetwork(neuronPerLayer).to(device)
+elif precision == 'bin':
+    model = BinaryNeuralNetwork(neuronPerLayer).to(device)
 model.load_state_dict(torch.load(modelFilename))
 
 '''
@@ -64,7 +69,10 @@ Test
 '''
 print(f'TEST\n')
 
-criterion = MulticlassHingeLoss(num_classes=10, squared=True, multiclass_mode='one-vs-all')
+if criterionName == 'nll':
+    criterion = nn.NLLLoss()
+elif criterionName == 'cel':
+    criterion = nn.CrossEntropyLoss()
 
 test(test_dataloader, train_dataloader, model, criterion)
 

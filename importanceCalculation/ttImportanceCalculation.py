@@ -1,17 +1,13 @@
 import random
 import pandas as pd
 import torch
-from models.auxFunctions import trainAndTest, ToBlackAndWhite
+from models.auxFunctions import ToBlackAndWhite
 from modelsBNNPaper.auxFunctions import ToSign
 from torchvision import datasets
 from torchvision.transforms import ToTensor, Compose
 from torch.utils.data import DataLoader
-from models.binaryNN import BinaryNeuralNetwork
-from models.fpNN import FPNeuralNetwork
 from modelsBNNPaper.binaryNN import BNNBinaryNeuralNetwork
-import torch.optim as optim
 from ttUtilities.helpLayerNeuronGenerator import HelpGenerator
-from torch.autograd import Variable
 import numpy as np
 
 neuronPerLayer = 4096
@@ -52,22 +48,10 @@ training_data = datasets.MNIST(
 	])
 )
 
-test_data = datasets.MNIST(
-	root='C:/Users/carlo/OneDrive/Documentos/Universidad/MUIT/Segundo/TFM/Code/data',
-	train=False,
-	download=False,
-	transform=Compose([
-		ToTensor(),
-		ToBlackAndWhite(),
-		ToSign()
-	])
-)
-
 '''
 Create DataLoader
 '''
 train_dataloader = DataLoader(training_data, batch_size=batch_size)
-test_dataloader = DataLoader(test_data, batch_size=batch_size)
 
 sampleSize = int(perGradientSampling * len(training_data.data))
 
@@ -185,13 +169,16 @@ for i in range(len(df)):
 
 i = 0
 for frame in df:
-	print(f'In layer {i}, there are a total of {len(frame)} input combinations from the {2 ** accLayers[i].nNeurons} possible')
+	print(f'In layer {i}, there are a total of {len(frame)} unique input combinations')
 	i += 1
 
 # Create the TT per neuron
 
-for layer in accLayers:
-	layer.fillTT()
+for i in range(len(accLayers)):
+	if i < len(accLayers) - 1:
+		accLayers[i].fillTT(accLayers[i+1])
+	else:
+		accLayers[i].fillTT(None)
 
 # Plot importance per entry of a neuron as an example
 

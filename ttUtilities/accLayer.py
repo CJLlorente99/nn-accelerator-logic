@@ -13,14 +13,17 @@ class AccLayer:
 	neurons: list
 	tt: pd.DataFrame
 
-	def fillTT(self):
+	def fillTT(self, activations):
 		"""
 		Method that calls each neuron in the layer recurrently and creates the TT per each
 		"""
 		i = 0
 		n = len(self.neurons)
 		for neuron in self.neurons:
-			neuron.createTT()
+			if activations:
+				neuron.createTT(activations[neuron.name])
+			else:
+				neuron.createTT(None)
 
 			if (i + 1) % 1 == 0:
 				print(f"{self.name} Neuron TT [{i + 1:>4d}/{n:>4d}]")

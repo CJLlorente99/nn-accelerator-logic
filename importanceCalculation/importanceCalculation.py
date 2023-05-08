@@ -1,18 +1,12 @@
-import random
 import pandas as pd
 import torch
-from models.auxFunctions import trainAndTest, ToBlackAndWhite
+from models.auxFunctions import ToBlackAndWhite
 from modelsBNNPaper.auxFunctions import ToSign
 from torchvision import datasets
 from torchvision.transforms import ToTensor, Compose
 from torch.utils.data import DataLoader
-from models.binaryNN import BinaryNeuralNetwork
 from modelsBNNPaper.binaryNN import BNNBinaryNeuralNetwork
-from models.fpNN import FPNeuralNetwork
-import torch.optim as optim
 from ttUtilities.helpLayerNeuronGenerator import HelpGenerator
-from torch.autograd import Variable
-import numpy as np
 
 neuronPerLayer = 4096
 # modelFilename = f'../models/savedModels/binaryNN20Epoch{neuronPerLayer}NPLBlackAndWhite'

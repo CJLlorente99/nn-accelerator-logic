@@ -52,11 +52,14 @@ class BinaryOutputNeuron:
 			self.importancePerClass['class' + str(n)] = len(dictImportance[n]) / nPerClass[n] * 100
 			self.importance += len(dictImportance[n]) / nPerClass[n] * 100
 
-	def createTT(self):
+	def createTT(self, activation):
 		"""
 		Method that adds new columns to the layer truth table corresponding to the importance and output of the neuron
 		"""
-		self.accLayer.tt['output' + self.name] = self.accLayer.tt.apply(self._neuronAction, axis=1)
+		if not activation:
+			self.accLayer.tt['output' + self.name] = self.accLayer.tt.apply(self._neuronAction, axis=1)
+		else:
+			self.accLayer.tt['output' + self.name] = activation
 		self.accLayer.tt['importance' + self.name] = self.accLayer.tt.apply(self._importanceToTT, axis=1)
 
 		for col in self.accLayer.tt:

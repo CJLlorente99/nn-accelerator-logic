@@ -208,7 +208,7 @@ class BNNBinaryNeuralNetwork(nn.Module):
 	# self.valueIden = np.array(self.valueIden).squeeze().reshape(len(self.valueIden), 10)
 
 	def computeImportance(self, neuronPerLayer):
-		# TODO. CAREFUL, as values are either +1 or -1, importance is equal to gradient
+		# CAREFUL, as values are either +1 or -1, importance is equal to gradient
 		importanceSTE0 = np.abs(self.gradientsSTE0)
 		print('Importance STE0 calculated')
 		importanceSTE1 = np.abs(self.gradientsSTE1)
