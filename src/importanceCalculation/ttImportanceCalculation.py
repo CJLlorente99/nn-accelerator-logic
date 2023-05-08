@@ -1,32 +1,32 @@
 import random
 import pandas as pd
 import torch
-from models.auxFunctions import ToBlackAndWhite
-from modelsBNNPaper.auxFunctions import ToSign
+from modelsCommon.auxTransformations import *
 from torchvision import datasets
 from torchvision.transforms import ToTensor, Compose
 from torch.utils.data import DataLoader
-from modelsBNNPaper.binaryNN import BNNBinaryNeuralNetwork
+from modules.binaryEnergyEfficiency import BinaryNeuralNetwork
 from ttUtilities.helpLayerNeuronGenerator import HelpGenerator
+from ttUtilities.auxFunctions import integerToBinaryArray
 import numpy as np
 
-neuronPerLayer = 4096
-mod = False
-modelUsed = f'MNISTSignbinNN50Epoch{neuronPerLayer}NPLhingeCriterion'
+neuronPerLayer = 100
+modelUsed = f'MNISTSignbinNN100Epoch100NPLnllCriterion'
 modelUsedImportance = f'SignBNN50epochs{neuronPerLayer}npl'
-modelFilename = f'../modelsBNNPaper/savedModels/{modelUsed}'
-layerActivationFilename = f'C:/Users/carlo/OneDrive/Documentos/Universidad/MUIT/Segundo/TFM/Code/data/activations/activations{modelUsedImportance}'
+modelFilename = f'src\modelCreation\savedModels\MNISTSignbinNN100Epoch100NPLnllCriterion'
+layerActivationFilename = f'./data/activations/activationsSignBin100epochs100npl'
 batch_size = 64
 perGradientSampling = 1
 nClasses = 10
+threshold = '1e1'
 
 
 def layerFilename(name):
-	return f'C:/Users/carlo/OneDrive/Documentos/Universidad/MUIT/Segundo/TFM/Code/data/layersTT/{name}{modelUsed}'
+	return f'./data/layersTT/{name}{modelUsed}'
 
 
 def layerImportanceFilename(layer):
-	return f'C:/Users/carlo/OneDrive/Documentos/Universidad/MUIT/Segundo/TFM/Code/data/layersImportance/layer{layer}ImportanceGradientBinary{modelUsedImportance}'
+	return f'./data/layersImportance/layer{layer}Importance{threshold}GradientBinary{modelUsedImportance}'
 
 
 # Check mps maybe if working in MacOS
@@ -55,7 +55,7 @@ train_dataloader = DataLoader(training_data, batch_size=batch_size)
 
 sampleSize = int(perGradientSampling * len(training_data.data))
 
-model = BNNBinaryNeuralNetwork(neuronPerLayer, mod=mod)
+model = BinaryNeuralNetwork(neuronPerLayer)
 model.load_state_dict(torch.load(modelFilename))
 
 '''
@@ -83,8 +83,6 @@ dfActivations['input3'] = pd.read_feather(layerActivationFilename + 'Input3')
 model.valueSTE2 = dfActivations['input3'].to_numpy()
 dfActivations['input4'] = pd.read_feather(layerActivationFilename + 'Input4')
 model.valueSTE3 = dfActivations['input4'].to_numpy()
-# dfActivations['out5'] = pd.read_feather(layerActivationFilename + 'Out5')
-# model.valueIden = dfActivations['out5'].to_numpy()
 
 # Instead of storing one 8bit word per activation, decompose as sum of products of 2
 model.signToBinary()
@@ -94,8 +92,6 @@ neuronTags = ['activation' + str(i) for i in range(model.activationSize)]
 neuronTags = neuronTags + ['lengthActivation' + str(i) for i in range(model.activationSize)]
 inputNeuronTags = ['activation' + str(i) for i in range(model.activationSizeInput)]
 inputNeuronTags = inputNeuronTags + ['lengthActivation' + str(i) for i in range(model.activationSizeInput)]
-# outputNeuronTags = ['activation' + str(i) for i in range(model.activationSizeOutput)]
-# outputNeuronTags = outputNeuronTags + ['lengthActivation' + str(i) for i in range(model.activationSizeOutput)]
 classTags = ['class' + str(i) for i in range(nClasses)]
 
 valueInput0 = np.hstack((model.input0, training_data.targets[:sampleSize].detach().numpy().reshape((sampleSize, 1))))
@@ -108,12 +104,6 @@ valueSTE2 = np.hstack((model.valueSTE2, training_data.targets[:sampleSize].detac
 valueSTE2 = np.hstack((valueSTE2, np.zeros((sampleSize, nClasses))))
 valueSTE3 = np.hstack((model.valueSTE3, training_data.targets[:sampleSize].detach().numpy().reshape((sampleSize, 1))))
 valueSTE3 = np.hstack((valueSTE3, np.zeros((sampleSize, nClasses))))
-if mod:
-	valueSTE4 = np.hstack(
-		(model.valueSTE4, training_data.targets[:sampleSize].detach().numpy().reshape((sampleSize, 1))))
-	valueSTE4 = np.hstack((valueSTE4, np.zeros((sampleSize, nClasses))))
-# valueIden = np.hstack((model.valueIden, training_data.targets[:sampleSize].detach().numpy().reshape((sampleSize, 1))))
-# valueIden = np.hstack((valueIden, np.zeros((sampleSize, nClasses))))
 
 df = []
 
@@ -122,10 +112,6 @@ df.append(pd.DataFrame(valueSTE0, columns=neuronTags + ['class'] + classTags))
 df.append(pd.DataFrame(valueSTE1, columns=neuronTags + ['class'] + classTags))
 df.append(pd.DataFrame(valueSTE2, columns=neuronTags + ['class'] + classTags))
 df.append(pd.DataFrame(valueSTE3, columns=neuronTags + ['class'] + classTags))
-if mod:
-	df.append(pd.DataFrame(valueSTE4, columns=neuronTags + ['class'] + classTags))
-# df.append(pd.DataFrame(valueIden, columns=outputNeuronTags + ['class'] + classTags))
-
 
 def classToClassesUnpack(row):
 	row['class' + str(int(row['class']))] = 1
@@ -143,14 +129,9 @@ typeDict = {}
 for tag in classTags:
 	typeDict[tag] = 'uint8'
 
-# for tag in neuronTags:
-#     typeDict[tag] = 'float64'
-
 for i in range(len(df)):
 	if i == 0:
 		df[i] = df[i].groupby(inputNeuronTags).aggregate('sum').reset_index().copy()
-	# elif i == 5:
-	# 	df[i] = df[i].groupby(outputNeuronTags).aggregate('sum').reset_index().copy()
 	else:
 		df[i] = df[i].groupby(neuronTags).aggregate('sum').reset_index().copy()
 	df[i] = df[i].astype(typeDict)
@@ -174,9 +155,16 @@ for frame in df:
 
 # Create the TT per neuron
 
+neuronTags = ['activation' + str(i) for i in range(model.activationSize)]
+lengthActivationTags = ['lengthActivation' + str(i) for i in range(model.activationSize)]
+
+def unpackActivation(row):
+    return np.array(integerToBinaryArray(row[neuronTags], row[lengthActivationTags]))
+
 for i in range(len(accLayers)):
 	if i < len(accLayers) - 1:
-		accLayers[i].fillTT(accLayers[i+1])
+		activation = pd.DataFrame(np.stack(accLayers[i+1].tt.apply(unpackActivation, axis=1)), columns=[f'N{i}' for i in range(neuronPerLayer)])
+		accLayers[i].fillTT(activation)
 	else:
 		accLayers[i].fillTT(None)
 

@@ -1,14 +1,13 @@
 import torch
-from models.auxFunctions import ToBlackAndWhite
-from modelsBNNPaper.auxFunctions import ToSign
+from modelsCommon.auxTransformations import ToBlackAndWhite, ToSign
 from torchvision import datasets
 from torchvision.transforms import ToTensor, Compose
 from torch.utils.data import DataLoader
-from models.binaryNN import BinaryNeuralNetwork
+from modules.binaryEnergyEfficiency import BinaryNeuralNetwork
 from ttUtilities.helpLayerNeuronGenerator import HelpGenerator
 
 neuronPerLayer = 100
-modelFilename = f'../models/savedModels/MNISTSignbinNN100Epoch100NPLnllCriterion'
+modelFilename = f'src\modelCreation\savedModels\MNISTSignbinNN100Epoch100NPLnllCriterion'
 batch_size = 64
 perGradientSampling = 1
 # Check mps maybe if working in MacOS
@@ -76,6 +75,6 @@ for i in range(sampleSize):
         print(f"Get Gradients and Activation Values [{i+1:>5d}/{sampleSize:>5d}]")
 
 model.listToArray(neuronPerLayer)  # Hopefully improves memory usage
-model.saveActivations(f'../data/activations/activationsSignBin100epochs{neuronPerLayer}npl')
-model.saveGradients(f'../data/gradients/gradientsSignBin100epochs{neuronPerLayer}npl', training_data.targets.tolist()[:sampleSize])
+model.saveActivations(f'data/activations/activationsSignBin100epochs{neuronPerLayer}npl')
+model.saveGradients(f'data/gradients/gradientsSignBin100epochs{neuronPerLayer}npl', training_data.targets.tolist()[:sampleSize])
 

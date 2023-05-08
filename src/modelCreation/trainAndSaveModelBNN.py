@@ -1,10 +1,11 @@
 import numpy as np
 import torch
-from modelsBNNPaper.auxFunctions import trainAndTest, ToBlackAndWhite, ToSign
+from modelsCommon.auxFunctionsBNN import trainAndTest
+from modelsCommon.auxTransformations import *
 from torchvision import datasets
 from torchvision.transforms import ToTensor, Compose
 from torch.utils.data import DataLoader
-from modelsBNNPaper.binaryNN import BNNBinaryNeuralNetwork
+from modules.binaryBNN import BNNBinaryNeuralNetwork
 import torch.optim as optim
 from torchmetrics.classification import MulticlassHingeLoss
 

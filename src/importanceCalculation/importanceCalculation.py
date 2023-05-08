@@ -1,16 +1,14 @@
 import pandas as pd
 import torch
-from models.auxFunctions import ToBlackAndWhite
-from modelsBNNPaper.auxFunctions import ToSign
+from modelsCommon.auxTransformations import *
 from torchvision import datasets
 from torchvision.transforms import ToTensor, Compose
 from torch.utils.data import DataLoader
-from modelsBNNPaper.binaryNN import BNNBinaryNeuralNetwork
+from modules.binaryEnergyEfficiency import BinaryNeuralNetwork
 from ttUtilities.helpLayerNeuronGenerator import HelpGenerator
 
-neuronPerLayer = 4096
-# modelFilename = f'../models/savedModels/binaryNN20Epoch{neuronPerLayer}NPLBlackAndWhite'
-modelFilename = f'../modelsBNNPaper/savedModels/MNISTSignbinNN50Epoch{neuronPerLayer}NPLhingeCriterion'
+neuronPerLayer = 100
+modelFilename = f'src\modelCreation\savedModels\MNISTSignbinNN100Epoch100NPLnllCriterion'
 batch_size = 64
 perGradientSampling = 1
 # Check mps maybe if working in MacOS
@@ -39,17 +37,17 @@ Create DataLoader
 '''
 train_dataloader = DataLoader(training_data, batch_size=batch_size)
 
-model = BNNBinaryNeuralNetwork(neuronPerLayer, mod=False)
+model = BinaryNeuralNetwork(neuronPerLayer)
 model.load_state_dict(torch.load(modelFilename))
 
 '''
 Load gradients previously calculated
 '''
 
-model.gradientsSTE0 = pd.read_feather('../data/gradients/gradientsSignBNN50epochs4096nplSTE0').drop(['target']).to_numpy()
-model.gradientsSTE1 = pd.read_feather('../data/gradients/gradientsSignBNN50epochs4096nplSTE1').drop(['target']).to_numpy()
-model.gradientsSTE2 = pd.read_feather('../data/gradients/gradientsSignBNN50epochs4096nplSTE2').drop(['target']).to_numpy()
-model.gradientsSTE3 = pd.read_feather('../data/gradients/gradientsSignBNN50epochs4096nplSTE3').drop(['target']).to_numpy()
+model.gradientsSTE0 = pd.read_feather('data/gradients/gradientsSignBin100epochs100nplSTE0').drop(['target'], axis=1).to_numpy()
+model.gradientsSTE1 = pd.read_feather('data/gradients/gradientsSignBin100epochs100nplSTE1').drop(['target'], axis=1).to_numpy()
+model.gradientsSTE2 = pd.read_feather('data/gradients/gradientsSignBin100epochs100nplSTE2').drop(['target'], axis=1).to_numpy()
+model.gradientsSTE3 = pd.read_feather('data/gradients/gradientsSignBin100epochs100nplSTE3').drop(['target'], axis=1).to_numpy()
 
 '''
 Generate AccLayers and Neuron objects
@@ -75,7 +73,7 @@ importance = model.computeImportance(neuronPerLayer)
 # Give each neuron its importance values
 for j in range(len(importance)):
     for i in range(len(accLayers[j].neurons)):
-        accLayers[j].neurons[i].giveImportance(importance[j][:, i], training_data.targets.tolist(), 10e-3)
+        accLayers[j].neurons[i].giveImportance(importance[j][:, i], training_data.targets.tolist(), 1e-3)
 
         if (i + 1) % 250 == 0:
             print(f"Give Importance Layer [{j + 1:>1d}/{len(importance):>1d}] Neuron [{i + 1:>4d}/{neuronPerLayer:>4d}]")
@@ -85,6 +83,6 @@ for j in range(len(importance)):
 for i in range(len(accLayers)):
     # accLayers[i].plotImportancePerNeuron(f'Layer {i}', True)
     # accLayers[i].plotImportancePerClass(f'Layer {i}', True)
-    accLayers[i].plotNumImportantClasses(f'Layer {i}', True)
-    accLayers[i].saveImportance(f'../data/layersImportance/layer{i}Importance10e3GradientBinarySignBNN50epochs{neuronPerLayer}npl')
+    # accLayers[i].plotNumImportantClasses(f'Layer {i}', True)
+    accLayers[i].saveImportance(f'data/layersImportance/layer{i}Importance1e3GradientBinarySignBNN50epochs{neuronPerLayer}npl')
     print(f'Creating plots and saving layer [{i + 1:>1d}/{len(accLayers):>1d}]')

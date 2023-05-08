@@ -1,11 +1,11 @@
 import random
 import pandas as pd
 import torch
-from models.auxFunctions import trainAndTest, ToBlackAndWhite
+from models.auxFunctionsEnergyEfficiency import trainAndTest, ToBlackAndWhite
 from torchvision import datasets
 from torchvision.transforms import ToTensor, Compose
 from torch.utils.data import DataLoader
-from models.binaryNN import BinaryNeuralNetwork
+from models.binaryEnergyEfficiency import BinaryNeuralNetwork
 from models.fpNN import FPNeuralNetwork
 import torch.optim as optim
 from ttUtilities.helpLayerNeuronGenerator import HelpGenerator

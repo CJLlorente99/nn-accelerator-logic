@@ -2,7 +2,7 @@ import torch
 from torchvision import datasets
 from torchvision.transforms import ToTensor
 from torch.utils.data import DataLoader
-from models.binaryNN import BinaryNeuralNetwork
+from models.binaryEnergyEfficiency import BinaryNeuralNetwork
 import torch.nn.functional as F
 import torch.optim as optim
 from torchviz import make_dot

@@ -1,9 +1,9 @@
 import torch
-from models.auxFunctions import trainAndTest, ToBlackAndWhite, test, ToSign
+from models.auxFunctionsEnergyEfficiency import trainAndTest, ToBlackAndWhite, test, ToSign
 from torchvision import datasets
 from torchvision.transforms import ToTensor, Compose
 from torch.utils.data import DataLoader
-from models.binaryNN import BinaryNeuralNetwork
+from models.binaryEnergyEfficiency import BinaryNeuralNetwork
 from models.fpNN import FPNeuralNetwork
 import torch.nn as nn
 

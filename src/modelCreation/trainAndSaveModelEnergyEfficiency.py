@@ -1,10 +1,11 @@
 import torch
-from models.auxFunctions import trainAndTest, ToBlackAndWhite, ToSign
+from modelsCommon.auxFunctionsEnergyEfficiency import trainAndTest
+from modelsCommon.auxTransformations import *
 from torchvision import datasets
 from torchvision.transforms import ToTensor, Compose
 from torch.utils.data import DataLoader
-from models.binaryNN import BinaryNeuralNetwork
-from models.fpNN import FPNeuralNetwork
+from modules.binaryEnergyEfficiency import BinaryNeuralNetwork
+from modules.fpNN import FPNeuralNetwork
 import torch.optim as optim
 import torch.nn as nn
 
