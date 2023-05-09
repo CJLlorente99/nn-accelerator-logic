@@ -174,7 +174,7 @@ class DNFRealization:
 				f.write(f'{text} {row.output}\n')
 			f.write(f'.e')
 
-	def generateABCInput(self, df: pd.DataFrame, filename: str):
+	def generateABCInput(self, df: pd.DataFrame, filename: str, neuron: str):
 		"""
 		Method that parses an ON-set and OFF-set defined TT into a file that can be processed by ABC SW
 		:param df:
@@ -190,10 +190,11 @@ class DNFRealization:
 			tags = [f'N{i}' for i in range(self.nNeurons)]
 			tags = ' '.join(tags)
 			f.write(f'.ilb {tags}\n')  # Names of the input variables
-			f.write(f'.ob output\n')  # Name of the output variable
+			f.write(f'.ob {neuron}\n')  # Name of the output variable
 			for index, row in df.iterrows():
 				text = ''.join(row[self.tag].to_string(header=False, index=False).split('\n'))
-				f.write(f'{text} {row.output}\n')
+				output = row[neuron]
+				f.write(f'{text} {output}\n')
 			f.write(f'.e')
 
 	def realizeNeurons(self):
@@ -255,7 +256,7 @@ class DNFRealization:
 
 			df = df.astype('int')
 
-			self.generateABCInput(df, f'{baseFilename}{neuron}')
+			self.generateABCInput(df, f'{baseFilename}{neuron}', neuron)
 			del df  # caring about memory
 			print(f"Realize ABC neurons [{i + 1:>5d}/{len(self.outputTags):>5d}]")
 			i += 1

@@ -155,18 +155,9 @@ for frame in df:
 
 # Create the TT per neuron
 
-neuronTags = ['activation' + str(i) for i in range(model.activationSize)]
-lengthActivationTags = ['lengthActivation' + str(i) for i in range(model.activationSize)]
-
-def unpackActivation(row):
-    return np.array(integerToBinaryArray(row[neuronTags], row[lengthActivationTags]))
-
 for i in range(len(accLayers)):
 	if i < len(accLayers) - 1:
-		activation = pd.DataFrame(np.stack(accLayers[i+1].tt.apply(unpackActivation, axis=1)), columns=[f'N{i}' for i in range(neuronPerLayer)])
-		accLayers[i].fillTT(activation)
-	else:
-		accLayers[i].fillTT(None)
+		accLayers[i].fillTT()
 
 # Plot importance per entry of a neuron as an example
 

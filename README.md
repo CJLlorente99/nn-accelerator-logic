@@ -19,10 +19,10 @@ layersTTOptimization folder.
 6) Create the PLA files to be fed into the synthesis tools. To do so use the following file from the realization folder.
    - mainRealization. This file will create PLA files that can be used by the original ESPRESSO tool or by the ABC tool.
 7) Creation and reduction of the boolean expression. Making use of ABC (AIG-based logic optimization) or ESPRESSO (SoP-based logic minimization)
-the realization of the ISF represented in the PLA files can be generated. Additionally, output verilog files can be generated.
-
-From this step on, it is not yet clear the path to be followed.
+the realization of the ISF represented in the PLA files can be generated. Additionally, output verilog and AIGER files can be generated.
 8) Leveraging the output of the synthesis tools, these will be inputted into further-synthesis and mapping tools in order to generate a per layer
 optimization (PLA files only, at least initially, define a neuron ISF). Thus, using the mapping utilities, the number of resources
 will be quantified (in CLBs, LUTs or else).
-9) In order to check accuracy of the definitive model, the output of the synthesis tools will be pythonized and tested.
+9) In order to check accuracy of the definitive model, the AIGER files will be used to simulate each neurons output. This will done as follows:
+   - A python script will recursively call a C++ file providing the AIGER file related to a particular neuron and the inputs to test in that neuron. The C++ file will generate the output per entry.
+   - Another python script will compute the last layer operations (as it is binary-float) and compare it with the results. 

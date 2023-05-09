@@ -1,10 +1,10 @@
 from ttUtilities.isfRealization import DNFRealization
 
-
-nNeurons = 100
-discriminated = True
-filename = '../data/layersTTOptimized/'
-layerFilename = 'layer0_binary20epoch200NPLBlackAndWhite'
+# ! WARNING! There are different nNeurons depending on the layer
+nNeurons = 784
+discriminated = False
+filename = './data/layersTT/'
+layerFilename = 'layer0_MNISTSignbinNN100Epoch100NPLnllCriterion'
 
 # Create DNFRealization object
 dnf = DNFRealization(nNeurons)
@@ -21,11 +21,11 @@ dnf.loadTT(filename + layerFilename)
 # Create PLA file for Espresso
 
 # TODO. Change functions so they're not overwritten
-dnf.createPLAFileEspresso(f'../data/espressoOptimized/{layerFilename}', discriminated=discriminated)
+# dnf.createPLAFileEspresso(f'../data/espressoOptimized/{layerFilename}', discriminated=discriminated)
 
 # Create PLA file for ABC
 
-dnf.createPLAFileABC(f'../data/ABCOptimized/{layerFilename}', discriminated=discriminated)
+dnf.createPLAFileABC(f'./data/ABC/{layerFilename}', discriminated=discriminated)
 
 # Create file with binary representation of output
 # TODO. Impossible computational wise
