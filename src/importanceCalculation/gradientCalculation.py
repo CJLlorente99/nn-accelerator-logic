@@ -6,8 +6,8 @@ from torch.utils.data import DataLoader
 from modules.binaryEnergyEfficiency import BinaryNeuralNetwork
 from ttUtilities.helpLayerNeuronGenerator import HelpGenerator
 
-neuronPerLayer = 100
-modelFilename = f'src\modelCreation\savedModels\MNISTSignbinNN100Epoch100NPLnllCriterion'
+neuronPerLayer = 1024
+modelFilename = f'src\modelCreation\savedModels\MNISTSignbinNN100Epoch1024NPLnllCriterion'
 batch_size = 64
 perGradientSampling = 1
 # Check mps maybe if working in MacOS

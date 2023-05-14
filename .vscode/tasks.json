@@ -7,9 +7,11 @@
             "args": [
                 "-fdiagnostics-color=always",
                 "-g",
+                "-IC:\\Users\\carlo\\OneDrive\\Documentos\\Universidad\\MUIT\\Segundo\\TFM\\thesisCode\\nn-accelerator-logic\\include",
+                "-IC:\\Users\\carlo\\OneDrive\\Documentos\\Universidad\\MUIT\\Segundo\\TFM\\thesisCode\\nn-accelerator-logic\\src\\networkSimulator",
+                "-fpermissive",
                 "${file}",
                 "-o",
-                "-I src\\networkSimulator\\include",
                 "${fileDirname}\\${fileBasenameNoExtension}.exe"
             ],
             "options": {

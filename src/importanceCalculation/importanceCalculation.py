@@ -75,14 +75,14 @@ for j in range(len(importance)):
     for i in range(len(accLayers[j].neurons)):
         accLayers[j].neurons[i].giveImportance(importance[j][:, i], training_data.targets.tolist(), 1e-3)
 
-        if (i + 1) % 250 == 0:
+        if (i + 1) % 50 == 0:
             print(f"Give Importance Layer [{j + 1:>1d}/{len(importance):>1d}] Neuron [{i + 1:>4d}/{neuronPerLayer:>4d}]")
 
 # Plot importance of neurons per layer
 
 for i in range(len(accLayers)):
-    # accLayers[i].plotImportancePerNeuron(f'Layer {i}', True)
+    accLayers[i].plotImportancePerNeuron(f'Layer {i}', True)
     # accLayers[i].plotImportancePerClass(f'Layer {i}', True)
     # accLayers[i].plotNumImportantClasses(f'Layer {i}', True)
-    accLayers[i].saveImportance(f'data/layersImportance/layer{i}Importance1e3GradientBinarySignBNN50epochs{neuronPerLayer}npl')
+    # accLayers[i].saveImportance(f'data/layersImportance/layer{i}Importance1e3GradientBinarySignBNN50epochs{neuronPerLayer}npl')
     print(f'Creating plots and saving layer [{i + 1:>1d}/{len(accLayers):>1d}]')

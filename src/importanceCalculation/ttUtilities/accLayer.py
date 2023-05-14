@@ -72,7 +72,7 @@ class AccLayer:
 				fig.update_layout(title=name + ' ' + col, barmode='stack', hovermode="x unified")
 				fig.show()
 
-	def plotNumImportantClasses(self, name, ordered=False):
+	def plotNumImportantClasses(self, name, ordered=False, save=False):
 		"""
 		Method that plots the importance per neuron per layer
 		:param name:
@@ -90,11 +90,16 @@ class AccLayer:
 
 		fig = go.Figure()
 
-		fig.add_trace(go.Scatter(name='Number of Important Classes', x=aux['name'], y=aux['numImportant']))
+		fig.add_trace(go.Scatter(name=f'Number of Important Classes', x=aux['name'], y=aux['numImportant']))
 
 		# fig.update_xaxes(type='category', tickmode='linear')
-		fig.update_layout(title='Number of Important Classes' + ' ' + self.name, barmode='stack', hovermode="x unified")
-		fig.show()
+		fig.update_layout(title=f'{name} Number of Important Classes' + ' ' + self.name, barmode='stack', hovermode="x unified")
+  
+		if save:
+			title = f'{name} NumberClasses' + self.name + '.png'
+			fig.write_image('C:/Users/carlo/OneDrive/Documentos/Universidad/MUIT/Segundo/TFM/thesisCode/nn-accelerator-logic/' + title.replace(' ', '_'))
+		else:
+			fig.show()
 
 	def saveTT(self, filename):
 		"""

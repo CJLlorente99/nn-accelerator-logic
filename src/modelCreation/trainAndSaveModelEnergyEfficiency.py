@@ -10,7 +10,7 @@ import torch.optim as optim
 import torch.nn as nn
 
 batch_size = 64
-neuronPerLayer = 100
+neuronPerLayer = 1024
 epochs = 100
 criterionName = 'nll'
 # criterionName = 'cel'
@@ -81,6 +81,4 @@ trainAndTest(epochs, train_dataloader, test_dataloader, model, opt, criterion)
 Save
 '''
 
-torch.save(model.state_dict(), f'savedModels/MNISTSign{precision}NN{epochs}Epoch{neuronPerLayer}NPL{criterionName}Criterion')
-
-
+torch.save(model.state_dict(), f'./src/modelCreation/savedModels/MNISTSign{precision}NN{epochs}Epoch{neuronPerLayer}NPL{criterionName}Criterion')

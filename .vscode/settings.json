@@ -1,0 +1,12 @@
+{
+    "files.associations": {
+        "array": "cpp",
+        "limits": "cpp",
+        "type_traits": "cpp",
+        "gtools.h": "c",
+        "naututil.h": "c",
+        "time.h": "c",
+        "nausparse.h": "c"
+    },
+    "C_Cpp.errorSquiggles": "disabled"
+}
