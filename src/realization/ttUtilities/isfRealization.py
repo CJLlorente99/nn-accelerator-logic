@@ -187,10 +187,11 @@ class DNFRealization:
 			# Write header of PLA file
 			f.write(f'.i {self.nNeurons}\n')  # Number of input neurons
 			f.write(f'.o {1}\n')  # Number of output per neuron (just 1)
-			tags = [f'N{i}' for i in range(self.nNeurons)]
-			tags = ' '.join(tags)
-			f.write(f'.ilb {tags}\n')  # Names of the input variables
-			f.write(f'.ob {neuron}\n')  # Name of the output variable
+			# tags = [f'N{i}' for i in range(self.nNeurons)]
+			# tags = ' '.join(tags)
+			# f.write(f'.ilb {tags}\n')  # Names of the input variables
+			# f.write(f'.ob {neuron}\n')  # Name of the output variable
+			f.write(f'.p {len(df)}\n')
 			for index, row in df.iterrows():
 				text = ''.join(row[self.tag].to_string(header=False, index=False).split('\n'))
 				output = row[neuron]

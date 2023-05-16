@@ -1,11 +1,11 @@
-import aiger
 import pandas as pd
-from utilities.auxTransformations import *
+from modelsCommon.auxTransformations import *
 from torchvision import datasets
 from torchvision.transforms import ToTensor, Compose
 from torch.utils.data import DataLoader
+from aigsim import Model, Reader
 
-aigFilename = "data/aigerFiles/layer0_MNISTSignbinNN100Epoch100NPLnllCriterionoutputL1N1.aig"
+aigFilename = "data/aigerFiles/example.aig"
 
 # Inputs for layer 0
 '''
@@ -42,20 +42,25 @@ train_dataloader = DataLoader(training_data, batch_size=64)
 test_dataloader = DataLoader(test_data, batch_size=64)
 
 # Parser for ascii AIGER format.
-aig = aiger.load(aigFilename)
+model = Model()
+reader = Reader()
 
-# Simulation Coroutine
-sim = aig.simulator()  # Coroutine
+reader.openFile(aigFilename)
+reader.readHeader(model)
+reader.readModel(model)
+
+model.printSelf()
+model.initModel()
 
 # Simulate layer 0
 tags = [f'N{i}' for i in range(28*28)]
 outputs = []
 for i in range(len(training_data)):
     X, y = train_dataloader.dataset[i]
-    auxDict = pd.DataFrame(X, columns=tags).to_dict()
+    stim = X.squeeze(0)
     
-    next(sim)  # Initialize
-    outputs.apppend(sim.send(auxDict))
+    stepNum = model.step(stim)
+    print(stepNum)
 
     if (i+1) % 500 == 0:
         print(f"Simulate layer 0 [{i+1:>5d}/{len(training_data):>5d}]")

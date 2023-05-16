@@ -7,8 +7,8 @@
             "args": [
                 "-fdiagnostics-color=always",
                 "-g",
-                "-IC:\\Users\\carlo\\OneDrive\\Documentos\\Universidad\\MUIT\\Segundo\\TFM\\thesisCode\\nn-accelerator-logic\\include",
                 "-IC:\\Users\\carlo\\OneDrive\\Documentos\\Universidad\\MUIT\\Segundo\\TFM\\thesisCode\\nn-accelerator-logic\\src\\networkSimulator",
+                "-IC:\\Users\\carlo\\OneDrive\\Documentos\\Universidad\\MUIT\\Segundo\\TFM\\thesisCode\\nn-accelerator-logic\\include",
                 "-fpermissive",
                 "${file}",
                 "-o",
