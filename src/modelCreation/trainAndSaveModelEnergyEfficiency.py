@@ -5,16 +5,18 @@ from torchvision import datasets
 from torchvision.transforms import ToTensor, Compose
 from torch.utils.data import DataLoader
 from modules.binaryEnergyEfficiency import BinaryNeuralNetwork
+from modules.binaryEnergyEfficiencyNoBN import BinaryNeuralNetworkNoBN
 from modules.fpNN import FPNeuralNetwork
 import torch.optim as optim
 import torch.nn as nn
 
 batch_size = 64
-neuronPerLayer = 1024
-epochs = 100
+neuronPerLayer = 100
+epochs = 10
 criterionName = 'nll'
 # criterionName = 'cel'
-precision = 'bin'
+# precision = 'bin'
+precision = 'binNoBN'
 # precision = 'full'
 
 # Check mps maybe if working in MacOS
@@ -62,6 +64,8 @@ if precision == 'full':
     model = FPNeuralNetwork(neuronPerLayer).to(device)
 elif precision == 'bin':
     model = BinaryNeuralNetwork(neuronPerLayer).to(device)
+elif precision == 'binNoBN':
+    model = BinaryNeuralNetworkNoBN(neuronPerLayer).to(device)
 
 '''
 Train and test

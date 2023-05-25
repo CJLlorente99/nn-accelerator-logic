@@ -3,7 +3,7 @@ from modelsCommon.auxTransformations import ToBlackAndWhite, ToSign
 from torchvision import datasets
 from torchvision.transforms import ToTensor, Compose
 from torch.utils.data import DataLoader
-from modules.binaryEnergyEfficiency import BinaryNeuralNetwork
+from modules.binaryEnergyEfficiencyAllGradients import BinaryNeuralNetwork
 from ttUtilities.helpLayerNeuronGenerator import HelpGenerator
 
 neuronPerLayer = 100
@@ -72,6 +72,6 @@ for i in range(sampleSize):
         print(f"Get Gradients and Activation Values [{i+1:>5d}/{sampleSize:>5d}]")
 
 model.listToArray(neuronPerLayer)  # Hopefully improves memory usage
-model.saveActivations(f'data/activations/activationsSignBinNoBNN100epochs{neuronPerLayer}npl')
+model.saveActivations(f'data/activations/activationsSignBin100epochs{neuronPerLayer}npl')
 model.saveGradients(f'data/gradients/gradientsSignBin100epochs{neuronPerLayer}npl', training_data.targets.tolist()[:sampleSize])
 

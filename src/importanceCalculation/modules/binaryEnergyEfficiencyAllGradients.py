@@ -34,6 +34,16 @@ class BinaryNeuralNetwork(nn.Module):
 		self.iden = nn.Identity()
 
 		# Lists for hook data
+		self.gradientsL0 = []
+		self.gradientsL1 = []
+		self.gradientsL2 = []
+		self.gradientsL3 = []
+  
+		self.valueL0 = []
+		self.valueL1 = []
+		self.valueL2 = []
+		self.valueL3 = []
+  
 		self.gradientsSTE0 = []
 		self.gradientsSTE1 = []
 		self.gradientsSTE2 = []
@@ -89,6 +99,11 @@ class BinaryNeuralNetwork(nn.Module):
 		self.ste2.register_forward_hook(self.forward_hook_ste2)
 		self.ste3.register_forward_hook(self.forward_hook_ste3)
 		self.iden.register_forward_hook(self.forward_hook_iden)
+  
+		# self.l0.register_forward_hook(self.forward_hook_l0)
+		self.l1.register_forward_hook(self.forward_hook_l1)
+		self.l2.register_forward_hook(self.forward_hook_l2)
+		self.l3.register_forward_hook(self.forward_hook_l3)
 
 		if not self.legacyImportance:
 			# Register hooks
@@ -96,6 +111,11 @@ class BinaryNeuralNetwork(nn.Module):
 			self.ste1.register_full_backward_hook(self.backward_hook_ste1)
 			self.ste2.register_full_backward_hook(self.backward_hook_ste2)
 			self.ste3.register_full_backward_hook(self.backward_hook_ste3)
+   
+			self.l0.register_full_backward_hook(self.backward_hook_l0)
+			self.l1.register_full_backward_hook(self.backward_hook_l1)
+			self.l2.register_full_backward_hook(self.backward_hook_l2)
+			self.l3.register_full_backward_hook(self.backward_hook_l3)
 
 	def backward_hook_ste0(self, module, grad_input, grad_output):
 		self.gradientsSTE0.append(grad_output[0].cpu().detach().numpy()[0])
@@ -108,9 +128,31 @@ class BinaryNeuralNetwork(nn.Module):
 
 	def backward_hook_ste3(self, module, grad_input, grad_output):
 		self.gradientsSTE3.append(grad_output[0].cpu().detach().numpy()[0])
+  
+	def backward_hook_l0(self, module, grad_input, grad_output):
+		self.gradientsL0.append(grad_output[0].cpu().detach().numpy()[0])
+
+	def backward_hook_l1(self, module, grad_input, grad_output):
+		self.gradientsL1.append(grad_output[0].cpu().detach().numpy()[0])
+
+	def backward_hook_l2(self, module, grad_input, grad_output):
+		self.gradientsL2.append(grad_output[0].cpu().detach().numpy()[0])
+
+	def backward_hook_l3(self, module, grad_input, grad_output):
+		self.gradientsL3.append(grad_output[0].cpu().detach().numpy()[0])
 
 	def forward_hook_l0(self, module, val_input, val_output):
 		self.input0.append(val_input[0].cpu().detach().numpy())
+		self.valueL0.append(val_output[0].cpu().detach().numpy())
+  
+	def forward_hook_l1(self, module, val_input, val_output):
+		self.valueL1.append(val_output[0].cpu().detach().numpy())
+  
+	def forward_hook_l2(self, module, val_input, val_output):
+		self.valueL2.append(val_output[0].cpu().detach().numpy())
+  
+	def forward_hook_l3(self, module, val_input, val_output):
+		self.valueL3.append(val_output[0].cpu().detach().numpy())
 
 	def forward_hook_ste0(self, module, val_input, val_output):
 		if not self.legacyImportance:
@@ -152,6 +194,16 @@ class BinaryNeuralNetwork(nn.Module):
 		self.gradientsSTE1 = np.array(self.gradientsSTE1).squeeze().reshape(len(self.gradientsSTE1), neuronPerLayer)
 		self.gradientsSTE2 = np.array(self.gradientsSTE2).squeeze().reshape(len(self.gradientsSTE2), neuronPerLayer)
 		self.gradientsSTE3 = np.array(self.gradientsSTE3).squeeze().reshape(len(self.gradientsSTE3), neuronPerLayer)
+  
+		self.valueL0 = np.array(self.valueL0).squeeze().reshape(len(self.valueL0), neuronPerLayer)
+		self.valueL1 = np.array(self.valueL1).squeeze().reshape(len(self.valueL1), neuronPerLayer)
+		self.valueL2 = np.array(self.valueL2).squeeze().reshape(len(self.valueL2), neuronPerLayer)
+		self.valueL3 = np.array(self.valueL3).squeeze().reshape(len(self.valueL3), neuronPerLayer)
+  
+		self.gradientsL0 = np.array(self.gradientsL0).squeeze().reshape(len(self.gradientsL0), neuronPerLayer)
+		self.gradientsL1 = np.array(self.gradientsL1).squeeze().reshape(len(self.gradientsL1), neuronPerLayer)
+		self.gradientsL2 = np.array(self.gradientsL2).squeeze().reshape(len(self.gradientsL2), neuronPerLayer)
+		self.gradientsL3 = np.array(self.gradientsL3).squeeze().reshape(len(self.gradientsL3), neuronPerLayer)
 
 		self.valueSTE0 = np.array(self.valueSTE0).squeeze().reshape(len(self.valueSTE0), neuronPerLayer)
 		self.valueSTE1 = np.array(self.valueSTE1).squeeze().reshape(len(self.valueSTE1), neuronPerLayer)
@@ -170,8 +222,17 @@ class BinaryNeuralNetwork(nn.Module):
 		print('Importance STE2 calculated')
 		importanceSTE3 = np.abs(self.gradientsSTE3)
 		print('Importance STE3 calculated')
+  
+		importanceL0 = np.abs(self.valueL0 * self.gradientsL0)
+		print('Importance L0 calculated')
+		importanceL1 = np.abs(self.valueL1 * self.gradientsL1)
+		print('Importance L1 calculated')
+		importanceL2 = np.abs(self.valueL2 * self.gradientsL2)
+		print('Importance L2 calculated')
+		importanceL3 = np.abs(self.valueL3 * self.gradientsL3)
+		print('Importance L3 calculated')
 
-		return [importanceSTE0, importanceSTE1, importanceSTE2, importanceSTE3]
+		return [importanceSTE0, importanceSTE1, importanceSTE2, importanceSTE3, importanceL0, importanceL1, importanceL2, importanceL3]
 
 	def saveActivations(self, baseFilename):
 		columnsInLayer0 = [f'{i}' for i in range(len(self.input0[0]))]
@@ -205,6 +266,28 @@ class BinaryNeuralNetwork(nn.Module):
 		# pd.DataFrame(
 		# 	np.array(self.valueIden), columns=columnsOutLayer5).to_feather(
 		# 	f'{baseFilename}Out5')
+  
+		columnsInLayer0 = [f'{i}' for i in range(len(self.valueL0[0]))]
+		columnsInLayer1 = [f'{i}' for i in range(len(self.valueL1[0]))]
+		columnsInLayer2 = [f'{i}' for i in range(len(self.valueL2[0]))]
+		columnsInLayer3 = [f'{i}' for i in range(len(self.valueL3[0]))]
+
+		pd.DataFrame(
+			self.valueL0, columns=columnsInLayer0).to_feather(
+			f'{baseFilename}ValueL0')
+
+		pd.DataFrame(
+			self.valueL1, columns=columnsInLayer1).to_feather(
+			f'{baseFilename}ValueL1')
+
+		pd.DataFrame(
+			self.valueL2, columns=columnsInLayer2).to_feather(
+			f'{baseFilename}ValueL2')
+
+		pd.DataFrame(
+			self.valueL3, columns=columnsInLayer3).to_feather(
+			f'{baseFilename}ValueL3')
+
 
 	def saveGradients(self, baseFilename: str, targets: list):
 		columnsInLayer1 = [f'N{i}' for i in range(len(self.gradientsSTE0[0]))]
@@ -227,6 +310,27 @@ class BinaryNeuralNetwork(nn.Module):
 		aux = pd.DataFrame(self.gradientsSTE3, columns=columnsInLayer4)
 		aux['target'] = targets
 		aux.to_feather(f'{baseFilename}STE3')
+  
+		columnsInLayer1 = [f'N{i}' for i in range(len(self.gradientsL0[0]))]
+		columnsInLayer2 = [f'N{i}' for i in range(len(self.gradientsL1[0]))]
+		columnsInLayer3 = [f'N{i}' for i in range(len(self.gradientsL2[0]))]
+		columnsInLayer4 = [f'N{i}' for i in range(len(self.gradientsL3[0]))]
+
+		aux = pd.DataFrame(self.gradientsL0, columns=columnsInLayer1)
+		aux['target'] = targets
+		aux.to_feather(f'{baseFilename}L0')
+
+		aux = pd.DataFrame(self.gradientsL1, columns=columnsInLayer2)
+		aux['target'] = targets
+		aux.to_feather(f'{baseFilename}L1')
+
+		aux = pd.DataFrame(self.gradientsL2, columns=columnsInLayer3)
+		aux['target'] = targets
+		aux.to_feather(f'{baseFilename}L2')
+
+		aux = pd.DataFrame(self.gradientsL3, columns=columnsInLayer4)
+		aux['target'] = targets
+		aux.to_feather(f'{baseFilename}L3')
 
 	def signToBinary(self):
 		self.input0[self.input0 == -1] = 0

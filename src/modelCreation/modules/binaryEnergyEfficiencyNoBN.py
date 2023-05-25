@@ -7,9 +7,9 @@ import torch
 import pandas as pd
 
 
-class BinaryNeuralNetwork(nn.Module):
+class BinaryNeuralNetworkNoBN(nn.Module):
 	def __init__(self, neuronPerLayer=100):
-		super(BinaryNeuralNetwork, self).__init__()
+		super(BinaryNeuralNetworkNoBN, self).__init__()
 		self.flatten = nn.Flatten()
 
 		self.l0 = nn.Linear(28 * 28, neuronPerLayer)
@@ -21,7 +21,6 @@ class BinaryNeuralNetwork(nn.Module):
 		self.ste1 = STEFunction()
 
 		self.l2 = nn.Linear(neuronPerLayer, neuronPerLayer)
-		self.bn2 = nn.BatchNorm1d(neuronPerLayer)
 		self.ste2 = STEFunction()
 
 		self.l3 = nn.Linear(neuronPerLayer, neuronPerLayer)
@@ -68,7 +67,6 @@ class BinaryNeuralNetwork(nn.Module):
 		x = self.ste1(x)
 
 		x = self.l2(x)
-		x = self.bn2(x)
 		x = self.ste2(x)
 
 		x = self.l3(x)
@@ -98,16 +96,16 @@ class BinaryNeuralNetwork(nn.Module):
 			self.ste3.register_full_backward_hook(self.backward_hook_ste3)
 
 	def backward_hook_ste0(self, module, grad_input, grad_output):
-		self.gradientsSTE0.append(grad_output[0].cpu().detach().numpy()[0])
+		self.gradientsSTE0.append(grad_input[0].cpu().detach().numpy()[0])
 
 	def backward_hook_ste1(self, module, grad_input, grad_output):
-		self.gradientsSTE1.append(grad_output[0].cpu().detach().numpy()[0])
+		self.gradientsSTE1.append(grad_input[0].cpu().detach().numpy()[0])
 
 	def backward_hook_ste2(self, module, grad_input, grad_output):
-		self.gradientsSTE2.append(grad_output[0].cpu().detach().numpy()[0])
+		self.gradientsSTE2.append(grad_input[0].cpu().detach().numpy()[0])
 
 	def backward_hook_ste3(self, module, grad_input, grad_output):
-		self.gradientsSTE3.append(grad_output[0].cpu().detach().numpy()[0])
+		self.gradientsSTE3.append(grad_input[0].cpu().detach().numpy()[0])
 
 	def forward_hook_l0(self, module, val_input, val_output):
 		self.input0.append(val_input[0].cpu().detach().numpy())
@@ -241,7 +239,7 @@ class BinaryNeuralNetwork(nn.Module):
 		for activation in self.input0:
 			aux.append(binaryArrayToSingleValue(activation))
 
-			if (i + 1) % 5000 == 0:
+			if (i + 1) % 250 == 0:
 				print(f"Activations to Unique Value (Input0) [{i + 1:>4d}/{len(self.input0):>4d}]")
 			i += 1
 		self.input0 = np.array(aux)
@@ -252,7 +250,7 @@ class BinaryNeuralNetwork(nn.Module):
 		for activation in self.valueSTE0:
 			aux.append(binaryArrayToSingleValue(activation))
 
-			if (i + 1) % 5000 == 0:
+			if (i + 1) % 250 == 0:
 				print(f"Activations to Unique Value (STE0) [{i + 1:>4d}/{len(self.valueSTE0):>4d}]")
 			i += 1
 		self.valueSTE0 = np.array(aux)
@@ -262,7 +260,7 @@ class BinaryNeuralNetwork(nn.Module):
 		for activation in self.valueSTE1:
 			aux.append(binaryArrayToSingleValue(activation))
 
-			if (i + 1) % 5000 == 0:
+			if (i + 1) % 250 == 0:
 				print(f"Activations to Unique Value (STE1) [{i + 1:>4d}/{len(self.valueSTE1):>4d}]")
 			i += 1
 		self.valueSTE1 = np.array(aux)
@@ -272,7 +270,7 @@ class BinaryNeuralNetwork(nn.Module):
 		for activation in self.valueSTE2:
 			aux.append(binaryArrayToSingleValue(activation))
 
-			if (i + 1) % 5000 == 0:
+			if (i + 1) % 250 == 0:
 				print(f"Activations to Unique Value (STE2) [{i + 1:>4d}/{len(self.valueSTE2):>4d}]")
 			i += 1
 		self.valueSTE2 = np.array(aux)
@@ -282,7 +280,7 @@ class BinaryNeuralNetwork(nn.Module):
 		for activation in self.valueSTE3:
 			aux.append(binaryArrayToSingleValue(activation))
 
-			if (i + 1) % 5000 == 0:
+			if (i + 1) % 250 == 0:
 				print(f"Activations to Unique Value (STE3) [{i + 1:>4d}/{len(self.valueSTE3):>4d}]")
 			i += 1
 		self.valueSTE3 = np.array(aux)

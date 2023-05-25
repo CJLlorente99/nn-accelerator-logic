@@ -125,6 +125,7 @@ class BinaryOutputNeuron:
 		lengthsTags = [col for col in row.index if col.startswith('lengthActivation')]
 		row = np.array(integerToBinaryArray(row[tags].values, row[lengthsTags].values))
 		# Pad zeros at the beginning for length consistency
+		# TODO. Check if this is correctly done
 		row = np.pad(row.squeeze(), (len(self.weight) - len(row), 0))
 		# Multiply per weights
 		z = torch.from_numpy(row).type(torch.FloatTensor) @ self.weight + self.bias

@@ -1,10 +1,10 @@
 from ttUtilities.isfRealization import DNFRealization
 
 # ! WARNING! There are different nNeurons depending on the layer
-nNeurons = 784
+nNeurons = 100
 discriminated = False
 filename = './data/layersTT/'
-layerFilename = 'layer0_MNISTSignbinNN100Epoch100NPLnllCriterion'
+layerFilename = 'layer3_MNISTSignbinNN100Epoch100NPLnllCriterion'
 
 # Create DNFRealization object
 dnf = DNFRealization(nNeurons)

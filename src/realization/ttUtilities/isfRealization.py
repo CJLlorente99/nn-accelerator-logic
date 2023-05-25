@@ -253,7 +253,7 @@ class DNFRealization:
 
 			# Take out entries out of the ON-Set
 			# Select only ON-Set
-			df = df[df[neuron] == 1]
+			# df = df[df[neuron] == 1]
 
 			df = df.astype('int')
 
