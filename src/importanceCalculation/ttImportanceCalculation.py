@@ -157,7 +157,7 @@ for frame in df:
 
 for i in range(len(accLayers)):
 	if i < len(accLayers) - 1:
-		accLayers[i].fillTT()
+		accLayers[i].fillTT(dfActivations[f'input{i+1}'])
 
 # Plot importance per entry of a neuron as an example
 

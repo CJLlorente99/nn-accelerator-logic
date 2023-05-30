@@ -83,6 +83,18 @@ class BinaryNeuralNetwork(nn.Module):
 		return F.log_softmax(x, dim=1)
 
 	def forwardLastLayer(self, x):
+		x = self.l1(x)
+		x = self.bn1(x)
+		x = self.ste1(x)
+
+		x = self.l2(x)
+		x = self.bn2(x)
+		x = self.ste2(x)
+
+		x = self.l3(x)
+		x = self.bn3(x)
+		x = self.ste3(x)
+
 		x = self.l4(x)
 		x = self.bn4(x)
 

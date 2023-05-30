@@ -8,7 +8,7 @@ from modules.binaryEnergyEfficiency import BinaryNeuralNetwork
 from ttUtilities.helpLayerNeuronGenerator import HelpGenerator
 import numpy as np
 
-neuronPerLayer = 300
+neuronPerLayer = 500
 modelFilename = f'src\modelCreation\savedModels\MNISTSignbinNN100Epoch{neuronPerLayer}NPLnllCriterion'
 batch_size = 64
 perGradientSampling = 1
@@ -70,7 +70,7 @@ Calculate importance per class per neuron
 # Compute importance
 
 importance = model.computeImportance(neuronPerLayer)
-importanceThresholds = np.logspace(-3, -1, num=3, base=10)
+importanceThresholds = np.logspace(-5, -1, num=5, base=10)
 
 for threshold in importanceThresholds:
 
@@ -86,7 +86,7 @@ for threshold in importanceThresholds:
     # Plot importance of neurons per layer
 
     for i in range(len(accLayers) - 1):
-        # accLayers[i].plotImportancePerNeuron(f'Threshold {threshold:.0e}', True)
+        accLayers[i].plotImportancePerNeuron(f'Threshold {threshold:.0e}', True)
         # accLayers[i].plotImportancePerClass(f'Layer {i} Threshold {threshold:.0e}', True)
         accLayers[i].plotNumImportantClasses(f'NPL {neuronPerLayer} Layer {i} Threshold {threshold:.0e}', True, save=True)
         # accLayers[i].saveImportance(f'data/layersImportance/layer{i}Importance{threshold:.0e}GradientBinarySignBNN50epochs{neuronPerLayer}npl')

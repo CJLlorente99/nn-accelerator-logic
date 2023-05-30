@@ -8,7 +8,7 @@ from ttUtilities.helpLayerNeuronGenerator import HelpGenerator
 
 neuronPerLayer = 100
 modelFilename = f'src\modelCreation\savedModels\MNISTSignbinNN100Epoch100NPLnllCriterion'
-batch_size = 64
+batch_size = 1
 perGradientSampling = 1
 # Check mps maybe if working in MacOS
 device = 'cuda' if torch.cuda.is_available() else 'cpu'
