@@ -13,21 +13,14 @@ dnf = DNFRealization(nNeurons)
 
 dnf.loadTT(filename + layerFilename)
 
-# Proceed with the realizations
-# Impossible computational wise
-
-# realization = dnf.realizeNeurons()
-
 # Create PLA file for Espresso
 
 # TODO. Change functions so they're not overwritten
-# dnf.createPLAFileEspresso(f'../data/espressoOptimized/{layerFilename}', discriminated=discriminated)
+dnf.createPLAFileEspresso(f'../data/espressoOptimized/{layerFilename}', discriminated=discriminated)
 
 # Create PLA file for ABC
 
-dnf.createPLAFileABC(f'./data/ABC/{layerFilename}', discriminated=discriminated)
+# dnf.createPLAFileABC(f'./data/ABC/{layerFilename}', discriminated=discriminated)
 
-# Create file with binary representation of output
-# TODO. Impossible computational wise
-
-# dnf.createBinaryOutputRepresentation('../data/outputRepresentation/bin')
+# Create AIG file
+# dnf.createAIGFile(f'../data/AIG/{layerFilename}', discriminated=discriminated)
