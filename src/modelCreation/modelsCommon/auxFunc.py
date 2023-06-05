@@ -59,6 +59,8 @@ def test(dataloader, dataloader2, model, criterion):
 def trainAndTest(epochs, train_dataloader, test_dataloader, model, opt, criterion):
 	for t in range(epochs):
 		print(f"Epoch {t + 1}\n-------------------------------")
+		if t in [99, 149, 299]:
+			opt.param_groups['lr'] /= 10
 		train(train_dataloader, model, opt, criterion)
 		test(test_dataloader, train_dataloader, model, criterion)
 

@@ -59,6 +59,31 @@ class AccLayer:
 			d['name'] = neuron.name
 			d['importance'] = neuron.importance
 			aux = pd.concat([aux, pd.DataFrame(d, index=[0])], ignore_index=True)
+   
+		if ordered:
+			aux.sort_values(['importance'], inplace=True)
+
+		fig = go.Figure()
+
+		for col in aux:
+			if col not in ['name', 'importance']:
+				fig.add_trace(go.Bar(name=col, x=aux['name'], y=aux[col]))
+
+		fig.update_layout(title=name, barmode='stack', hovermode="x unified")
+		fig.show()
+
+	def plotImportanceCardinalityPerClass(self, name, ordered=False):
+		"""
+		Method that plots the importance per neuron per layer
+		:param name:
+		"""
+		# Get neuron name and importance per class
+		aux = pd.DataFrame()
+		for neuron in self.neurons:
+			d = neuron.cardinalityPerClass.copy()
+			d['name'] = neuron.name
+			d['importance'] = neuron.importance
+			aux = pd.concat([aux, pd.DataFrame(d, index=[0])], ignore_index=True)
 
 		for col in aux:
 			if col not in ['name', 'importance']:

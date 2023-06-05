@@ -26,6 +26,7 @@ class BinaryOutputNeuron:
 	def __post_init__(self):
 		self.fanIn = len(self.weight)
 		self.importancePerClass = {}
+		self.cardinalityPerClass = {}
 		self.importance = 0
 		self.name = 'L' + str(self.nLayer) + 'N' + str(self.nNeuron)
 		self.sopForm = ''
@@ -50,6 +51,7 @@ class BinaryOutputNeuron:
 
 		for n in dictImportance:
 			self.importancePerClass['class' + str(n)] = len(dictImportance[n]) / nPerClass[n] * 100
+			self.cardinalityPerClass['class' + str(n)] = len(dictImportance[n])
 			self.importance += len(dictImportance[n]) / nPerClass[n] * 100
 
 	def createTT(self, outputDf: pd.DataFrame):

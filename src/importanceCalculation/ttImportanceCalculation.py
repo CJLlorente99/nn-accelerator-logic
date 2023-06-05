@@ -12,11 +12,11 @@ import numpy as np
 
 neuronPerLayer = 100
 modelUsed = f'MNISTSignbinNN100Epoch100NPLnllCriterion'
-modelUsedImportance = f'SignBNN50epochs{neuronPerLayer}npl'
+modelUsedImportance = f'SignBNN100epochs{neuronPerLayer}npl'
 modelFilename = f'src\modelCreation\savedModels\MNISTSignbinNN100Epoch100NPLnllCriterion'
 layerActivationFilename = f'./data/activations/activationsSignBin100epochs100npl'
 batch_size = 64
-perGradientSampling = 1
+perGradientSampling = 0.25
 nClasses = 10
 threshold = '1e1'
 
@@ -163,15 +163,15 @@ for i in range(len(accLayers)):
 
 # Example belonging to layer 1
 
-exampleNeuron = accLayers[0].neurons[random.randint(0, len(accLayers[0].neurons) - 1)]
-exampleNeuron.showImportancePerEntry()
-exampleNeuron.showImportancePerClassPerEntry()
+# exampleNeuron = accLayers[0].neurons[random.randint(0, len(accLayers[0].neurons) - 1)]
+# exampleNeuron.showImportancePerEntry()
+# exampleNeuron.showImportancePerClassPerEntry()
 
 # Example belonging to layer 2
 
-exampleNeuron = accLayers[1].neurons[random.randint(0, len(accLayers[1].neurons) - 1)]
-exampleNeuron.showImportancePerEntry()
-exampleNeuron.showImportancePerClassPerEntry()
+# exampleNeuron = accLayers[1].neurons[random.randint(0, len(accLayers[1].neurons) - 1)]
+# exampleNeuron.showImportancePerEntry()
+# exampleNeuron.showImportancePerClassPerEntry()
 
 # Save the layers
 

@@ -2,87 +2,102 @@ import pandas as pd
 import torch
 from modelsCommon.auxTransformations import *
 from torchvision import datasets
-from torchvision.transforms import ToTensor, Compose
+from torchvision.transforms import ToTensor, Compose, Normalize, RandomHorizontalFlip, RandomCrop
 from torch.utils.data import DataLoader
-from modules.binaryEnergyEfficiency import BinaryNeuralNetwork
-from ttUtilities.helpLayerNeuronGenerator import HelpGenerator
+from modules.binaryVGGSmall import VGGSmall
+import plotly.graph_objects as go
+import numpy as np
 
-neuronPerLayer = 100
-modelFilename = f'src\modelCreation\savedModels\MNISTSignbinNN100Epoch100NPLnllCriterion'
+neuronPerLayer = 4096
+modelFilename = f'src\modelCreation\savedModels\MNISTSignbinNN50Epoch4096NPLhingeCriterion'
 batch_size = 64
 perGradientSampling = 1
 # Check mps maybe if working in MacOS
 device = 'cuda' if torch.cuda.is_available() else 'cpu'
 
 '''
-Importing MNIST dataset
+Importing CIFAR10 dataset
 '''
-print(f'IMPORT DATASET\n')
-
-training_data = datasets.MNIST(
-    root='C:/Users/carlo/OneDrive/Documentos/Universidad/MUIT/Segundo/TFM/Code/data',
-    train=True,
-    download=False,
-    transform=Compose([
-            ToTensor(),
-            ToBlackAndWhite(),
-            ToSign()
-        ])
-)
-
-sampleSize = int(perGradientSampling * len(training_data.data))  # sample size to be used for importance calculation
+print(f'DOWNLOAD DATASET\n')
+train_dataset = datasets.CIFAR10(root='./data', train=True, transform=Compose([
+	RandomHorizontalFlip(),
+	RandomCrop(32, 4),
+	ToTensor(),
+	Normalize((0.485, 0.456, 0.406), (0.229, 0.224, 0.225))]),
+								 download=False)
 
 '''
 Create DataLoader
 '''
-train_dataloader = DataLoader(training_data, batch_size=batch_size)
+train_dataloader = DataLoader(train_dataset, batch_size=batch_size)
 
-model = BinaryNeuralNetwork(neuronPerLayer)
+sampleSize = int(perGradientSampling * len(train_dataset.data))  # sample size to be used for importance calculation
+
+'''
+Load model
+'''
+model = VGGSmall()
 model.load_state_dict(torch.load(modelFilename))
 
 '''
 Load gradients previously calculated
 '''
-
-model.gradientsSTE0 = pd.read_feather('data/gradients/gradientsSignBin100epochs100nplSTE0').drop(['target'], axis=1).to_numpy()
-model.gradientsSTE1 = pd.read_feather('data/gradients/gradientsSignBin100epochs100nplSTE1').drop(['target'], axis=1).to_numpy()
-model.gradientsSTE2 = pd.read_feather('data/gradients/gradientsSignBin100epochs100nplSTE2').drop(['target'], axis=1).to_numpy()
-model.gradientsSTE3 = pd.read_feather('data/gradients/gradientsSignBin100epochs100nplSTE3').drop(['target'], axis=1).to_numpy()
+model.loadGradients('./data/gradients/vggSmall')
+model.loadActivations('./data/gradients/vggSmall')
 
 '''
-Generate AccLayers and Neuron objects
+Calculate importance values
 '''
-
-accLayers = HelpGenerator.getAccLayers(model)
-HelpGenerator.getNeurons(accLayers)
-
-print(f'Number of layers is {len(accLayers)}')
-i = 0
-for layer in accLayers:
-    print(f'Layer {i} has {layer.nNeurons} neurons')
-    i += 1
+importances = model.computeImportance()
 
 '''
-Calculate importance per class per neuron
+Calculate importance scores
 '''
+threshold = 10e-50
+for importance in importances:
+	importance = (importance > threshold)
 
-# Compute importance
+'''
+Calculate importance per class
+'''
+importancePerClass = {}
+# Initialize for 10 classes and layers
+for grad in model.helpHookList:
+	importancePerClass[grad] = {}
+	for i in range(10):
+		importancePerClass[grad][i] = None
 
-importance = model.computeImportance(neuronPerLayer)
-
-# Give each neuron its importance values
-for j in range(len(importance)):
-    for i in range(len(accLayers[j].neurons)):
-        accLayers[j].neurons[i].giveImportance(importance[j][:, i], training_data.targets.tolist(), 10e-10)
-
-        if (i + 1) % 50 == 0:
-            print(f"Give Importance Layer [{j + 1:>1d}/{len(importance):>1d}] Neuron [{i + 1:>4d}/{neuronPerLayer:>4d}]")
-
-# Plot importance of neurons per layer
-
-for i in range(len(accLayers)):
-    accLayers[i].plotImportancePerNeuron(f'Layer {i}', True)
-    # accLayers[i].plotImportancePerClass(f'Layer {i}', True)
-    accLayers[i].plotNumImportantClasses(f'Layer {i}', True)
-    # accLayers[i].saveImportance(f'data/layersImportance/layer{i}Importance1e3GradientBinarySignBNN50epochs{neuronPerLayer}npl')
-    print(f'Creating plots and saving layer [{i + 1:>1d}/{len(accLayers):>1d}]')
+# Iterate through the calculated importances and assign depending on the class
+imp = 0
+for grad in model.helpHookList:
+	importance = importances[imp]
+	for i in range(importance.shape[0]):
+		importancePerClass[grad][train_dataset.targets[i]] = importance.sum(1)
+	imp += 1
+	
+# Join the lists so each row is a class and each column a filter/neuron
+for grad in importancePerClass:
+	importancePerClass[grad] = np.row_stack(tuple(importancePerClass[grad].values()))
+	
+'''
+Print results
+'''
+# Print aggregated importance
+for grad in importancePerClass:
+	aux = importancePerClass[grad].sum(1)
+	
+	fig = go.Figure()
+	fig.add_trace(go.Bar(aux))
+	fig.show()
+	
+# Print classes that are important
+	aux = (importancePerClass[grad] > 0).sum(1)
+	
+	fig = go.Figure()
+	fig.add_trace(go.Bar(aux))
+	fig.show()
+ 
+ # Print importance per class
+	fig = go.Figure()
+	fig.add_trace(go.Bar(importancePerClass[grad]))
+	fig.show()

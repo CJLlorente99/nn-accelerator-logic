@@ -69,7 +69,7 @@ with open(lastLayerInputsTrainFilename) as f:
             x.pop()
             line = np.array(x, dtype=np.double)            
             dfInputsLastLayerTrain = pd.concat([dfInputsLastLayerTrain,
-                                                pd.DataFrame(line, index=columnTags).transpose()])
+                                                pd.DataFrame(line, index=columnTags).transpose()], ignore_index=True)
             
             count += 1
             if (count+1) % 5000 == 0:
@@ -108,7 +108,7 @@ for index, row in dfInputsLastLayerTrain.iterrows():
         count += 1
 
 totalCorrect += correct
-print(f"Train Error: \n Accuracy: {(100 * correct / size):>0.2f}%\n")
+print(f"Train Error: \n Accuracy: {(100 * correct / size):>0.2f}% \n Correct: {correct}\n")
     
 # print(f'TEST Test\n')
 
