@@ -4,7 +4,7 @@ from modelsCommon.auxTransformations import *
 from torchvision import datasets
 from torchvision.transforms import ToTensor, Compose, Normalize, RandomHorizontalFlip, RandomCrop
 from torch.utils.data import DataLoader
-from modules.binaryVGGSmall import VGGSmall
+from modules.binaryVggSmall import VGGSmall
 import torch.optim as optim
 import torch.nn as nn
 
@@ -57,4 +57,4 @@ trainAndTest(epochs, train_dataloader, test_dataloader, model, opt, criterion)
 Save
 '''
 
-torch.save(model.state_dict(), f'./src/modelCreation/savedModels/VGGSmall')
+torch.save(model.state_dict(), f'./src/modelCreation/savedModels/binaryVGGSmall')

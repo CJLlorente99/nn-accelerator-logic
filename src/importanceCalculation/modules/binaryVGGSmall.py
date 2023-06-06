@@ -15,60 +15,60 @@ class VGGSmall(nn.Module):
 
 		# Layer 0
 		self.conv0 = nn.Conv2d(3, 64, kernel_size=3, padding=1)
-		self.relu0 = nn.ReLU(inplace=True)
+		self.ste0 = STEFunction()
 		self.maxpool0 = nn.MaxPool2d(kernel_size=2, stride=2)
-		self.helpHookList.append('relu0')
+		self.helpHookList.append('ste0')
 
 		# Layer 1
 		self.conv1 = nn.Conv2d(64, 128, kernel_size=3, padding=1)
-		self.relu1 = nn.ReLU(inplace=True)
+		self.ste1 = STEFunction()
 		self.maxpool1 = nn.MaxPool2d(kernel_size=2, stride=2)
-		self.helpHookList.append('relu1')
+		self.helpHookList.append('ste1')
   
 		# Layer 2.1
 		self.conv21 = nn.Conv2d(128, 256, kernel_size=3, padding=1)
-		self.relu21 = nn.ReLU(inplace=True)
-		self.helpHookList.append('relu21')
+		self.ste21 = STEFunction()
+		self.helpHookList.append('ste21')
   
 		# Layer 2.2
 		self.conv22 = nn.Conv2d(256, 256, kernel_size=3, padding=1)
-		self.relu22 = nn.ReLU(inplace=True)
+		self.ste22 = STEFunction()
 		self.maxpool22 = nn.MaxPool2d(kernel_size=2, stride=2)
-		self.helpHookList.append('relu22')
+		self.helpHookList.append('ste22')
   
 		# Layer 3.1
 		self.conv31 = nn.Conv2d(256, 512, kernel_size=3, padding=1)
-		self.relu31 = nn.ReLU(inplace=True)
-		self.helpHookList.append('relu31')
+		self.ste31 = STEFunction()
+		self.helpHookList.append('ste31')
 
 		# Layer 3.2
 		self.conv32 = nn.Conv2d(512, 512, kernel_size=3, padding=1)
-		self.relu32 = nn.ReLU(inplace=True)
+		self.ste32 = STEFunction()
 		self.maxpool32 = nn.MaxPool2d(kernel_size=2, stride=2)
-		self.helpHookList.append('relu32')
+		self.helpHookList.append('ste32')
   
 		# Layer 4.1
 		self.conv41 = nn.Conv2d(512, 512, kernel_size=3, padding=1)
-		self.relu41 = nn.ReLU(inplace=True)
-		self.helpHookList.append('relu41')
+		self.ste41 = STEFunction()
+		self.helpHookList.append('ste41')
   
 		# Layer 4.2
 		self.conv42 = nn.Conv2d(512, 512, kernel_size=3, padding=1)
-		self.relu42 = nn.ReLU(inplace=True)
+		self.ste42 = STEFunction()
 		self.maxpool42 = nn.MaxPool2d(kernel_size=2, stride=2)
-		self.helpHookList.append('relu42')
+		self.helpHookList.append('ste42')
   
 		# Layer FC0
 		self.dropoutl0 = nn.Dropout(0.5)
 		self.l0 = nn.Linear(512, 512)
-		self.relul0 = nn.ReLU(inplace=True)
-		self.helpHookList.append('relul0')
+		self.stel0 = STEFunction()
+		self.helpHookList.append('stel0')
   
 		# Layer FC1
 		self.dropoutl1 = nn.Dropout(0.5)
 		self.l1 = nn.Linear(512, 512)
-		self.relul1 = nn.ReLU(inplace=True)
-		self.helpHookList.append('relul1')
+		self.stel1 = STEFunction()
+		self.helpHookList.append('stel1')
   
 		# Layer FC2
 		self.l2 = nn.Linear(512, 10)
@@ -93,50 +93,52 @@ class VGGSmall(nn.Module):
 	def forward(self, x):
 		# Layer 0
 		x = self.conv0(x)
-		x = self.relu0(x)
+		x = self.ste0(x)
 		x = self.maxpool0(x)
 
 		# Layer 1
 		x = self.conv1(x)
-		x = self.relu1(x)
+		x = self.ste1(x)
 		x = self.maxpool1(x)
   
 		# Layer 2.1
 		x = self.conv21(x)
-		x = self.relu21(x)
+		x = self.ste21(x)
   
 		# Layer 2.2
 		x = self.conv22(x)
-		x = self.relu22(x)
+		x = self.ste22(x)
 		x = self.maxpool22(x)
   
 		# Layer 3.1
 		x = self.conv31(x)
-		x = self.relu31(x)
+		x = self.ste31(x)
 
 		# Layer 3.2
 		x = self.conv32(x)
-		x = self.relu32(x)
+		x = self.ste32(x)
 		x = self.maxpool32(x)
   
 		# Layer 4.1
 		x = self.conv41(x)
-		x = self.relu41(x)
+		x = self.ste41(x)
   
 		# Layer 4.2
 		x = self.conv42(x)
-		x = self.relu42(x)
+		x = self.ste42(x)
 		x = self.maxpool42(x)
+  
+		x = x.reshape(x.size(0), -1)
   
 		# Layer FC0
 		x = self.dropoutl0(x)
 		x = self.l0(x)
-		x = self.relul0(x)
+		x = self.stel0(x)
   
 		# Layer FC1
 		x = self.dropoutl1(x)
 		x = self.l1(x)
-		x = self.relul1(x)
+		x = self.stel1(x)
   
 		# Layer FC2
 		x = self.l2(x)
@@ -146,90 +148,90 @@ class VGGSmall(nn.Module):
 	# Probably there exists a better way to do this
 	def registerHooks(self):
 		# Forward hooks are needed to compute importance
-		self.relu0.register_forward_hook(self.forward_hook_relu0)
-		self.relu1.register_forward_hook(self.forward_hook_relu1)
-		self.relu21.register_forward_hook(self.forward_hook_relu21)
-		self.relu22.register_forward_hook(self.forward_hook_relu22)
-		self.relu31.register_forward_hook(self.forward_hook_relu31)
-		self.relu32.register_forward_hook(self.forward_hook_relu32)
-		self.relu41.register_forward_hook(self.forward_hook_relu41)
-		self.relu42.register_forward_hook(self.forward_hook_relu42)
-		self.relul0.register_forward_hook(self.forward_hook_relul0)
-		self.relul1.register_forward_hook(self.forward_hook_relul1)
+		self.ste0.register_forward_hook(self.forward_hook_ste0)
+		self.ste1.register_forward_hook(self.forward_hook_ste1)
+		self.ste21.register_forward_hook(self.forward_hook_ste21)
+		self.ste22.register_forward_hook(self.forward_hook_ste22)
+		self.ste31.register_forward_hook(self.forward_hook_ste31)
+		self.ste32.register_forward_hook(self.forward_hook_ste32)
+		self.ste41.register_forward_hook(self.forward_hook_ste41)
+		self.ste42.register_forward_hook(self.forward_hook_ste42)
+		self.stel0.register_forward_hook(self.forward_hook_stel0)
+		self.stel1.register_forward_hook(self.forward_hook_stel1)
   
 		# Backward hooks are needed to compute importance
-		self.relu0.register_full_backward_hook(self.backward_hook_relu0)
-		self.relu1.register_full_backward_hook(self.backward_hook_relu1)
-		self.relu21.register_full_backward_hook(self.backward_hook_relu21)
-		self.relu22.register_full_backward_hook(self.backward_hook_relu22)
-		self.relu31.register_full_backward_hook(self.backward_hook_relu31)
-		self.relu32.register_full_backward_hook(self.backward_hook_relu32)
-		self.relu41.register_full_backward_hook(self.backward_hook_relu41)
-		self.relu42.register_full_backward_hook(self.backward_hook_relu42)
-		self.relul0.register_full_backward_hook(self.backward_hook_relul0)
-		self.relul1.register_full_backward_hook(self.backward_hook_relul1)
+		self.ste0.register_full_backward_hook(self.backward_hook_ste0)
+		self.ste1.register_full_backward_hook(self.backward_hook_ste1)
+		self.ste21.register_full_backward_hook(self.backward_hook_ste21)
+		self.ste22.register_full_backward_hook(self.backward_hook_ste22)
+		self.ste31.register_full_backward_hook(self.backward_hook_ste31)
+		self.ste32.register_full_backward_hook(self.backward_hook_ste32)
+		self.ste41.register_full_backward_hook(self.backward_hook_ste41)
+		self.ste42.register_full_backward_hook(self.backward_hook_ste42)
+		self.stel0.register_full_backward_hook(self.backward_hook_stel0)
+		self.stel1.register_full_backward_hook(self.backward_hook_stel1)
 
 	# Define all backward hooks
-	def backward_hook_relu0(self, module, grad_input, grad_output):
-		self.gradsFromHooks['relu0']['backward'].append(grad_output[0].cpu().detach().numpy()[0])
+	def backward_hook_ste0(self, module, grad_input, grad_output):
+		self.gradsFromHooks['ste0']['backward'].append(grad_output[0].cpu().detach().numpy()[0])
   
-	def backward_hook_relu1(self, module, grad_input, grad_output):
-		self.gradsFromHooks['relu1']['backward'].append(grad_output[0].cpu().detach().numpy()[0])
+	def backward_hook_ste1(self, module, grad_input, grad_output):
+		self.gradsFromHooks['ste1']['backward'].append(grad_output[0].cpu().detach().numpy()[0])
   
-	def backward_hook_relu21(self, module, grad_input, grad_output):
-		self.gradsFromHooks['relu21']['backward'].append(grad_output[0].cpu().detach().numpy()[0])
+	def backward_hook_ste21(self, module, grad_input, grad_output):
+		self.gradsFromHooks['ste21']['backward'].append(grad_output[0].cpu().detach().numpy()[0])
   
-	def backward_hook_relu22(self, module, grad_input, grad_output):
-		self.gradsFromHooks['relu22']['backward'].append(grad_output[0].cpu().detach().numpy()[0])
+	def backward_hook_ste22(self, module, grad_input, grad_output):
+		self.gradsFromHooks['ste22']['backward'].append(grad_output[0].cpu().detach().numpy()[0])
   
-	def backward_hook_relu31(self, module, grad_input, grad_output):
-		self.gradsFromHooks['relu31']['backward'].append(grad_output[0].cpu().detach().numpy()[0])
+	def backward_hook_ste31(self, module, grad_input, grad_output):
+		self.gradsFromHooks['ste31']['backward'].append(grad_output[0].cpu().detach().numpy()[0])
   
-	def backward_hook_relu32(self, module, grad_input, grad_output):
-		self.gradsFromHooks['relu32']['backward'].append(grad_output[0].cpu().detach().numpy()[0])
+	def backward_hook_ste32(self, module, grad_input, grad_output):
+		self.gradsFromHooks['ste32']['backward'].append(grad_output[0].cpu().detach().numpy()[0])
   
-	def backward_hook_relu41(self, module, grad_input, grad_output):
-		self.gradsFromHooks['relu41']['backward'].append(grad_output[0].cpu().detach().numpy()[0])
+	def backward_hook_ste41(self, module, grad_input, grad_output):
+		self.gradsFromHooks['ste41']['backward'].append(grad_output[0].cpu().detach().numpy()[0])
   
-	def backward_hook_relu42(self, module, grad_input, grad_output):
-		self.gradsFromHooks['relu42']['backward'].append(grad_output[0].cpu().detach().numpy()[0])
+	def backward_hook_ste42(self, module, grad_input, grad_output):
+		self.gradsFromHooks['ste42']['backward'].append(grad_output[0].cpu().detach().numpy()[0])
   
-	def backward_hook_relul0(self, module, grad_input, grad_output):
-		self.gradsFromHooks['relul0']['backward'].append(grad_output[0].cpu().detach().numpy()[0])
+	def backward_hook_stel0(self, module, grad_input, grad_output):
+		self.gradsFromHooks['stel0']['backward'].append(grad_output[0].cpu().detach().numpy()[0])
   
-	def backward_hook_relul1(self, module, grad_input, grad_output):
-		self.gradsFromHooks['relul1']['backward'].append(grad_output[0].cpu().detach().numpy()[0])
+	def backward_hook_stel1(self, module, grad_input, grad_output):
+		self.gradsFromHooks['stel1']['backward'].append(grad_output[0].cpu().detach().numpy()[0])
   
 	# Define all forward hooks
-	def backward_hook_relu0(self, module, val_input, val_output):
-		self.activationsFromHooks['relu0']['forward'].append(val_output[0].cpu().detach().numpy()[0])
+	def backward_hook_ste0(self, module, val_input, val_output):
+		self.activationsFromHooks['ste0']['forward'].append(val_output[0].cpu().detach().numpy()[0])
   
-	def backward_hook_relu1(self, module, val_input, val_output):
-		self.activationsFromHooks['relu1']['forward'].append(val_output[0].cpu().detach().numpy()[0])
+	def backward_hook_ste1(self, module, val_input, val_output):
+		self.activationsFromHooks['ste1']['forward'].append(val_output[0].cpu().detach().numpy()[0])
   
-	def backward_hook_relu21(self, module, val_input, val_output):
-		self.activationsFromHooks['relu21']['forward'].append(val_output[0].cpu().detach().numpy()[0])
+	def backward_hook_ste21(self, module, val_input, val_output):
+		self.activationsFromHooks['ste21']['forward'].append(val_output[0].cpu().detach().numpy()[0])
   
-	def backward_hook_relu22(self, module, val_input, val_output):
-		self.activationsFromHooks['relu22']['forward'].append(val_output[0].cpu().detach().numpy()[0])
+	def backward_hook_ste22(self, module, val_input, val_output):
+		self.activationsFromHooks['ste22']['forward'].append(val_output[0].cpu().detach().numpy()[0])
   
-	def backward_hook_relu31(self, module, val_input, val_output):
-		self.activationsFromHooks['relu31']['forward'].append(val_output[0].cpu().detach().numpy()[0])
+	def backward_hook_ste31(self, module, val_input, val_output):
+		self.activationsFromHooks['ste31']['forward'].append(val_output[0].cpu().detach().numpy()[0])
   
-	def backward_hook_relu32(self, module, val_input, val_output):
-		self.activationsFromHooks['relu32']['forward'].append(val_output[0].cpu().detach().numpy()[0])
+	def backward_hook_ste32(self, module, val_input, val_output):
+		self.activationsFromHooks['ste32']['forward'].append(val_output[0].cpu().detach().numpy()[0])
   
-	def backward_hook_relu41(self, module, val_input, val_output):
-		self.activationsFromHooks['relu41']['forward'].append(val_output[0].cpu().detach().numpy()[0])
+	def backward_hook_ste41(self, module, val_input, val_output):
+		self.activationsFromHooks['ste41']['forward'].append(val_output[0].cpu().detach().numpy()[0])
   
-	def backward_hook_relu42(self, module, val_input, val_output):
-		self.activationsFromHooks['relu42']['forward'].append(val_output[0].cpu().detach().numpy()[0])
+	def backward_hook_ste42(self, module, val_input, val_output):
+		self.activationsFromHooks['ste42']['forward'].append(val_output[0].cpu().detach().numpy()[0])
   
-	def backward_hook_relul0(self, module, val_input, val_output):
-		self.activationsFromHooks['relul0']['forward'].append(val_output[0].cpu().detach().numpy()[0])
+	def backward_hook_stel0(self, module, val_input, val_output):
+		self.activationsFromHooks['stel0']['forward'].append(val_output[0].cpu().detach().numpy()[0])
   
-	def backward_hook_relul1(self, module, val_input, val_output):
-		self.activationsFromHooks['relul1']['forward'].append(val_output[0].cpu().detach().numpy()[0])
+	def backward_hook_stel1(self, module, val_input, val_output):
+		self.activationsFromHooks['stel1']['forward'].append(val_output[0].cpu().detach().numpy()[0])
   
 	# Change each hook list to an equivalent array
 	def listToArray(self):
