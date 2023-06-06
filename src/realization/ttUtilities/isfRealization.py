@@ -49,7 +49,7 @@ class DNFRealization:
 
 		self.tt = self.tt[self.outputTags]
 
-	def generateEspressoInput(self, df: pd.DataFrame, filename: str):
+	def generateEspressoInput(self, df: pd.DataFrame, filename: str, neuron: str, joinOutput: bool = False):
 		"""
 		Method that parses an ON-set and OFF-set defined TT into a PLA file that can be processed by Espresso SW
 		:param df:
@@ -58,18 +58,29 @@ class DNFRealization:
 		with open(f'{filename}.pla', 'w') as f:
 			# Write header of PLA file
 			f.write(f'.i {self.nNeurons}\n')  # Number of input neurons
-			f.write(f'.o {1}\n')  # Number of output per neuron (just 1)
+			if joinOutput:
+				f.write(f'.o {len(neuron)}\n')  # Number of output per layer
+			else:
+				f.write(f'.o {1}\n')  # Number of output per neuron (just 1)
 			tags = [f'N{i}' for i in range(self.nNeurons)]
 			tags = ' '.join(tags)
 			f.write(f'.ilb {tags}\n')  # Names of the input variables
-			f.write(f'.ob output\n')  # Name of the output variable
+			if joinOutput:
+				outputText = ' '.join(neuron).split('\n')
+				f.write(f'.ob {outputText[0]}\n')  # Name of the output variable
+			else:
+				f.write(f'.ob {neuron}\n')  # Name of the output variable
 			f.write(f'.type fr\n')  # .pla contains ON-Set and OFF-Set
 			for index, row in df.iterrows():
 				text = ''.join(row[self.tag].to_string(header=False, index=False).split('\n'))
-				f.write(f'{text} {row.output}\n')
+				if joinOutput:
+					outputText = ''.join(row[neuron].to_string(header=False, index=False).split('\n'))
+				else:
+					outputText = row[neuron]
+				f.write(f'{text} {outputText}\n')
 			f.write(f'.e')
 
-	def generateABCInput(self, df: pd.DataFrame, filename: str, neuron: str):
+	def generateABCInput(self, df: pd.DataFrame, filename: str, neuron, joinOutput: bool = False):
 		"""
 		Method that parses an ON-set and OFF-set defined TT into a file that can be processed by ABC SW
 		:param df:
@@ -81,7 +92,10 @@ class DNFRealization:
 		with open(f'{filename}.pla', 'w') as f:
 			# Write header of PLA file
 			f.write(f'.i {self.nNeurons}\n')  # Number of input neurons
-			f.write(f'.o {1}\n')  # Number of output per neuron (just 1)
+			if joinOutput:
+				f.write(f'.o {len(neuron)}\n')  # Number of output per layer
+			else:
+				f.write(f'.o {1}\n')  # Number of output per neuron (just 1)
 			# tags = [f'N{i}' for i in range(self.nNeurons)]
 			# tags = ' '.join(tags)
 			# f.write(f'.ilb {tags}\n')  # Names of the input variables
@@ -89,8 +103,11 @@ class DNFRealization:
 			f.write(f'.p {len(df)}\n')
 			for index, row in df.iterrows():
 				text = ''.join(row[self.tag].to_string(header=False, index=False).split('\n'))
-				output = row[neuron]
-				f.write(f'{text} {output}\n')
+				if joinOutput:
+					outputText = ''.join(row[neuron].to_string(header=False, index=False).split('\n'))
+				else:
+					outputText = row[neuron]
+				f.write(f'{text} {outputText}\n')
 			f.write(f'.e')
    
 	def generateAIG(self, df: pd.DataFrame, filename: str, neuron: str):
@@ -101,10 +118,28 @@ class DNFRealization:
 		"""
 		pass
    
-	def createPLAFileEspresso(self, baseFilename: str, discriminated: bool = False):
+	def createPLAFileEspresso(self, baseFilename: str, discriminated: bool = False, joinOutput: bool = False):
 		i = 0
-		for neuron in self.outputTags:
-			df = self.tt[neuron].copy()
+		if not joinOutput:
+			for neuron in self.outputTags:
+				df = self.tt[neuron].copy()
+				df = pd.concat([df, self.setOnOff], axis=1)
+				# df.rename(columns={neuron: 'output'}, inplace=True)
+
+				if discriminated:
+					print(f'Applying discriminator')
+					discrimData = self.discrimData[:, i]
+					df['drop'] = discrimData
+					df = df[df['drop'] == 1]
+
+				df = df.astype('int')
+
+				self.generateEspressoInput(df, f'{baseFilename}{neuron}', neuron)
+				del df  # caring about memory
+				print(f"Realize Espresso neurons [{i + 1:>5d}/{len(self.outputTags):>5d}]")
+				i += 1
+		if joinOutput:
+			df = self.tt[self.outputTags].copy()
 			df = pd.concat([df, self.setOnOff], axis=1)
 			# df.rename(columns={neuron: 'output'}, inplace=True)
 
@@ -116,59 +151,48 @@ class DNFRealization:
 
 			df = df.astype('int')
 
-			self.generateEspressoInput(df, f'{baseFilename}{neuron}')
+			self.generateEspressoInput(df, f'{baseFilename}', self.outputTags, joinOutput)
 			del df  # caring about memory
-			print(f"Realize Espresso neurons [{i + 1:>5d}/{len(self.outputTags):>5d}]")
-			i += 1
 
-	def createPLAFileABC(self, baseFilename: str, discriminated: bool = False):
+	def createPLAFileABC(self, baseFilename: str, discriminated: bool = False, joinOutput: bool = False):
 		i = 0
-		for neuron in self.outputTags:
-			df = self.tt[neuron].copy()
-			df = pd.concat([df, self.setOnOff], axis=1)
-			# df.rename(columns={neuron: 'output'}, inplace=True)
+		if not joinOutput:
+			for neuron in self.outputTags:
+				df = self.tt[neuron].copy()
+				df = pd.concat([df, self.setOnOff], axis=1)
+				# df.rename(columns={neuron: 'output'}, inplace=True)
 
+				if discriminated:
+					print(f'Applying discriminator')
+					discrimData = self.discrimData[:, i]
+					df['drop'] = discrimData
+					df = df[df['drop'] == 1]
+
+				# Take out entries out of the ON-Set
+				# Select only ON-Set
+				# df = df[df[neuron] == 1]
+
+				df = df.astype('int')
+
+				self.generateABCInput(df, f'{baseFilename}{neuron}', neuron)
+				del df  # caring about memory
+				print(f"Realize ABC neurons [{i + 1:>5d}/{len(self.outputTags):>5d}]")
+				i += 1
+		if joinOutput:
+			df = self.tt[self.outputTags].copy()
+			df = pd.concat([df, self.setOnOff], axis=1)
+			
 			if discriminated:
 				print(f'Applying discriminator')
 				discrimData = self.discrimData[:, i]
 				df['drop'] = discrimData
 				df = df[df['drop'] == 1]
-
-			# Take out entries out of the ON-Set
-			# Select only ON-Set
-			# df = df[df[neuron] == 1]
-
+    
 			df = df.astype('int')
 
-			self.generateABCInput(df, f'{baseFilename}{neuron}', neuron)
+			self.generateABCInput(df, f'{baseFilename}', self.outputTags, joinOutput)
 			del df  # caring about memory
-			print(f"Realize ABC neurons [{i + 1:>5d}/{len(self.outputTags):>5d}]")
-			i += 1
    
-	def createAIGFile(self, baseFilename: str, discriminated: bool = False):
-		i = 0
-		for neuron in self.outputTags:
-			df = self.tt[neuron].copy()
-			df = pd.concat([df, self.setOnOff], axis=1)
-			# df.rename(columns={neuron: 'output'}, inplace=True)
-
-			if discriminated:
-				print(f'Applying discriminator')
-				discrimData = self.discrimData[:, i]
-				df['drop'] = discrimData
-				df = df[df['drop'] == 1]
-
-			# Take out entries out of the ON-Set
-			# Select only ON-Set
-			df = df[df[neuron] == 1]
-
-			df = df.astype('int')
-
-			self.generateAIG(df, f'{baseFilename}{neuron}', neuron)
-			del df  # caring about memory
-			print(f"Realize AIG neurons [{i + 1:>5d}/{len(self.outputTags):>5d}]")
-			i += 1
-
 	def _toBinaryArrayActivations(self, row):
 		"""
 		Private method

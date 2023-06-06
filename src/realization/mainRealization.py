@@ -15,12 +15,16 @@ dnf.loadTT(filename + layerFilename)
 
 # Create PLA file for Espresso
 
-# TODO. Change functions so they're not overwritten
-dnf.createPLAFileEspresso(f'../data/espressoOptimized/{layerFilename}', discriminated=discriminated)
+dnf.createPLAFileEspresso(f'./data/espresso/{layerFilename}', discriminated=discriminated)
+
+# Create PLA file for Espresso (all together)
+
+dnf.createPLAFileEspresso(f'./data/espresso/grouped/{layerFilename}', discriminated=discriminated, joinOutput=True)
 
 # Create PLA file for ABC
 
 # dnf.createPLAFileABC(f'./data/ABC/{layerFilename}', discriminated=discriminated)
 
-# Create AIG file
-# dnf.createAIGFile(f'../data/AIG/{layerFilename}', discriminated=discriminated)
+# Create PLA file for ABC (all together)
+
+dnf.createPLAFileABC(f'./data/ABC/grouped/{layerFilename}', discriminated=discriminated, joinOutput=True)
