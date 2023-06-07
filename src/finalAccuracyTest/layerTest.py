@@ -1,30 +1,53 @@
 import pandas as pd
 import numpy as np
 from ttUtilities.auxFunctions import integerToBinaryArray, binaryArrayToSingleValue
+import torch
+from torchvision import datasets
+from torchvision.transforms import ToTensor
+from torch.utils.data import DataLoader
+from modules.binaryEnergyEfficiency import BinaryNeuralNetwork
+import torch.nn as nn
 
-layer = '1'
+# WARNING! The tt file is ordered
 
-ttFilename = f'data/layersTT/layer{layer}_MNISTSignbinNN100Epoch100NPLnllCriterion'
+layer = 1
+
+inputFilename = f'data/inputs/layer{layer}'
 simulatedFilename = f'L{layer}_'
-nNeurons = 100
+neuronPerLayer = 100
+modelFilename = f'./src/modelCreation/savedModels/MNISTSignbinNN100Epoch{neuronPerLayer}NPLnllCriterion'
 
-df = pd.read_feather(ttFilename)
+# Check mps maybe if working in MacOS
+device = 'cuda' if torch.cuda.is_available() else 'cpu'
 
-outputTags = [col for col in df if col.startswith('output')]
-activationTags = [col for col in df if col.startswith('activation')]
-lengthActivationTags = [col for col in df if col.startswith('lengthActivation')]
-discriminationTags = [col for col in df if col.startswith('discriminator')]
-lengthDiscriminationTags = [col for col in df if col.startswith('lengthDiscriminator')]
-
-df = df[outputTags]
-df = df.reindex(sorted(df.columns), axis=1)
+model = BinaryNeuralNetwork(neuronPerLayer).to(device)
+model.load_state_dict(torch.load(modelFilename))
 
 correct = 0
-with open(simulatedFilename, 'r') as f:
-    for index, row in df.iterrows():
-        text = ''.join(row.to_string(header=False, index=False).split('\n'))
-        if text == f.readline():
-            correct += 1
+count = 0
+with open(simulatedFilename) as f_sim:
+    with open(inputFilename) as f_input:
+        numLines = len(f_sim.readlines())
+        f_sim.seek(0)
+        while True:
+            y_simulated = list(f_sim.readline())
+            x_real = list(f_input.readline())
+            if len(y_simulated):
+                y_simulated.pop()
+                line_simulated = np.array(y_simulated, dtype=np.double)
+                
+                x_real.pop()
+                line_real = np.array(x_real, dtype=np.double)
+                pred = model.forwardOneLayer(torch.tensor(line_real).type(torch.FloatTensor), layer)           
+                
+                if pred == line_simulated:
+                    correct += 1
+                
+                count += 1
+                if (count+1) % 5000 == 0:
+                    print(f"Load inputs [{count+1:>5d}/{numLines:>5d}]")
+            else:
+                break     
             
-print(f'Correct {correct}/{len(df)} {correct/len(df)}')
+print(f'Correct {correct}/{len(numLines)} {correct/len(numLines)*100}%')
     

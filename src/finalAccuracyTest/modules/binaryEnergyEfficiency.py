@@ -102,6 +102,29 @@ class BinaryNeuralNetwork(nn.Module):
 
 		return F.log_softmax(x, dim=1)
 
+	def forwardOneLayer(self, x, layer):
+		if layer == 0:
+			x = self.l0(x)
+			x = self.bn0(x)
+			x = self.ste0(x)
+		elif layer == 1:
+			x = self.l1(x)
+			x = self.bn1(x)
+			x = self.ste1(x)
+		elif layer == 2:
+			x = self.l2(x)
+			x = self.bn2(x)
+			x = self.ste2(x)
+		elif layer == 3:
+			x = self.l3(x)
+			x = self.bn3(x)
+			x = self.ste3(x)
+		elif layer == 4:
+			x = self.l4(x)
+			x = self.bn4(x)
+   
+		return x
+
 	def registerHooks(self):
 		self.l0.register_forward_hook(self.forward_hook_l0)
 		self.ste0.register_forward_hook(self.forward_hook_ste0)
