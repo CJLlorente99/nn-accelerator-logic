@@ -12,7 +12,7 @@ neuronPerLayer = 100
 mod = True  # Change accordingly in modelFilename too
 modelFilename = f'./src/modelCreation/savedModels/MNISTSignbinNN100Epoch{neuronPerLayer}NPLnllCriterion'
 precision = 'bin'
-lastLayerInputsTrainFilename = f'C:/Users/carlo/Desktop/data/inputSimulated/L0'
+lastLayerInputsTrainFilename = f'C:/Users/carlo/Desktop/data/L0'
 lastLayerInputsTestFilename = f'example'
 
 

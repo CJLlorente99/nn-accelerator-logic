@@ -1,3 +1,4 @@
 data/*
 src/modelCreation/savedModels/*
 *.pyc
+src/finalAccuracyTest/modules/__pycache__/binaryEnergyEfficiency.cpython-311.pyc
