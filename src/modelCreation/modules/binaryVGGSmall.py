@@ -13,7 +13,7 @@ class VGGSmall(nn.Module):
 
 		# Layer 0
 		self.conv0 = nn.Conv2d(3, 64, kernel_size=3, padding=1)
-		self.ste0 = STEFunction()
+		self.ste0 = nn.ReLU()
 		self.maxpool0 = nn.MaxPool2d(kernel_size=2, stride=2)
 
 		# Layer 1
@@ -23,7 +23,7 @@ class VGGSmall(nn.Module):
   
 		# Layer 2.1
 		self.conv21 = nn.Conv2d(128, 256, kernel_size=3, padding=1)
-		self.ste21 = nn.ReLU()
+		self.ste21 = STEFunction()
   
 		# Layer 2.2
 		self.conv22 = nn.Conv2d(256, 256, kernel_size=3, padding=1)
@@ -32,7 +32,7 @@ class VGGSmall(nn.Module):
   
 		# Layer 3.1
 		self.conv31 = nn.Conv2d(256, 512, kernel_size=3, padding=1)
-		self.ste31 = nn.ReLU()
+		self.ste31 = STEFunction()
 
 		# Layer 3.2
 		self.conv32 = nn.Conv2d(512, 512, kernel_size=3, padding=1)
@@ -41,7 +41,7 @@ class VGGSmall(nn.Module):
   
 		# Layer 4.1
 		self.conv41 = nn.Conv2d(512, 512, kernel_size=3, padding=1)
-		self.ste41 = nn.ReLU()
+		self.ste41 = STEFunction()
   
 		# Layer 4.2
 		self.conv42 = nn.Conv2d(512, 512, kernel_size=3, padding=1)
