@@ -6,6 +6,7 @@ import torch.nn.functional as F
 import numpy as np
 from ttUtilities.auxFunctions import binaryArrayToSingleValue, integerToBinaryArray
 import math
+import os
 
 class VGGSmall(nn.Module):
 	def __init__(self):
@@ -272,22 +273,50 @@ class VGGSmall(nn.Module):
 
 	# Save activations
 	def saveActivations(self, baseFilename):
+		# Check folder exists
+		if not os.path.exists(f'{baseFilename}'):
+			os.makedirs(f'{baseFilename}')
+   
 		for grad in self.dataFromHooks:
-			pd.DataFrame(
-				self.dataFromHooks[grad]['forward']).to_feather(
-					f'{baseFilename}Forward{grad}')
+			if grad.startswith('relul'): # then it is linear layer
+				columnTags = [f'{i}' for i in range(self.dataFromHooks[grad]['forward'].shape[1])]
+				pd.DataFrame(
+						self.dataFromHooks[grad]['forward'], columns=columnTags).to_feather(
+							f'{baseFilename}/{grad}')
+			else:
+				if not os.path.exists(f'{baseFilename}/{grad}'):
+					os.makedirs(f'{baseFilename}/{grad}')
+     
+				for iDepth in range(self.dataFromHooks[grad]['forward'].shape[1]):
+					columnTags = [f'{i}' for i in range(self.dataFromHooks[grad]['forward'].shape[2])]
+					pd.DataFrame(
+						self.dataFromHooks[grad]['forward'][:, iDepth, :], columns=columnTags).to_feather(
+							f'{baseFilename}/{grad}/{iDepth}')
     
     # Load activations
 	def loadActivations(self, baseFilename):
 		for grad in self.dataFromHooks:
-			self.dataFromHooks[grad]['forward'] = pd.read_feather(f'{baseFilename}Forward{grad}')
+			if grad.startwith('relul'):
+				self.dataFromHooks[grad]['forward'] = pd.read_feather(f'{baseFilename}/{grad}').to_numpy()
+			else:
+				self.dataFromHooks[grad]['forward'] = []
+				for file in os.scandir(f'{baseFilename}/{grad}'):
+					self.dataFromHooks[grad]['forward'].append(pd.read_feather(f'{file}').to_numpy())
+				self.dataFromHooks[grad]['forward'] = np.array(self.dataFromHooks[grad]['forward'])
+				# TODO check dimensions are correctly ordered
+				
     
     # Save gradients
 	def saveGradients(self, baseFilename):
+		# Check folder exists
+		if not os.path.exists(f'{baseFilename}'):
+			os.makedirs(f'{baseFilename}')
+   
 		for grad in self.dataFromHooks:
+			columnTags = [f'{i}' for i in range(self.dataFromHooks[grad]['backward'].shape[1])]
 			pd.DataFrame(
-				self.dataFromHooks[grad]['backward']).to_feather(
-					f'{baseFilename}Backward{grad}')
+				self.dataFromHooks[grad]['backward'], columns=columnTags).to_feather(
+					f'{baseFilename}/{grad}')
     
 	# Load gradients
 	def loadGradients(self, baseFilename):

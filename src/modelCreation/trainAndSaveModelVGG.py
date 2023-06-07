@@ -4,12 +4,12 @@ from modelsCommon.auxTransformations import *
 from torchvision import datasets
 from torchvision.transforms import ToTensor, Compose, Normalize, RandomHorizontalFlip, RandomCrop
 from torch.utils.data import DataLoader
-from modules.binaryVggSmall import VGGSmall
+from modules.vggSmall import VGGSmall
 import torch.optim as optim
 import torch.nn as nn
 
 batch_size = 128
-epochs = 50
+epochs = 25
 
 # Check mps maybe if working in MacOS
 device = 'cuda' if torch.cuda.is_available() else 'cpu'
@@ -57,4 +57,4 @@ trainAndTest(epochs, train_dataloader, test_dataloader, model, opt, criterion)
 Save
 '''
 
-torch.save(model.state_dict(), f'./src/modelCreation/savedModels/binaryVGGSmall')
+torch.save(model.state_dict(), f'./src/modelCreation/savedModels/VGGSmall')
