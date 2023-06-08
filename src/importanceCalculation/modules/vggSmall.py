@@ -296,14 +296,16 @@ class VGGSmall(nn.Module):
     # Load activations
 	def loadActivations(self, baseFilename):
 		for grad in self.dataFromHooks:
-			if grad.startwith('relul'):
+			if grad.startswith('relul'):
 				self.dataFromHooks[grad]['forward'] = pd.read_feather(f'{baseFilename}/{grad}').to_numpy()
 			else:
 				self.dataFromHooks[grad]['forward'] = []
 				for file in os.scandir(f'{baseFilename}/{grad}'):
-					self.dataFromHooks[grad]['forward'].append(pd.read_feather(f'{file}').to_numpy())
+					self.dataFromHooks[grad]['forward'].append(pd.read_feather(f'{file.path}').to_numpy())
 				self.dataFromHooks[grad]['forward'] = np.array(self.dataFromHooks[grad]['forward'])
-				# TODO check dimensions are correctly ordered
+				self.dataFromHooks[grad]['forward'] = np.moveaxis(self.dataFromHooks[grad]['forward'], 0, 1)
+				print(self.dataFromHooks[grad]['forward'].shape)
+			print(f'Activations from {grad} loaded')
 				
     
     # Save gradients
@@ -321,7 +323,8 @@ class VGGSmall(nn.Module):
 	# Load gradients
 	def loadGradients(self, baseFilename):
 		for grad in self.dataFromHooks:
-			self.dataFromHooks[grad]['backward'] = pd.read_feather(f'{baseFilename}Backward{grad}')
+			self.dataFromHooks[grad]['backward'] = pd.read_feather(f'{baseFilename}/{grad}')
+			print(f'Gradients from {grad} loaded')
     
 	# SqueezeActivationToUniqueValues (only binary)
 	def individualActivationsToUniqueValue(self):
