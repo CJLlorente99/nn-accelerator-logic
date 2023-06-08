@@ -65,6 +65,7 @@ with open(lastLayerInputsTrainFilename) as f:
     f.seek(0)
     while True:
         x = list(f.readline())
+        # x = x[-102:-2]
         if len(x):
             x.pop()
             line = np.array(x, dtype=np.double)            
@@ -98,7 +99,7 @@ model.eval()
 totalCorrect = 0
 
 correct = 0
-size = len(train_dataloader.dataset)
+size = len(dfInputsLastLayerTrain)
 count = 0
 for index, row in dfInputsLastLayerTrain.iterrows():
     with torch.no_grad():
