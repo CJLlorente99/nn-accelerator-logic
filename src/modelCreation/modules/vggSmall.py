@@ -50,7 +50,7 @@ class VGGSmall(nn.Module):
   
 		# Layer FC0
 		self.dropoutl0 = nn.Dropout(0.5)
-		self.l0 = nn.Linear(512, 4096)
+		self.l0 = nn.Linear(7*7*512, 4096)
 		self.relul0 = nn.ReLU()
   
 		# Layer FC1

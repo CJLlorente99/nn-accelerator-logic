@@ -37,7 +37,7 @@ class VGGSmall(nn.Module):
 		self.maxpool42 = nn.MaxPool2d(kernel_size=2, stride=2)
   
 		# Layer FC0
-		self.l0 = nn.Linear(512, 1024)
+		self.l0 = nn.Linear(7*7*512, 1024)
 		self.relul0 = nn.ReLU()
   
 		# Layer FC1
@@ -69,39 +69,25 @@ class VGGSmall(nn.Module):
 		# Layer 2.1
 		x = self.conv21(x)
 		x = self.relu21(x)
-  
-		# Layer 2.2
-		# x = self.conv22(x)
-		# x = self.relu22(x)
 		x = self.maxpool22(x)
   
 		# Layer 3.1
 		x = self.conv31(x)
 		x = self.relu31(x)
-
-		# Layer 3.2
-		# x = self.conv32(x)
-		# x = self.relu32(x)
 		x = self.maxpool32(x)
   
 		# Layer 4.1
 		x = self.conv41(x)
 		x = self.relu41(x)
-  
-		# Layer 4.2
-		# x = self.conv42(x)
-		# x = self.relu42(x)
 		x = self.maxpool42(x)
   
 		x = x.reshape(x.size(0), -1)
   
 		# Layer FC0
-		# x = self.dropoutl0(x)
 		x = self.l0(x)
 		x = self.relul0(x)
   
 		# Layer FC1
-		# x = self.dropoutl1(x)
 		x = self.l1(x)
 		x = self.relul1(x)
   

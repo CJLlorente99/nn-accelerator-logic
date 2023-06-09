@@ -92,11 +92,23 @@ Print results
 for grad in importancePerClassFilter:
     # Print aggregated importance
 	aux = importancePerClassFilter[grad].sum(0)
+	aux.sort()
  
 	fig = go.Figure()
-	fig.add_trace(go.Bar(y=aux))
+	fig.add_trace(go.Scatter(y=aux))
 	fig.update_layout(title=f'{grad} total importance per filter ({len(aux)})')
 	fig.show()
+ 
+	# Print aggregated importance
+	if not grad.startswith('relul'):
+		aux = importancePerClassNeuron[grad].sum(0)
+		aux.sort()
+	
+		fig = go.Figure()
+		fig.add_trace(go.Scatter(y=aux))
+		fig.update_layout(title=f'{grad} total importance per neuron ({len(aux)})')
+		fig.show()
+	
 	
 	# Print classes that are important
 	if grad.startswith('relul'):
