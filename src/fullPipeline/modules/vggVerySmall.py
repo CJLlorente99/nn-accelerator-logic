@@ -8,10 +8,10 @@ from ttUtilities.auxFunctions import binaryArrayToSingleValue, integerToBinaryAr
 import math
 import os
 
-class VGGSmall(nn.Module):
+class VGGVerySmall(nn.Module):
 	def __init__(self):
-		super(VGGSmall, self).__init__()
-
+		super(VGGVerySmall, self).__init__()
+  
 		self.helpHookList = []
 
 		# Layer 0
@@ -29,50 +29,33 @@ class VGGSmall(nn.Module):
 		# Layer 2.1
 		self.conv21 = nn.Conv2d(128, 256, kernel_size=3, padding=1)
 		self.relu21 = nn.ReLU()
-		self.helpHookList.append('relu21')
-  
-		# Layer 2.2
-		self.conv22 = nn.Conv2d(256, 256, kernel_size=3, padding=1)
-		self.relu22 = nn.ReLU()
 		self.maxpool22 = nn.MaxPool2d(kernel_size=2, stride=2)
-		self.helpHookList.append('relu22')
+		self.helpHookList.append('relu21')
   
 		# Layer 3.1
 		self.conv31 = nn.Conv2d(256, 512, kernel_size=3, padding=1)
 		self.relu31 = nn.ReLU()
-		self.helpHookList.append('relu31')
-
-		# Layer 3.2
-		self.conv32 = nn.Conv2d(512, 512, kernel_size=3, padding=1)
-		self.relu32 = nn.ReLU()
 		self.maxpool32 = nn.MaxPool2d(kernel_size=2, stride=2)
-		self.helpHookList.append('relu32')
+		self.helpHookList.append('relu31')
   
 		# Layer 4.1
 		self.conv41 = nn.Conv2d(512, 512, kernel_size=3, padding=1)
 		self.relu41 = nn.ReLU()
+		self.maxpool42 = nn.MaxPool2d(kernel_size=2, stride=2)
 		self.helpHookList.append('relu41')
   
-		# Layer 4.2
-		self.conv42 = nn.Conv2d(512, 512, kernel_size=3, padding=1)
-		self.relu42 = nn.ReLU()
-		self.maxpool42 = nn.MaxPool2d(kernel_size=2, stride=2)
-		self.helpHookList.append('relu42')
-  
 		# Layer FC0
-		self.dropoutl0 = nn.Dropout(0.5)
-		self.l0 = nn.Linear(2*2*512, 4096)
+		self.l0 = nn.Linear(2*2*512, 1024)
 		self.relul0 = nn.ReLU()
 		self.helpHookList.append('relul0')
   
 		# Layer FC1
-		self.dropoutl1 = nn.Dropout(0.5)
-		self.l1 = nn.Linear(4096, 1000)
+		self.l1 = nn.Linear(1024, 250)
 		self.relul1 = nn.ReLU()
 		self.helpHookList.append('relul1')
   
 		# Layer FC2
-		self.l2 = nn.Linear(1000, 10)
+		self.l2 = nn.Linear(250, 10)
   
 		# Initialize
 		for m in self.modules():
@@ -90,6 +73,7 @@ class VGGSmall(nn.Module):
 		self.activationSizeInfo = {}
 		for i in self.helpHookList:
 			self.activationSizeInfo[i] = 0
+    
 
 	def forward(self, x):
 		# Layer 0
@@ -105,39 +89,25 @@ class VGGSmall(nn.Module):
 		# Layer 2.1
 		x = self.conv21(x)
 		x = self.relu21(x)
-  
-		# Layer 2.2
-		x = self.conv22(x)
-		x = self.relu22(x)
 		x = self.maxpool22(x)
   
 		# Layer 3.1
 		x = self.conv31(x)
 		x = self.relu31(x)
-
-		# Layer 3.2
-		x = self.conv32(x)
-		x = self.relu32(x)
 		x = self.maxpool32(x)
   
 		# Layer 4.1
 		x = self.conv41(x)
 		x = self.relu41(x)
-  
-		# Layer 4.2
-		x = self.conv42(x)
-		x = self.relu42(x)
 		x = self.maxpool42(x)
   
 		x = x.reshape(x.size(0), -1)
   
 		# Layer FC0
-		x = self.dropoutl0(x)
 		x = self.l0(x)
 		x = self.relul0(x)
   
 		# Layer FC1
-		x = self.dropoutl1(x)
 		x = self.l1(x)
 		x = self.relul1(x)
   
@@ -152,11 +122,8 @@ class VGGSmall(nn.Module):
 		self.relu0.register_forward_hook(self.forward_hook_relu0)
 		self.relu1.register_forward_hook(self.forward_hook_relu1)
 		self.relu21.register_forward_hook(self.forward_hook_relu21)
-		self.relu22.register_forward_hook(self.forward_hook_relu22)
 		self.relu31.register_forward_hook(self.forward_hook_relu31)
-		self.relu32.register_forward_hook(self.forward_hook_relu32)
 		self.relu41.register_forward_hook(self.forward_hook_relu41)
-		self.relu42.register_forward_hook(self.forward_hook_relu42)
 		self.relul0.register_forward_hook(self.forward_hook_relul0)
 		self.relul1.register_forward_hook(self.forward_hook_relul1)
   
@@ -164,11 +131,8 @@ class VGGSmall(nn.Module):
 		self.relu0.register_full_backward_hook(self.backward_hook_relu0)
 		self.relu1.register_full_backward_hook(self.backward_hook_relu1)
 		self.relu21.register_full_backward_hook(self.backward_hook_relu21)
-		self.relu22.register_full_backward_hook(self.backward_hook_relu22)
 		self.relu31.register_full_backward_hook(self.backward_hook_relu31)
-		self.relu32.register_full_backward_hook(self.backward_hook_relu32)
 		self.relu41.register_full_backward_hook(self.backward_hook_relu41)
-		self.relu42.register_full_backward_hook(self.backward_hook_relu42)
 		self.relul0.register_full_backward_hook(self.backward_hook_relul0)
 		self.relul1.register_full_backward_hook(self.backward_hook_relul1)
 
@@ -185,25 +149,13 @@ class VGGSmall(nn.Module):
 		aux = (grad_output[0].cpu().detach().numpy()[0] + grad_output[0].cpu().detach().numpy()[1]).flatten()
 		self.dataFromHooks['relu21']['backward'].append(aux)
   
-	def backward_hook_relu22(self, module, grad_input, grad_output):
-		aux = (grad_output[0].cpu().detach().numpy()[0] + grad_output[0].cpu().detach().numpy()[1]).flatten()
-		self.dataFromHooks['relu22']['backward'].append(aux)
-  
 	def backward_hook_relu31(self, module, grad_input, grad_output):
 		aux = (grad_output[0].cpu().detach().numpy()[0] + grad_output[0].cpu().detach().numpy()[1]).flatten()
 		self.dataFromHooks['relu31']['backward'].append(aux)
   
-	def backward_hook_relu32(self, module, grad_input, grad_output):
-		aux = (grad_output[0].cpu().detach().numpy()[0] + grad_output[0].cpu().detach().numpy()[1]).flatten()
-		self.dataFromHooks['relu32']['backward'].append(aux)
-  
 	def backward_hook_relu41(self, module, grad_input, grad_output):
 		aux = (grad_output[0].cpu().detach().numpy()[0] + grad_output[0].cpu().detach().numpy()[1]).flatten()
 		self.dataFromHooks['relu41']['backward'].append(aux)
-  
-	def backward_hook_relu42(self, module, grad_input, grad_output):
-		aux = (grad_output[0].cpu().detach().numpy()[0] + grad_output[0].cpu().detach().numpy()[1]).flatten()
-		self.dataFromHooks['relu42']['backward'].append(aux)
   
 	def backward_hook_relul0(self, module, grad_input, grad_output):
 		self.dataFromHooks['relul0']['backward'].append(grad_output[0].cpu().detach().numpy()[0])
@@ -224,25 +176,13 @@ class VGGSmall(nn.Module):
 		aux = val_output.flatten(start_dim=1, end_dim=-1).cpu().detach().numpy()
 		self.dataFromHooks['relu21']['forward'].append(aux)
   
-	def forward_hook_relu22(self, module, val_input, val_output):
-		aux = val_output.flatten(start_dim=1, end_dim=-1).cpu().detach().numpy()
-		self.dataFromHooks['relu22']['forward'].append(aux)
-  
 	def forward_hook_relu31(self, module, val_input, val_output):
 		aux = val_output.flatten(start_dim=1, end_dim=-1).cpu().detach().numpy()
 		self.dataFromHooks['relu31']['forward'].append(aux)
   
-	def forward_hook_relu32(self, module, val_input, val_output):
-		aux = val_output.flatten(start_dim=1, end_dim=-1).cpu().detach().numpy()
-		self.dataFromHooks['relu32']['forward'].append(aux)
-  
 	def forward_hook_relu41(self, module, val_input, val_output):
 		aux = val_output.flatten(start_dim=1, end_dim=-1).cpu().detach().numpy()
 		self.dataFromHooks['relu41']['forward'].append(aux)
-  
-	def forward_hook_relu42(self, module, val_input, val_output):
-		aux = val_output.flatten(start_dim=1, end_dim=-1).cpu().detach().numpy()
-		self.dataFromHooks['relu42']['forward'].append(aux)
   
 	def forward_hook_relul0(self, module, val_input, val_output):
 		self.dataFromHooks['relul0']['forward'].append(val_output[0].cpu().detach().numpy())

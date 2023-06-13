@@ -4,12 +4,17 @@ from modelsCommon.auxTransformations import *
 from torchvision import datasets
 from torchvision.transforms import ToTensor, Compose, Normalize, RandomHorizontalFlip, RandomCrop, Resize
 from torch.utils.data import DataLoader
-from modules.vggVerySmall import VGGSmall
+from modules.binaryVggVerySmall import binaryVGGVerySmall
+from modules.binaryVggVerySmall2 import binaryVGGVerySmall2
+from modules.vggVerySmall import VGGVerySmall
+from modules.vggSmall import VGGSmall
 import torch.optim as optim
 import torch.nn as nn
 
-batch_size = 300
-epochs = 25
+# ! Change the name of the saved module
+
+batch_size = 200
+epochs = 20
 
 # Check mps maybe if working in MacOS
 device = 'cuda' if torch.cuda.is_available() else 'cpu'
@@ -23,13 +28,13 @@ train_dataset = datasets.CIFAR10(root='./data', train=True, transform=Compose([
         RandomCrop(32, 4),
         ToTensor(),
         Normalize((0.485, 0.456, 0.406), (0.229, 0.224, 0.225)),
-        Resize(224, antialias=False)]),
+        Resize(64, antialias=False)]),
     download=False)
 
 test_dataset = datasets.CIFAR10(root='./data', train=False, transform=Compose([
         ToTensor(),
         Normalize((0.485, 0.456, 0.406), (0.229, 0.224, 0.225)),
-        Resize(224, antialias=False)]),
+        Resize(64, antialias=False)]),
     download=False)
 
 '''
@@ -43,7 +48,7 @@ Instantiate NN models
 '''
 print(f'MODEL INSTANTIATION\n')
 
-model = VGGSmall().to(device)
+model = VGGVerySmall().to(device)
 
 '''
 Train and test

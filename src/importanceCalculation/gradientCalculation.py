@@ -1,16 +1,18 @@
 import torch
 from modelsCommon.auxTransformations import ToBlackAndWhite, ToSign
 from torchvision import datasets
-from torchvision.transforms import ToTensor, Compose, Normalize, RandomHorizontalFlip, RandomCrop
+from torchvision.transforms import ToTensor, Compose, Normalize, RandomHorizontalFlip, RandomCrop, Resize
 from torch.utils.data import DataLoader
 from modules.vggSmall import VGGSmall
+from modules.vggVerySmall import VGGVerySmall
+from modules.binaryVggVerySmall import binaryVGGVerySmall
 import plotly.graph_objects as go
 import numpy as np
 import pandas as pd
 
-modelFilename = f'src\modelCreation\savedModels\VGGSmall'
+modelName = f'binaryVGGVerySmall'
 batch_size = 64
-perGradientSampling = 0.5
+perGradientSampling = 0.2
 # Check mps maybe if working in MacOS
 device = 'cuda' if torch.cuda.is_available() else 'cpu'
 
@@ -22,7 +24,8 @@ train_dataset = datasets.CIFAR10(root='./data', train=True, transform=Compose([
 	RandomHorizontalFlip(),
 	RandomCrop(32, 4),
 	ToTensor(),
-	Normalize((0.485, 0.456, 0.406), (0.229, 0.224, 0.225))]),
+	Normalize((0.485, 0.456, 0.406), (0.229, 0.224, 0.225)),
+ 	Resize(64, antialias=False)]),
 								 download=False)
 
 '''
@@ -35,8 +38,8 @@ sampleSize = int(perGradientSampling * len(train_dataset.data))  # sample size t
 '''
 Load model
 '''
-model = VGGSmall()
-model.load_state_dict(torch.load(modelFilename))
+model = binaryVGGVerySmall()
+model.load_state_dict(torch.load(f'src\modelCreation\savedModels/{modelName}'))
 
 '''
 Calculate importance per class per neuron
@@ -51,7 +54,7 @@ model.eval()
 for i in range(sampleSize):
 	X, y = train_dataloader.dataset[i]
 	model.zero_grad()
-	pred = model(X)
+	pred = model(X[None, :, :, :])
 	pred[0, y].backward()
 
 	if (i+1) % 500 == 0:
@@ -60,8 +63,8 @@ for i in range(sampleSize):
 model.listToArray()  # Hopefully improves memory usage
 
 importances = model.computeImportance()
-model.saveActivations(f'data/activations/vggSmall')
-model.saveGradients(f'data/gradients/vggSmall')
+model.saveActivations(f'data/activations/{modelName}')
+model.saveGradients(f'data/gradients/{modelName}')
 
 '''
 Calculate importance scores
