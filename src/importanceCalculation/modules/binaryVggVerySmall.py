@@ -283,7 +283,7 @@ class binaryVGGVerySmall(nn.Module):
 			os.makedirs(f'{baseFilename}')
    
 		for grad in self.dataFromHooks:
-			if grad.startswith('relul'):
+			if grad.startswith('relul') or grad.startswith('stel'):
 				columnTags = [f'{i}' for i in range(self.dataFromHooks[grad]['backward'].shape[1])]
 				pd.DataFrame(
 					self.dataFromHooks[grad]['backward'], columns=columnTags).to_feather(

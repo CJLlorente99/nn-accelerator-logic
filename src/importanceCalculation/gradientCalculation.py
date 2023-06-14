@@ -13,7 +13,7 @@ import pandas as pd
 modelName = f'binaryVGGVerySmall'
 model = binaryVGGVerySmall()
 batch_size = 64
-perGradientSampling = 0.25
+perGradientSampling = 0.1
 # Check mps maybe if working in MacOS
 device = 'cuda' if torch.cuda.is_available() else 'cpu'
 
