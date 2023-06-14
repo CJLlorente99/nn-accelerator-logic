@@ -152,95 +152,77 @@ class binaryVGGVerySmall(nn.Module):
 
 	# Define all backward hooks
 	def backward_hook_relu0(self, module, grad_input, grad_output):
-		aux = grad_output[0].cpu().detach().numpy()[0].flatten()
-		self.dataFromHooks['relu0']['backward'].append(aux)
+		aux = grad_output[0].flatten(start_dim=-2, end_dim=-1).cpu().detach().numpy()[0]
+		self.dataFromHooks['relu0']['backward'].append(np.float16(aux))
   
 	def backward_hook_relu1(self, module, grad_input, grad_output):
-		aux = grad_output[0].cpu().detach().numpy()[0].flatten()
-		self.dataFromHooks['ste1']['backward'].append(aux)
+		aux = grad_output[0].flatten(start_dim=-2, end_dim=-1).cpu().detach().numpy()[0]
+		self.dataFromHooks['ste1']['backward'].append(np.float16(aux))
   
 	def backward_hook_relu21(self, module, grad_input, grad_output):
-		aux = grad_output[0].cpu().detach().numpy()[0].flatten()
-		self.dataFromHooks['ste21']['backward'].append(aux)
+		aux = grad_output[0].flatten(start_dim=-2, end_dim=-1).cpu().detach().numpy()[0]
+		self.dataFromHooks['ste21']['backward'].append(np.float16(aux))
   
 	def backward_hook_relu31(self, module, grad_input, grad_output):
-		aux = grad_output[0].cpu().detach().numpy()[0].flatten()
-		self.dataFromHooks['ste31']['backward'].append(aux)
+		aux = grad_output[0].flatten(start_dim=-2, end_dim=-1).cpu().detach().numpy()[0]
+		self.dataFromHooks['ste31']['backward'].append(np.float16(aux))
   
 	def backward_hook_relu41(self, module, grad_input, grad_output):
-		aux = grad_output[0].cpu().detach().numpy()[0].flatten()
-		self.dataFromHooks['ste41']['backward'].append(aux)
+		aux = grad_output[0].flatten(start_dim=-2, end_dim=-1).cpu().detach().numpy()[0]
+		self.dataFromHooks['ste41']['backward'].append(np.float16(aux))
   
 	def backward_hook_relul0(self, module, grad_input, grad_output):
-		self.dataFromHooks['stel0']['backward'].append(grad_output[0].cpu().detach().numpy()[0])
+		self.dataFromHooks['stel0']['backward'].append(np.float16(grad_output[0].cpu().detach().numpy()[0]))
   
 	def backward_hook_relul1(self, module, grad_input, grad_output):
-		self.dataFromHooks['relul1']['backward'].append(grad_output[0].cpu().detach().numpy()[0])
+		self.dataFromHooks['relul1']['backward'].append(np.float16(grad_output[0].cpu().detach().numpy()[0]))
   
 	# Define all forward hooks
 	def forward_hook_relu0(self, module, val_input, val_output):
-		aux = val_output.flatten(start_dim=1, end_dim=-1).cpu().detach().numpy()
-		self.dataFromHooks['relu0']['forward'].append(aux)
+		aux = val_output.flatten(start_dim=-2, end_dim=-1).cpu().detach().numpy()[0]
+		self.dataFromHooks['relu0']['forward'].append(np.float16(aux))
   
 	def forward_hook_relu1(self, module, val_input, val_output):
-		aux = val_output.flatten(start_dim=1, end_dim=-1).cpu().detach().numpy()
-		self.dataFromHooks['ste1']['forward'].append(aux)
+		aux = val_output.flatten(start_dim=-2, end_dim=-1).cpu().detach().numpy()[0]
+		self.dataFromHooks['ste1']['forward'].append(np.float16(aux))
   
 	def forward_hook_relu21(self, module, val_input, val_output):
-		aux = val_output.flatten(start_dim=1, end_dim=-1).cpu().detach().numpy()
-		self.dataFromHooks['ste21']['forward'].append(aux)
+		aux = val_output.flatten(start_dim=-2, end_dim=-1).cpu().detach().numpy()[0]
+		self.dataFromHooks['ste21']['forward'].append(np.float16(aux))
   
 	def forward_hook_relu31(self, module, val_input, val_output):
-		aux = val_output.flatten(start_dim=1, end_dim=-1).cpu().detach().numpy()
-		self.dataFromHooks['ste31']['forward'].append(aux)
+		aux = val_output.flatten(start_dim=-2, end_dim=-1).cpu().detach().numpy()[0]
+		self.dataFromHooks['ste31']['forward'].append(np.float16(aux))
   
 	def forward_hook_relu41(self, module, val_input, val_output):
-		aux = val_output.flatten(start_dim=1, end_dim=-1).cpu().detach().numpy()
-		self.dataFromHooks['ste41']['forward'].append(aux)
+		aux = val_output.flatten(start_dim=-2, end_dim=-1).cpu().detach().numpy()[0]
+		self.dataFromHooks['ste41']['forward'].append(np.float16(aux))
   
 	def forward_hook_relul0(self, module, val_input, val_output):
-		self.dataFromHooks['stel0']['forward'].append(val_output[0].cpu().detach().numpy())
+		self.dataFromHooks['stel0']['forward'].append(np.float16(val_output[0].cpu().detach().numpy()))
   
 	def forward_hook_relul1(self, module, val_input, val_output):
-		self.dataFromHooks['relul1']['forward'].append(val_output[0].cpu().detach().numpy())
+		self.dataFromHooks['relul1']['forward'].append(np.float16(val_output[0].cpu().detach().numpy()))
   
 	# Change each hook list to an equivalent array
 	def listToArray(self):
 		for grads in self.dataFromHooks:
-			self.dataFromHooks[grads]['forward'] = np.array(self.dataFromHooks[grads]['forward'])
-			self.dataFromHooks[grads]['backward'] = np.array(self.dataFromHooks[grads]['backward'])
+			self.dataFromHooks[grads]['forward'] = np.array(self.dataFromHooks[grads]['forward'], dtype='float16')
+			self.dataFromHooks[grads]['backward'] = np.array(self.dataFromHooks[grads]['backward'], dtype='float16')
    
 	# Compute importance
-	def computeImportance(self, save : bool = False, baseFilename : str = ""):
+	def computeImportance(self):
 		importances = []
-  
-		if save:
-			# Check folder exists
-			if not os.path.exists(f'{baseFilename}'):
-				os.makedirs(f'{baseFilename}')
 
 		for grad in self.dataFromHooks:
-			aux = []
-			if self.dataFromHooks[grad]['forward'].ndim > 2:
-				for i in range(self.dataFromHooks[grad]['forward'].shape[1]):
-					imp = np.abs(np.multiply(self.dataFromHooks[grad]['backward'], self.dataFromHooks[grad]['forward'][:, i, :]))
-					aux.append(imp)
-					if save:
-						columnTags = [f'{i}' for i in range(imp.shape[1])]
-						df = pd.DataFrame(imp, columns=columnTags)
-						df.to_feather(f'{baseFilename}/{grad}_{i}')
-				importances.append(np.array(aux))
-			else:
-				imp = np.abs(np.multiply(self.dataFromHooks[grad]['backward'], self.dataFromHooks[grad]['forward']))
-				importances.append(imp)
-				if save:
-					columnTags = [f'{i}' for i in range(imp.shape[1])]
-					df = pd.DataFrame(imp, columns=columnTags)
-					df.to_feather(f'{baseFilename}/{grad}')
-    
+			aux = self.dataFromHooks[grad]['backward'].shape
+			print(f'Shape backward/forward {grad} is {aux}')
+			importances.append(np.abs(np.multiply(self.dataFromHooks[grad]['backward'], self.dataFromHooks[grad]['forward'])))
+	
 		return importances
 
 	# Load and return importances in the right order
+	# TODO create save correctly
 	def loadImportance(self, folderFilename : str):
 		files = os.listdir(folderFilename)
 		importances = []
@@ -262,7 +244,7 @@ class binaryVGGVerySmall(nn.Module):
 			os.makedirs(f'{baseFilename}')
    
 		for grad in self.dataFromHooks:
-			if grad.startswith('relul'): # then it is linear layer
+			if grad.startswith('relul') or grad.startswith('stel'): # then it is linear layer
 				columnTags = [f'{i}' for i in range(self.dataFromHooks[grad]['forward'].shape[1])]
 				pd.DataFrame(
 						self.dataFromHooks[grad]['forward'], columns=columnTags).to_feather(
@@ -276,6 +258,7 @@ class binaryVGGVerySmall(nn.Module):
 					pd.DataFrame(
 						self.dataFromHooks[grad]['forward'][:, iDepth, :], columns=columnTags).to_feather(
 							f'{baseFilename}/{grad}/{iDepth}')
+			print(f'Saved activations {grad}')
     
     # Load activations
 	def loadActivations(self, baseFilename):
@@ -300,10 +283,21 @@ class binaryVGGVerySmall(nn.Module):
 			os.makedirs(f'{baseFilename}')
    
 		for grad in self.dataFromHooks:
-			columnTags = [f'{i}' for i in range(self.dataFromHooks[grad]['backward'].shape[1])]
-			pd.DataFrame(
-				self.dataFromHooks[grad]['backward'], columns=columnTags).to_feather(
-					f'{baseFilename}/{grad}')
+			if grad.startswith('relul'):
+				columnTags = [f'{i}' for i in range(self.dataFromHooks[grad]['backward'].shape[1])]
+				pd.DataFrame(
+					self.dataFromHooks[grad]['backward'], columns=columnTags).to_feather(
+						f'{baseFilename}/{grad}')
+			else:
+				if not os.path.exists(f'{baseFilename}/{grad}'):
+					os.makedirs(f'{baseFilename}/{grad}')
+     
+				for iDepth in range(self.dataFromHooks[grad]['backward'].shape[1]):
+					columnTags = [f'{i}' for i in range(self.dataFromHooks[grad]['backward'].shape[2])]
+					pd.DataFrame(
+						self.dataFromHooks[grad]['backward'][:, iDepth, :], columns=columnTags).to_feather(
+							f'{baseFilename}/{grad}/{iDepth}')
+			print(f'Saved gradients {grad}')
     
 	# Load gradients
 	def loadGradients(self, baseFilename):

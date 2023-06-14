@@ -11,8 +11,9 @@ import numpy as np
 import pandas as pd
 
 modelName = f'binaryVGGVerySmall'
+model = binaryVGGVerySmall()
 batch_size = 64
-perGradientSampling = 0.2
+perGradientSampling = 0.25
 # Check mps maybe if working in MacOS
 device = 'cuda' if torch.cuda.is_available() else 'cpu'
 
@@ -38,7 +39,6 @@ sampleSize = int(perGradientSampling * len(train_dataset.data))  # sample size t
 '''
 Load model
 '''
-model = binaryVGGVerySmall()
 model.load_state_dict(torch.load(f'src\modelCreation\savedModels/{modelName}'))
 
 '''
@@ -90,11 +90,10 @@ for grad in model.helpHookList:
 imp = 0
 for grad in model.helpHookList:
 	importance = importances[imp]
-	if importance.ndim > 2:
-		for i in range(importance.shape[1]):
-			importancePerClassFilter[grad][train_dataset.targets[i]].append(importance[:, i, :])
-	else:
-		for i in range(importance.shape[0]):
+	for i in range(importance.shape[0]):
+		if importance.ndim > 2:
+			importancePerClassFilter[grad][train_dataset.targets[i]].append(importance[i, :, :])
+		else:
 			importancePerClassFilter[grad][train_dataset.targets[i]].append(importance[i, :])
 	imp += 1
  
@@ -110,7 +109,7 @@ for grad in model.helpHookList:
 			importancePerClassFilter[grad][nClass] = importancePerClassFilter[grad][nClass].sum(0) / len(importancePerClassFilter[grad][nClass])
 			importancePerClassNeuron[grad][nClass] = importancePerClassFilter[grad][nClass].flatten() # To store information about all neurons
 			# Take the max score per filter
-			importancePerClassFilter[grad][nClass] = importancePerClassFilter[grad][nClass].max(0)
+			importancePerClassFilter[grad][nClass] = importancePerClassFilter[grad][nClass].max(1)
 		else: # Then it comes from a neural layer
 			importancePerClassFilter[grad][nClass] = importancePerClassFilter[grad][nClass].sum(0) / len(importancePerClassFilter[grad][nClass])
 	
@@ -125,14 +124,15 @@ Print results
 for grad in importancePerClassFilter:
     # Print aggregated importance
 	aux = importancePerClassFilter[grad].sum(0)
+	aux.sort()	
  
 	fig = go.Figure()
-	fig.add_trace(go.Histogram(x=list(range(len(aux))), y=aux))
+	fig.add_trace(go.Scatter(x=list(range(len(aux))), y=aux))
 	fig.update_layout(title=f'{grad} total importance per filter ({len(aux)})')
 	fig.show()
 	
 	# Print classes that are important
-	if grad.startswith('relul'):
+	if grad.startswith('relul') or grad.startswith('stel'):
 		aux = (importancePerClassFilter[grad] > 0).sum(0)
 		aux.sort()
 		

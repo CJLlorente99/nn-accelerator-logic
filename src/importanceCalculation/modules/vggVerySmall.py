@@ -138,76 +138,72 @@ class VGGVerySmall(nn.Module):
 
 	# Define all backward hooks
 	def backward_hook_relu0(self, module, grad_input, grad_output):
-		aux = (grad_output[0].cpu().detach().numpy()[0] + grad_output[0].cpu().detach().numpy()[1]).flatten()
-		self.dataFromHooks['relu0']['backward'].append(aux)
+		aux = grad_output[0].flatten(start_dim=-2, end_dim=-1).cpu().detach().numpy()[0]
+		self.dataFromHooks['relu0']['backward'].append(np.float16(aux))
   
 	def backward_hook_relu1(self, module, grad_input, grad_output):
-		aux = (grad_output[0].cpu().detach().numpy()[0] + grad_output[0].cpu().detach().numpy()[1]).flatten()
-		self.dataFromHooks['relu1']['backward'].append(aux)
+		aux = grad_output[0].flatten(start_dim=-2, end_dim=-1).cpu().detach().numpy()[0]
+		self.dataFromHooks['relu1']['backward'].append(np.float16(aux))
   
 	def backward_hook_relu21(self, module, grad_input, grad_output):
-		aux = (grad_output[0].cpu().detach().numpy()[0] + grad_output[0].cpu().detach().numpy()[1]).flatten()
-		self.dataFromHooks['relu21']['backward'].append(aux)
+		aux = grad_output[0].flatten(start_dim=-2, end_dim=-1).cpu().detach().numpy()[0]
+		self.dataFromHooks['relu21']['backward'].append(np.float16(aux))
   
 	def backward_hook_relu31(self, module, grad_input, grad_output):
-		aux = (grad_output[0].cpu().detach().numpy()[0] + grad_output[0].cpu().detach().numpy()[1]).flatten()
-		self.dataFromHooks['relu31']['backward'].append(aux)
+		aux = grad_output[0].flatten(start_dim=-2, end_dim=-1).cpu().detach().numpy()[0]
+		self.dataFromHooks['relu31']['backward'].append(np.float16(aux))
   
 	def backward_hook_relu41(self, module, grad_input, grad_output):
-		aux = (grad_output[0].cpu().detach().numpy()[0] + grad_output[0].cpu().detach().numpy()[1]).flatten()
-		self.dataFromHooks['relu41']['backward'].append(aux)
+		aux = grad_output[0].flatten(start_dim=-2, end_dim=-1).cpu().detach().numpy()[0]
+		self.dataFromHooks['relu41']['backward'].append(np.float16(aux))
   
 	def backward_hook_relul0(self, module, grad_input, grad_output):
-		self.dataFromHooks['relul0']['backward'].append(grad_output[0].cpu().detach().numpy()[0])
+		self.dataFromHooks['relul0']['backward'].append(np.float16(grad_output[0].cpu().detach().numpy()[0]))
   
 	def backward_hook_relul1(self, module, grad_input, grad_output):
-		self.dataFromHooks['relul1']['backward'].append(grad_output[0].cpu().detach().numpy()[0])
+		self.dataFromHooks['relul1']['backward'].append(np.float16(grad_output[0].cpu().detach().numpy()[0]))
   
 	# Define all forward hooks
 	def forward_hook_relu0(self, module, val_input, val_output):
-		aux = val_output.flatten(start_dim=1, end_dim=-1).cpu().detach().numpy()
-		self.dataFromHooks['relu0']['forward'].append(aux)
+		aux = val_output.flatten(start_dim=-2, end_dim=-1).cpu().detach().numpy()[0]
+		self.dataFromHooks['relu0']['forward'].append(np.float16(aux))
   
 	def forward_hook_relu1(self, module, val_input, val_output):
-		aux = val_output.flatten(start_dim=1, end_dim=-1).cpu().detach().numpy()
-		self.dataFromHooks['relu1']['forward'].append(aux)
+		aux = val_output.flatten(start_dim=-2, end_dim=-1).cpu().detach().numpy()[0]
+		self.dataFromHooks['relu1']['forward'].append(np.float16(aux))
   
 	def forward_hook_relu21(self, module, val_input, val_output):
-		aux = val_output.flatten(start_dim=1, end_dim=-1).cpu().detach().numpy()
-		self.dataFromHooks['relu21']['forward'].append(aux)
+		aux = val_output.flatten(start_dim=-2, end_dim=-1).cpu().detach().numpy()[0]
+		self.dataFromHooks['relu21']['forward'].append(np.float16(aux))
   
 	def forward_hook_relu31(self, module, val_input, val_output):
-		aux = val_output.flatten(start_dim=1, end_dim=-1).cpu().detach().numpy()
-		self.dataFromHooks['relu31']['forward'].append(aux)
+		aux = val_output.flatten(start_dim=-2, end_dim=-1).cpu().detach().numpy()[0]
+		self.dataFromHooks['relu31']['forward'].append(np.float16(aux))
   
 	def forward_hook_relu41(self, module, val_input, val_output):
-		aux = val_output.flatten(start_dim=1, end_dim=-1).cpu().detach().numpy()
-		self.dataFromHooks['relu41']['forward'].append(aux)
+		aux = val_output.flatten(start_dim=-2, end_dim=-1).cpu().detach().numpy()[0]
+		self.dataFromHooks['relu41']['forward'].append(np.float16(aux))
   
 	def forward_hook_relul0(self, module, val_input, val_output):
-		self.dataFromHooks['relul0']['forward'].append(val_output[0].cpu().detach().numpy())
+		self.dataFromHooks['relul0']['forward'].append(np.float16(val_output[0].cpu().detach().numpy()))
   
 	def forward_hook_relul1(self, module, val_input, val_output):
-		self.dataFromHooks['relul1']['forward'].append(val_output[0].cpu().detach().numpy())
+		self.dataFromHooks['relul1']['forward'].append(np.float16(val_output[0].cpu().detach().numpy()))
   
 	# Change each hook list to an equivalent array
 	def listToArray(self):
 		for grads in self.dataFromHooks:
-			self.dataFromHooks[grads]['forward'] = np.array(self.dataFromHooks[grads]['forward'])
-			self.dataFromHooks[grads]['backward'] = np.array(self.dataFromHooks[grads]['backward'])
+			self.dataFromHooks[grads]['forward'] = np.array(self.dataFromHooks[grads]['forward'], dtype='float16')
+			self.dataFromHooks[grads]['backward'] = np.array(self.dataFromHooks[grads]['backward'], dtype='float16')
    
 	# Compute importance
 	def computeImportance(self):
 		importances = []
 
 		for grad in self.dataFromHooks:
-			aux = []
-			if self.dataFromHooks[grad]['forward'].ndim > 2:
-				for i in range(self.dataFromHooks[grad]['forward'].shape[1]):
-					aux.append(np.abs(np.multiply(self.dataFromHooks[grad]['backward'], self.dataFromHooks[grad]['forward'][:, i, :])))
-				importances.append(np.array(aux))
-			else:
-				importances.append(np.abs(np.multiply(self.dataFromHooks[grad]['backward'], self.dataFromHooks[grad]['forward'])))
+			aux = self.dataFromHooks[grad]['backward'].shape
+			print(f'Shape backward/forward {grad} is {aux}')
+			importances.append(np.abs(np.multiply(self.dataFromHooks[grad]['backward'], self.dataFromHooks[grad]['forward'])))
     
 		return importances
 
@@ -232,6 +228,7 @@ class VGGVerySmall(nn.Module):
 					pd.DataFrame(
 						self.dataFromHooks[grad]['forward'][:, iDepth, :], columns=columnTags).to_feather(
 							f'{baseFilename}/{grad}/{iDepth}')
+			print(f'Saved activations {grad}')
     
     # Load activations
 	def loadActivations(self, baseFilename):
@@ -256,10 +253,21 @@ class VGGVerySmall(nn.Module):
 			os.makedirs(f'{baseFilename}')
    
 		for grad in self.dataFromHooks:
-			columnTags = [f'{i}' for i in range(self.dataFromHooks[grad]['backward'].shape[1])]
-			pd.DataFrame(
-				self.dataFromHooks[grad]['backward'], columns=columnTags).to_feather(
-					f'{baseFilename}/{grad}')
+			if grad.startswith('relul'):
+				columnTags = [f'{i}' for i in range(self.dataFromHooks[grad]['backward'].shape[1])]
+				pd.DataFrame(
+					self.dataFromHooks[grad]['backward'], columns=columnTags).to_feather(
+						f'{baseFilename}/{grad}')
+			else:
+				if not os.path.exists(f'{baseFilename}/{grad}'):
+					os.makedirs(f'{baseFilename}/{grad}')
+     
+				for iDepth in range(self.dataFromHooks[grad]['backward'].shape[1]):
+					columnTags = [f'{i}' for i in range(self.dataFromHooks[grad]['backward'].shape[2])]
+					pd.DataFrame(
+						self.dataFromHooks[grad]['backward'][:, iDepth, :], columns=columnTags).to_feather(
+							f'{baseFilename}/{grad}/{iDepth}')
+			print(f'Saved gradients {grad}')
     
 	# Load gradients
 	def loadGradients(self, baseFilename):
