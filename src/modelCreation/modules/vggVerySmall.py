@@ -8,7 +8,7 @@ from ttUtilities.auxFunctions import binaryArrayToSingleValue, integerToBinaryAr
 import math
 
 class VGGVerySmall(nn.Module):
-	def __init__(self):
+	def __init__(self, resizeFactor):
 		super(VGGVerySmall, self).__init__()
 
 		# Layer 0
@@ -37,7 +37,7 @@ class VGGVerySmall(nn.Module):
 		self.maxpool42 = nn.MaxPool2d(kernel_size=2, stride=2)
   
 		# Layer FC0
-		self.l0 = nn.Linear(2*2*512, 1024)
+		self.l0 = nn.Linear(resizeFactor*resizeFactor*512, 1024)
 		self.relul0 = nn.ReLU()
   
 		# Layer FC1

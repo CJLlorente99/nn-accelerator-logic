@@ -5,7 +5,6 @@ from torchvision import datasets
 from torchvision.transforms import ToTensor, Compose, Normalize, RandomHorizontalFlip, RandomCrop, Resize
 from torch.utils.data import DataLoader
 from modules.binaryVggVerySmall import binaryVGGVerySmall
-from modules.binaryVggVerySmall2 import binaryVGGVerySmall2
 from modules.vggVerySmall import VGGVerySmall
 from modules.vggSmall import VGGSmall
 import torch.optim as optim
@@ -15,6 +14,8 @@ import torch.nn as nn
 
 batch_size = 200
 epochs = 20
+dataFolder = '/home/carlosl/Dokumente/nn-accelerator-logic/data'
+resizeFactor = 3
 
 # Check mps maybe if working in MacOS
 device = 'cuda' if torch.cuda.is_available() else 'cpu'
@@ -23,18 +24,18 @@ device = 'cuda' if torch.cuda.is_available() else 'cpu'
 Importing CIFAR10 dataset
 '''
 print(f'DOWNLOAD DATASET\n')
-train_dataset = datasets.CIFAR10(root='./data', train=True, transform=Compose([
+train_dataset = datasets.CIFAR10(root=dataFolder, train=True, transform=Compose([
         RandomHorizontalFlip(),
         RandomCrop(32, 4),
         ToTensor(),
         Normalize((0.485, 0.456, 0.406), (0.229, 0.224, 0.225)),
-        Resize(64, antialias=False)]),
+        Resize(resizeFactor*32, antialias=False)]),
     download=False)
 
-test_dataset = datasets.CIFAR10(root='./data', train=False, transform=Compose([
+test_dataset = datasets.CIFAR10(root=dataFolder, train=False, transform=Compose([
         ToTensor(),
         Normalize((0.485, 0.456, 0.406), (0.229, 0.224, 0.225)),
-        Resize(64, antialias=False)]),
+        Resize(resizeFactor*32, antialias=False)]),
     download=False)
 
 '''
@@ -48,7 +49,7 @@ Instantiate NN models
 '''
 print(f'MODEL INSTANTIATION\n')
 
-model = VGGVerySmall().to(device)
+model = binaryVGGVerySmall(resizeFactor).to(device)
 
 '''
 Train and test
@@ -64,4 +65,4 @@ trainAndTest(epochs, train_dataloader, test_dataloader, model, opt, criterion)
 Save
 '''
 
-torch.save(model.state_dict(), f'./src/modelCreation/savedModels/VGGVerySmall')
+torch.save(model.state_dict(), f'{dataFolder}/../src/modelCreation/savedModels/binaryVGGVerySmall_{resizeFactor}')

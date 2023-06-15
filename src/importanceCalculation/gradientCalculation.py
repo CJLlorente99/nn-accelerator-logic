@@ -13,7 +13,8 @@ import pandas as pd
 modelName = f'binaryVGGVerySmall'
 model = binaryVGGVerySmall()
 batch_size = 64
-perGradientSampling = 0.1
+perGradientSampling = 0.05
+dataFolder = '/home/carlosl/Dokumente/nn-accelerator-logic/data'
 # Check mps maybe if working in MacOS
 device = 'cuda' if torch.cuda.is_available() else 'cpu'
 
@@ -21,7 +22,7 @@ device = 'cuda' if torch.cuda.is_available() else 'cpu'
 Importing CIFAR10 dataset
 '''
 print(f'DOWNLOAD DATASET\n')
-train_dataset = datasets.CIFAR10(root='./data', train=True, transform=Compose([
+train_dataset = datasets.CIFAR10(root=dataFolder, train=True, transform=Compose([
 	RandomHorizontalFlip(),
 	RandomCrop(32, 4),
 	ToTensor(),
@@ -39,7 +40,7 @@ sampleSize = int(perGradientSampling * len(train_dataset.data))  # sample size t
 '''
 Load model
 '''
-model.load_state_dict(torch.load(f'src\modelCreation\savedModels/{modelName}'))
+model.load_state_dict(torch.load(f'/home/carlosl/Dokumente/nn-accelerator-logic/src/modelCreation/savedModels/{modelName}'))
 
 '''
 Calculate importance per class per neuron
@@ -63,8 +64,8 @@ for i in range(sampleSize):
 model.listToArray()  # Hopefully improves memory usage
 
 importances = model.computeImportance()
-model.saveActivations(f'data/activations/{modelName}')
-model.saveGradients(f'data/gradients/{modelName}')
+model.saveActivations(f'{dataFolder}/activations/{modelName}')
+model.saveGradients(f'{dataFolder}/gradients/{modelName}')
 
 '''
 Calculate importance scores
