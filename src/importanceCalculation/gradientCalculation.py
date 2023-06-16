@@ -13,7 +13,7 @@ import pandas as pd
 modelName = f'binaryVGGVerySmall'
 model = binaryVGGVerySmall()
 batch_size = 64
-perGradientSampling = 0.05
+perGradientSampling = 0.025
 dataFolder = '/home/carlosl/Dokumente/nn-accelerator-logic/data'
 # Check mps maybe if working in MacOS
 device = 'cuda' if torch.cuda.is_available() else 'cpu'
@@ -64,8 +64,8 @@ for i in range(sampleSize):
 model.listToArray()  # Hopefully improves memory usage
 
 importances = model.computeImportance()
-model.saveActivations(f'{dataFolder}/activations/{modelName}')
-model.saveGradients(f'{dataFolder}/gradients/{modelName}')
+# model.saveActivations(f'{dataFolder}/activations/{modelName}')
+# model.saveGradients(f'{dataFolder}/gradients/{modelName}')
 
 '''
 Calculate importance scores

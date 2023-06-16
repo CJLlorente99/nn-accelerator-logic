@@ -7,18 +7,21 @@ from torch.utils.data import DataLoader
 from modules.binaryVggVerySmall import binaryVGGVerySmall
 from modules.vggVerySmall import VGGVerySmall
 from modules.vggSmall import VGGSmall
+from modules.binaryVggSmall import BinaryVGGSmall
 import torch.optim as optim
 import torch.nn as nn
 
 # ! Change the name of the saved module
 
 batch_size = 200
-epochs = 20
+epochs = 40
 dataFolder = '/home/carlosl/Dokumente/nn-accelerator-logic/data'
 resizeFactor = 3
+modelName = 'binaryVGGSmall'
 
 # Check mps maybe if working in MacOS
 device = 'cuda' if torch.cuda.is_available() else 'cpu'
+model = BinaryVGGSmall(resizeFactor).to(device)
 
 '''
 Importing CIFAR10 dataset
@@ -49,7 +52,6 @@ Instantiate NN models
 '''
 print(f'MODEL INSTANTIATION\n')
 
-model = binaryVGGVerySmall(resizeFactor).to(device)
 
 '''
 Train and test
@@ -65,4 +67,4 @@ trainAndTest(epochs, train_dataloader, test_dataloader, model, opt, criterion)
 Save
 '''
 
-torch.save(model.state_dict(), f'{dataFolder}/../src/modelCreation/savedModels/binaryVGGVerySmall_{resizeFactor}')
+torch.save(model.state_dict(), f'{dataFolder}/../src/modelCreation/savedModels/{modelName}_{resizeFactor}')

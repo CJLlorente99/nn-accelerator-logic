@@ -28,13 +28,13 @@ train_dataset = datasets.CIFAR10(root='../../data', train=True, transform=Compos
     ToTensor(),
     Normalize((0.485, 0.456, 0.406), (0.229, 0.224, 0.225)),
     Resize(resizeFactor*32, antialias=False)]),
-                                 download=False)
+                                 download=True)
 
 test_dataset = datasets.CIFAR10(root='../../data', train=False, transform=Compose([
     ToTensor(),
     Normalize((0.485, 0.456, 0.406), (0.229, 0.224, 0.225)),
     Resize(resizeFactor*32, antialias=False)]),
-                                 download=False)
+                                 download=True)
 
 '''
 Create DataLoader
