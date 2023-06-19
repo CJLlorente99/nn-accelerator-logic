@@ -11,7 +11,7 @@ from torchmetrics.classification import MulticlassHingeLoss
 
 batch_size = 200
 neuronPerLayer = 4096
-epochs = 100
+epochs = 15
 precision = 'bin'
 
 # Check mps maybe if working in MacOS
@@ -23,7 +23,7 @@ Importing MNIST dataset
 print(f'IMPORT DATASET\n')
 
 training_data = datasets.MNIST(
-    root='C:/Users/carlo/OneDrive/Documentos/Universidad/MUIT/Segundo/TFM/Code/data',
+    root='/home/carlosl/Dokumente/nn-accelerator-logic/data',
     train=True,
     download=False,
     transform=Compose([
@@ -34,7 +34,7 @@ training_data = datasets.MNIST(
 )
 
 test_data = datasets.MNIST(
-    root='C:/Users/carlo/OneDrive/Documentos/Universidad/MUIT/Segundo/TFM/Code/data',
+    root='/home/carlosl/Dokumente/nn-accelerator-logic/data',
     train=False,
     download=False,
     transform=Compose([
@@ -55,7 +55,7 @@ Instantiate NN models
 '''
 print(f'MODEL INSTANTIATION\n')
 
-model = BNNBinaryNeuralNetwork(neuronPerLayer, True).to(device)
+model = BNNBinaryNeuralNetwork(neuronPerLayer, False).to(device)
 
 '''
 Train and test
@@ -92,6 +92,6 @@ trainAndTest(epochs, train_dataloader, test_dataloader, model, opt, criterion, s
 Save
 '''
 
-torch.save(model.state_dict(), f'savedModels/MNISTSignMod{precision}NN{epochs}Epoch{neuronPerLayer}NPLhingeCriterion')
+torch.save(model.state_dict(), f'/home/carlosl/Dokumente/nn-accelerator-logic/src/modelCreation/savedModels/MNIST_BNN_FP_4096NPL')
 
 

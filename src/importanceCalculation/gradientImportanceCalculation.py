@@ -9,8 +9,8 @@ import numpy as np
 import plotly.graph_objects as go
 import matplotlib.pyplot as plt
 
-neuronPerLayer = 1024
-modelFilename = f'/home/carlosl/Dokumente/nn-accelerator-logic/src/modelCreation/savedModels/MNISTSignbinNN100Epoch1024NPLnllCriterion'
+neuronPerLayer = 100
+modelFilename = f'/home/carlosl/Dokumente/nn-accelerator-logic/src/modelCreation/savedModels/MNIST_bin_100NPL'
 batch_size = 1
 perGradientSampling = 1
 # Check mps maybe if working in MacOS
@@ -63,13 +63,44 @@ for i in range(sampleSize):
 
 model.listToArray(neuronPerLayer)  # Hopefully improves memory usage
 importanceList = model.computeImportance(neuronPerLayer)
-    
+
+
+def getIdxDuplicates(arr):
+    vals, inverse, count = np.unique(arr, axis=0, return_inverse=True,
+                                     return_counts=True)
+
+    idx_vals_repeated = np.where(count > 1)[0]
+
+    rows, cols = np.where(inverse == idx_vals_repeated[:, np.newaxis])
+    _, inverse_rows = np.unique(rows, return_index=True)
+    res = np.split(cols, inverse_rows[1:])
+    return res
+
+# Get info about the activations
+dupList = []
+dupList.append(getIdxDuplicates(model.input0))
+uniqueInput0 = np.unique(model.input0, axis=0)
+print(f'Original length {model.input0.shape[0]}, only unique length {uniqueInput0.shape[0]}, number of sample {sampleSize}')
+dupList.append(getIdxDuplicates(model.valueSTE0))
+uniqueSTE0 = np.unique(model.valueSTE0, axis=0)
+print(f'Original length {model.valueSTE0.shape[0]}, only unique length {uniqueSTE0.shape[0]}, number of sample {sampleSize}')
+dupList.append(getIdxDuplicates(model.valueSTE1))
+uniqueSTE1 = np.unique(model.valueSTE1, axis=0)
+print(f'Original length {model.valueSTE1.shape[0]}, only unique length {uniqueSTE1.shape[0]}, number of sample {sampleSize}')
+dupList.append(getIdxDuplicates(model.valueSTE2))
+uniqueSTE2 = np.unique(model.valueSTE2, axis=0)
+print(f'Original length {model.valueSTE2.shape[0]}, only unique length {uniqueSTE2.shape[0]}, number of sample {sampleSize}')
+
 # Apply threshold
 print(f'APPLY THRESHOLD\n')
 threshold = 10e-5
 for iImp in range(len(importanceList)):
     importanceList[iImp] = importanceList[iImp] > threshold
+    for dup in dupList[iImp]:
+        if len(dup) != 0:
+            importanceList[iImp][dup[0], :] = np.sum(importanceList[iImp][dup, :], axis=0)
     print(f'importance number {iImp} has shape {importanceList[iImp].shape}')
+    print(f'importance number {iImp} has {importanceList[iImp].sum().sum()} entries above threshold {threshold} out of {importanceList[iImp].size}')
     
 # Intialize containers of importance per class
 print(f'INITIALIZE IMPORTANCE PER CLASS\n')
@@ -95,8 +126,14 @@ for iImp in range(len(importanceList)):
 # Save importance per class
 print(f'CLASS-IMPORTANCE SCORE CALCULATION\n')
 for iImp in range(len(importanceList)):
+    nEntries = 0
+    totalEntries = 0
     for i in range(10):
-        importancePerClass[iImp][i] = importancePerClass[iImp][i].sum(0) / len(importancePerClass[iImp][i])
+        totalEntries += importancePerClass[iImp][i].size
+        aux = importancePerClass[iImp][i].sum(0) / len(importancePerClass[iImp][i])
+        nEntries += len(importancePerClass[iImp][i]) * (aux > 0).sum()
+        importancePerClass[iImp][i] = aux
+    print(f'importance number {iImp} has {nEntries} with relevant classes out of {totalEntries}')
         
 # Group all importances in same array
 for iImp in range(len(importanceList)):
@@ -110,7 +147,7 @@ for imp in importancePerClass:
 
     fig = go.Figure()
     fig.add_trace(go.Scatter(x=list(range(len(aux))), y=aux))
-    fig.update_layout(title=f'Layer {imp} total importance per neuron (EEB-{neuronPerLayer})',
+    fig.update_layout(title=f'Layer {imp} total importance per neuron (EE-{neuronPerLayer})',
                       xaxis_title="Neuron index",
                       yaxis_title="Neuron importance score",
                       paper_bgcolor='rgba(0,0,0,0)')
@@ -122,9 +159,8 @@ for imp in importancePerClass:
 
     fig = go.Figure()
     fig.add_trace(go.Scatter(y=aux))
-    fig.update_layout(title=f'Layer {imp} number of important classes per neuron (EEB-{neuronPerLayer})',
+    fig.update_layout(title=f'Layer {imp} number of important classes per neuron (EE-{neuronPerLayer})',
                       xaxis_title="Neuron index",
                       yaxis_title="Number of important classes",
                       paper_bgcolor='rgba(0,0,0,0)')
     fig.show()
-

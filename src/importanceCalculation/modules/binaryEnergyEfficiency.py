@@ -162,13 +162,13 @@ class BinaryNeuralNetwork(nn.Module):
 
 	def computeImportance(self, neuronPerLayer):
 		# CAREFUL, as values are either +1 or -1, importance is equal to gradient
-		importanceSTE0 = np.abs(self.gradientsSTE0)
+		importanceSTE0 = np.abs(np.multiply(self.valueSTE0, self.gradientsSTE0))
 		print('Importance STE0 calculated')
-		importanceSTE1 = np.abs(self.gradientsSTE1)
+		importanceSTE1 = np.abs(np.multiply(self.valueSTE1, self.gradientsSTE1))
 		print('Importance STE1 calculated')
-		importanceSTE2 = np.abs(self.gradientsSTE2)
+		importanceSTE2 = np.abs(np.multiply(self.valueSTE2, self.gradientsSTE2))
 		print('Importance STE2 calculated')
-		importanceSTE3 = np.abs(self.gradientsSTE3)
+		importanceSTE3 = np.abs(np.multiply(self.valueSTE3, self.gradientsSTE3))
 		print('Importance STE3 calculated')
 
 		return [importanceSTE0, importanceSTE1, importanceSTE2, importanceSTE3]
