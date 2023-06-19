@@ -14,7 +14,7 @@ class BinaryVGGSmall(nn.Module):
 		# Layer 0
 		self.conv0 = nn.Conv2d(3, 64, kernel_size=3, padding=1)
 		self.bn0 = nn.BatchNorm2d(64)
-		self.relu0 = nn.ReLU()
+		self.relu0 = STEFunction()
 		self.maxpool0 = nn.MaxPool2d(kernel_size=2, stride=2)
 
 		# Layer 1

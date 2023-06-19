@@ -16,7 +16,8 @@ import torch.nn as nn
 batch_size = 200
 epochs = 40
 dataFolder = '/home/carlosl/Dokumente/nn-accelerator-logic/data'
-resizeFactor = 3
+resizeFactor = 5
+
 modelName = 'binaryVGGSmall'
 
 # Check mps maybe if working in MacOS
