@@ -4,17 +4,21 @@ from torchvision import datasets
 from torchvision.transforms import ToTensor, Compose, Normalize, RandomHorizontalFlip, RandomCrop
 from torch.utils.data import DataLoader
 from modules.vggSmall import VGGSmall
+from modules.binaryVggVerySmall import binaryVGGVerySmall
 import plotly.graph_objects as go
 import numpy as np
 import pandas as pd
 
-modelFilename = f'src\modelCreation\savedModels\VGGSmall'
+modelName = 'binaryVggVerySmall'
+modelFilename = f'src\modelCreation\savedModels\{modelName}'
 # Check mps maybe if working in MacOS
 device = 'cuda' if torch.cuda.is_available() else 'cpu'
+model = binaryVGGVerySmall()
 
 '''
 Importing CIFAR10 dataset
 '''
+# Is not relevant to perform appropriate transformation as only target are important
 print(f'DOWNLOAD DATASET\n')
 train_dataset = datasets.CIFAR10(root='./data', train=True, transform=Compose([
     RandomHorizontalFlip(),
@@ -26,11 +30,11 @@ train_dataset = datasets.CIFAR10(root='./data', train=True, transform=Compose([
 '''
 Load model
 '''
-model = VGGSmall()
+
 model.load_state_dict(torch.load(modelFilename))
 
-model.loadActivations(f'data/activations/vggSmall')
-model.loadGradients(f'data/gradients/vggSmall')
+model.loadActivations(f'data/activations/{modelName}')
+model.loadGradients(f'data/gradients/{modelName}')
 importances = model.computeImportance()
 
 '''
@@ -78,7 +82,7 @@ for grad in model.helpHookList:
 			importancePerClassNeuron[grad][nClass] = importancePerClassFilter[grad][nClass].flatten() # To store information about all neurons
 			# Take the max score per filter
 			importancePerClassFilter[grad][nClass] = importancePerClassFilter[grad][nClass].max(0)
-		else: # Then it comes from a neural layer
+		else: # Then it comes from a linear layer
 			importancePerClassFilter[grad][nClass] = importancePerClassFilter[grad][nClass].sum(0) / len(importancePerClassFilter[grad][nClass])
 	
 # Join the lists so each row is a class and each column a filter/neuron
@@ -96,46 +100,51 @@ for grad in importancePerClassFilter:
  
 	fig = go.Figure()
 	fig.add_trace(go.Scatter(y=aux))
-	fig.update_layout(title=f'{grad} total importance per filter ({len(aux)})')
-	fig.show()
+	fig.update_layout(title=f'{grad} total importance per filter ({len(aux)})',
+                   paper_bgcolor='rgba(0,0,0,0)')
+	# fig.show()
+	fig.write_image(f'{grad}_importance.png')
  
 	# Print aggregated importance
-	if not grad.startswith('relul'):
+	if not (grad.startswith('relul') or grad.startswith('stel')):
 		aux = importancePerClassNeuron[grad].sum(0)
 		aux.sort()
 	
 		fig = go.Figure()
 		fig.add_trace(go.Scatter(y=aux))
-		fig.update_layout(title=f'{grad} total importance per neuron ({len(aux)})')
-		fig.show()
+		fig.update_layout(title=f'{grad} total importance per neuron ({len(aux)})',
+                    paper_bgcolor='rgba(0,0,0,0)')
+		# fig.show()
+		try:
+			fig.write_image(f'{grad}_importanceNeuron.png')
+		except:
+			pass
 	
 	
 	# Print classes that are important
-	if grad.startswith('relul'):
+	if grad.startswith('relul') or grad.startswith('stel'):
 		aux = (importancePerClassFilter[grad] > 0).sum(0)
 		aux.sort()
 		
 		fig = go.Figure()
 		fig.add_trace(go.Scatter(y=aux))
-		fig.update_layout(title=f'{grad} number of important classes per neuron ({len(aux)})')
-		fig.show()
+		fig.update_layout(title=f'{grad} number of important classes per neuron ({len(aux)})',
+                    paper_bgcolor='rgba(0,0,0,0)')
+		# fig.show()
+		try:
+			fig.write_image(f'{grad}_numberClasses.png')
+		except:
+			pass
 	else:
 		aux = (importancePerClassNeuron[grad] > 0).sum(0)
 		aux.sort()
 		
 		fig = go.Figure()
 		fig.add_trace(go.Scatter(y=aux))
-		fig.update_layout(title=f'{grad} number of important classes per neuron ({len(aux)})')
-		fig.show()
- 
- 	# Print importance per class
-	# aux = pd.DataFrame(importancePerClassFilter[grad],
-    #                 columns=[f'filter{i}' for i in range(importancePerClassFilter[grad].shape[1])])
-	# fig = go.Figure()
-	# for index, row in aux.iterrows():
-	# 	fig.add_trace(go.Bar(name=f'class{index}', y=row, x=aux.columns))
-	# fig.update_layout(title=f'{grad} importance per class', barmode='stack')
-	# fig.show()
-	pass
-
-
+		fig.update_layout(title=f'{grad} number of important classes per neuron ({len(aux)})',
+                    paper_bgcolor='rgba(0,0,0,0)')
+		try:
+			fig.write_image(f'{grad}_numberClasses.png')
+		except:
+			pass
+		# fig.show()

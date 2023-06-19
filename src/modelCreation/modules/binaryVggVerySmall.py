@@ -8,7 +8,7 @@ from ttUtilities.auxFunctions import binaryArrayToSingleValue, integerToBinaryAr
 import math
 
 class binaryVGGVerySmall(nn.Module):
-	def __init__(self):
+	def __init__(self, resizeFactor):
 		super(binaryVGGVerySmall, self).__init__()
 
 		# Layer 0
@@ -20,7 +20,7 @@ class binaryVGGVerySmall(nn.Module):
 		# Layer 1
 		self.conv1 = nn.Conv2d(64, 128, kernel_size=3, padding=1)
 		self.bn1 = nn.BatchNorm2d(128)
-		self.relu1 = STEFunction()
+		self.relu1 = nn.ReLU()
 		self.maxpool1 = nn.MaxPool2d(kernel_size=2, stride=2)
   
 		# Layer 2.1
@@ -42,14 +42,14 @@ class binaryVGGVerySmall(nn.Module):
 		self.maxpool42 = nn.MaxPool2d(kernel_size=2, stride=2)
   
 		# Layer FC0
-		self.l0 = nn.Linear(2*2*512, 1024)
+		self.l0 = nn.Linear(resizeFactor*resizeFactor*512, 1024)
 		self.bnl0 = nn.BatchNorm1d(1024)
 		self.relul0 = STEFunction()
   
 		# Layer FC1
 		self.l1 = nn.Linear(1024, 250)
 		self.bnl1 = nn.BatchNorm1d(250)
-		self.relul1 = nn.ReLU()
+		self.relul1 = STEFunction()
   
 		# Layer FC2
 		self.l2 = nn.Linear(250, 10)

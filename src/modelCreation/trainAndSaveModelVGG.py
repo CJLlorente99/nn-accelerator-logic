@@ -5,7 +5,6 @@ from torchvision import datasets
 from torchvision.transforms import ToTensor, Compose, Normalize, RandomHorizontalFlip, RandomCrop, Resize
 from torch.utils.data import DataLoader
 from modules.binaryVggVerySmall import binaryVGGVerySmall
-from modules.binaryVggVerySmall2 import binaryVGGVerySmall2
 from modules.vggVerySmall import VGGVerySmall
 from modules.vggSmall import VGGSmall
 import torch.optim as optim
@@ -15,9 +14,12 @@ import torch.nn as nn
 
 batch_size = 200
 epochs = 20
+resizeFactor = 3
+modelName = 'binaryVGGVerySmall_RRSSSSS'
 
 # Check mps maybe if working in MacOS
 device = 'cuda' if torch.cuda.is_available() else 'cpu'
+model = binaryVGGVerySmall(resizeFactor).to(device)
 
 '''
 Importing CIFAR10 dataset
@@ -28,13 +30,13 @@ train_dataset = datasets.CIFAR10(root='./data', train=True, transform=Compose([
         RandomCrop(32, 4),
         ToTensor(),
         Normalize((0.485, 0.456, 0.406), (0.229, 0.224, 0.225)),
-        Resize(64, antialias=False)]),
+        Resize(resizeFactor*32, antialias=False)]),
     download=False)
 
 test_dataset = datasets.CIFAR10(root='./data', train=False, transform=Compose([
         ToTensor(),
         Normalize((0.485, 0.456, 0.406), (0.229, 0.224, 0.225)),
-        Resize(64, antialias=False)]),
+        Resize(resizeFactor*32, antialias=False)]),
     download=False)
 
 '''
@@ -47,8 +49,6 @@ test_dataloader = DataLoader(test_dataset, batch_size=batch_size)
 Instantiate NN models
 '''
 print(f'MODEL INSTANTIATION\n')
-
-model = VGGVerySmall().to(device)
 
 '''
 Train and test
@@ -64,4 +64,4 @@ trainAndTest(epochs, train_dataloader, test_dataloader, model, opt, criterion)
 Save
 '''
 
-torch.save(model.state_dict(), f'./src/modelCreation/savedModels/VGGVerySmall')
+torch.save(model.state_dict(), f'./src/modelCreation/savedModels/{modelName}_{resizeFactor}')

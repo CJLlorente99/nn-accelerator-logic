@@ -10,10 +10,10 @@ import plotly.graph_objects as go
 import numpy as np
 import pandas as pd
 
-modelName = f'binaryVGGVerySmall'
-model = binaryVGGVerySmall()
+modelName = f'VGGVerySmall'
+model = VGGVerySmall()
 batch_size = 64
-perGradientSampling = 0.1
+perGradientSampling = 0.3
 # Check mps maybe if working in MacOS
 device = 'cuda' if torch.cuda.is_available() else 'cpu'
 
@@ -128,7 +128,8 @@ for grad in importancePerClassFilter:
  
 	fig = go.Figure()
 	fig.add_trace(go.Scatter(x=list(range(len(aux))), y=aux))
-	fig.update_layout(title=f'{grad} total importance per filter ({len(aux)})')
+	fig.update_layout(title=f'{grad} total importance per filter ({len(aux)})',
+                   paper_bgcolor='rgba(0,0,0,0)')
 	fig.show()
 	
 	# Print classes that are important
@@ -138,7 +139,8 @@ for grad in importancePerClassFilter:
 		
 		fig = go.Figure()
 		fig.add_trace(go.Scatter(y=aux))
-		fig.update_layout(title=f'{grad} number of important classes per neuron ({len(aux)})')
+		fig.update_layout(title=f'{grad} number of important classes per neuron ({len(aux)})',
+                    paper_bgcolor='rgba(0,0,0,0)')
 		fig.show()
 	else:
 		aux = (importancePerClassNeuron[grad] > 0).sum(0)
@@ -146,7 +148,8 @@ for grad in importancePerClassFilter:
 		
 		fig = go.Figure()
 		fig.add_trace(go.Scatter(y=aux))
-		fig.update_layout(title=f'{grad} number of important classes per neuron ({len(aux)})')
+		fig.update_layout(title=f'{grad} number of important classes per neuron ({len(aux)})',
+                    paper_bgcolor='rgba(0,0,0,0)')
 		fig.show()
  
  	# Print importance per class

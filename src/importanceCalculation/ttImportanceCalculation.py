@@ -6,7 +6,6 @@ from torchvision import datasets
 from torchvision.transforms import ToTensor, Compose, Normalize, RandomHorizontalFlip, RandomCrop, Resize
 from torch.utils.data import DataLoader
 from modules.binaryVggVerySmall import binaryVGGVerySmall
-from modules.binaryVggVerySmall2 import binaryVGGVerySmall2
 from modules.vggVerySmall import VGGVerySmall
 from modules.vggSmall import VGGSmall
 from ttUtilities.helpLayerNeuronGenerator import HelpGenerator
@@ -14,7 +13,7 @@ from ttUtilities.auxFunctions import integerToBinaryArray
 import numpy as np
 import os
 
-modelName = f'example'
+modelName = f'binaryVGGVerySmall'
 batch_size = 64
 nClasses = 10
 
@@ -44,12 +43,15 @@ model.load_state_dict(torch.load(f'./src/modelCreation/savedModels/{modelName}')
 '''
 Load activations
 '''
-model.loadActivations(f'data/activations/{modelName}')
-importances = model.loadImportances(f'data/importances/{modelName}')
+model.loadActivations(f'data/activations\{modelName}')
+model.loadGradients(f'data/gradients\{modelName}')
+importances = model.computeImportance()
 
 '''
 Calculate importance scores
 '''
+
+print('APPLY THRESHOLD \n')
 threshold = 10e-50
 for i in range(len(importances)):
 	importances[i] = (importances[i] > threshold)
@@ -65,34 +67,38 @@ for grad in model.helpHookList:
 		importancePerClassNeuron[grad][i] = {}
  
 # Iterate through the calculated importances and assign depending on the class
+print('ASSIGN TO CLASSES \n')
 imp = 0
 for grad in model.helpHookList:
 	importance = importances[imp]
 	if importance.ndim > 2:
 		for i in range(importance.shape[1]):
-			importancePerClassFilter[grad][train_dataset.targets[i]].append(importance[:, i, :])
+			importancePerClassFilter[grad][train_dataset.targets[i]].append(importance[i, :, :])
 	else:
 		for i in range(importance.shape[0]):
 			importancePerClassFilter[grad][train_dataset.targets[i]].append(importance[i, :])
 	imp += 1
  
  # Change from list to array each entry of importancePerClassFilter
+print('CLASSES LIST TO ARRAY \n')
 for grad in model.helpHookList:
 	for nClass in importancePerClassFilter[grad]:
 		importancePerClassFilter[grad][nClass] = np.array(importancePerClassFilter[grad][nClass])
  
  # Iterate through the importance scores and convert them into importance values
+print('CALCULATE IMPORTANCE VALUES \n')
 for grad in model.helpHookList:
 	for nClass in importancePerClassFilter[grad]:
 		if importancePerClassFilter[grad][nClass].ndim > 2: # Then it comes from a conv layer
 			importancePerClassFilter[grad][nClass] = importancePerClassFilter[grad][nClass].sum(0) / len(importancePerClassFilter[grad][nClass])
 			importancePerClassNeuron[grad][nClass] = importancePerClassFilter[grad][nClass].flatten() # To store information about all neurons
 			# Take the max score per filter
-			importancePerClassFilter[grad][nClass] = importancePerClassFilter[grad][nClass].max(0)
+			importancePerClassFilter[grad][nClass] = importancePerClassFilter[grad][nClass].max(1)
 		else: # Then it comes from a neural layer
 			importancePerClassFilter[grad][nClass] = importancePerClassFilter[grad][nClass].sum(0) / len(importancePerClassFilter[grad][nClass])
 	
 # Join the lists so each row is a class and each column a filter/neuron
+print('JOIN CLASS-IMPORTANCE \n')
 for grad in importancePerClassFilter:
 	importancePerClassFilter[grad] = np.row_stack(tuple(importancePerClassFilter[grad].values()))
 	importancePerClassNeuron[grad] = np.row_stack(tuple(importancePerClassNeuron[grad].values()))
@@ -104,13 +110,11 @@ Loop over the possibly optimized layers. Create and optimize the TT
 previousGrad = ''
 iImportance = 0
 for grad in model.helpHookList:
-	if grad.startswith('ste') and previousGrad.startswith('ste'): # Input and output binary conv to conv
-		previousGrad = grad
-  
+	if grad.startswith('ste') and previousGrad.startswith('ste'): # Input and output binary conv to conv  
 		# If conv layer, change to (samples, filters)
 		if not previousGrad.startswith('stel'):
 		# TODO reduce the third dimension (samples, filters)
-			inputToLayer = model.dataFromHooks[previousGrad]['forward'].flatten()
+			inputToLayer = model.dataFromHooks[previousGrad]['forward'].reshape(-1, model.dataFromHooks[previousGrad]['forward'].shape[0])
 		if not grad.startswith('stel'):
 			outputToLayer = model.dataFromHooks[grad]['forward'].flatten()
 			imp = importances[iImportance].flatten()
@@ -131,5 +135,6 @@ for grad in model.helpHookList:
 			if not os.path.exists(f'data/optimizedTT/{modelName}/{grad}'):
 				os.makedirs(f'data/optimizedTT/{modelName}/{grad}')
 			df.to_feather(f'data/optimizedTT/{modelName}/{grad}/F{iFilter}')
+	previousGrad = grad	
 	iImportance += 1
   

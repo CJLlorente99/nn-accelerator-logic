@@ -214,10 +214,9 @@ class binaryVGGVerySmall(nn.Module):
 	def computeImportance(self):
 		importances = []
 
-		for grad in self.dataFromHooks:
-			aux = self.dataFromHooks[grad]['backward'].shape
-			print(f'Shape backward/forward {grad} is {aux}')
+		for grad in self.dataFromHooks:			
 			importances.append(np.abs(np.multiply(self.dataFromHooks[grad]['backward'], self.dataFromHooks[grad]['forward'])))
+			print(f'Shape importance {grad} is {importances[-1].shape}')
 	
 		return importances
 
@@ -263,17 +262,17 @@ class binaryVGGVerySmall(nn.Module):
     # Load activations
 	def loadActivations(self, baseFilename):
 		for grad in self.dataFromHooks:
-			if grad.startswith('relul'):
+			if grad.startswith('relul') or grad.startswith('stel'):
 				self.dataFromHooks[grad]['forward'] = pd.read_feather(f'{baseFilename}/{grad}').to_numpy()
-				print(self.dataFromHooks[grad]['forward'].shape)
 			else:
 				self.dataFromHooks[grad]['forward'] = []
 				for file in os.scandir(f'{baseFilename}/{grad}'):
 					self.dataFromHooks[grad]['forward'].append(pd.read_feather(f'{file.path}').to_numpy())
 				self.dataFromHooks[grad]['forward'] = np.array(self.dataFromHooks[grad]['forward'])
 				self.dataFromHooks[grad]['forward'] = np.moveaxis(self.dataFromHooks[grad]['forward'], 0, 1)
-				print(self.dataFromHooks[grad]['forward'].shape)
 			print(f'Activations from {grad} loaded')
+			print(self.dataFromHooks[grad]['forward'].shape)
+			print()
 				
     
     # Save gradients
@@ -297,14 +296,22 @@ class binaryVGGVerySmall(nn.Module):
 					pd.DataFrame(
 						self.dataFromHooks[grad]['backward'][:, iDepth, :], columns=columnTags).to_feather(
 							f'{baseFilename}/{grad}/{iDepth}')
-			print(f'Saved gradients {grad}')
+			print(f'Saved gradients {grad} \n')
     
 	# Load gradients
 	def loadGradients(self, baseFilename):
 		for grad in self.dataFromHooks:
-			self.dataFromHooks[grad]['backward'] = pd.read_feather(f'{baseFilename}/{grad}').to_numpy()
+			if grad.startswith('relul') or grad.startswith('stel'):
+				self.dataFromHooks[grad]['backward'] = pd.read_feather(f'{baseFilename}/{grad}').to_numpy()
+			else:
+				self.dataFromHooks[grad]['backward'] = []
+				for file in os.scandir(f'{baseFilename}/{grad}'):
+					self.dataFromHooks[grad]['backward'].append(pd.read_feather(f'{file.path}').to_numpy())
+				self.dataFromHooks[grad]['backward'] = np.array(self.dataFromHooks[grad]['backward'])
+				self.dataFromHooks[grad]['backward'] = np.moveaxis(self.dataFromHooks[grad]['backward'], 0, 1)
 			print(f'Gradients from {grad} loaded')
 			print(self.dataFromHooks[grad]['backward'].shape)
+			print()
     
 	# SqueezeActivationToUniqueValues (only binary)
 	def individualActivationsToUniqueValue(self):
