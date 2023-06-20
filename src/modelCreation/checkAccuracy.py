@@ -11,9 +11,10 @@ import torch.optim as optim
 import torch.nn as nn
 
 batch_size = 128
-modelFilename = f'/home/carlosl/Dokumente/nn-accelerator-logic/src/modelCreation/savedModels/VGGVerySmall'
+modelFilename = f'src\modelCreation\savedModels/binaryVGGVerySmall'
+relus = [1, 0, 0, 0, 0, 0, 1]
 resizeFactor = 2
-model = VGGVerySmall(resizeFactor)
+model = binaryVGGVerySmall(resizeFactor, relus)
 
 # Check mps maybe if working in MacOS
 device = 'cuda' if torch.cuda.is_available() else 'cpu'
@@ -22,19 +23,19 @@ device = 'cuda' if torch.cuda.is_available() else 'cpu'
 Importing CIFAR10 dataset
 '''
 print(f'DOWNLOAD DATASET\n')
-train_dataset = datasets.CIFAR10(root='../../data', train=True, transform=Compose([
+train_dataset = datasets.CIFAR10(root='./data', train=True, transform=Compose([
     RandomHorizontalFlip(),
     RandomCrop(32, 4),
     ToTensor(),
     Normalize((0.485, 0.456, 0.406), (0.229, 0.224, 0.225)),
     Resize(resizeFactor*32, antialias=False)]),
-                                 download=True)
+                                 download=False)
 
-test_dataset = datasets.CIFAR10(root='../../data', train=False, transform=Compose([
+test_dataset = datasets.CIFAR10(root='./data', train=False, transform=Compose([
     ToTensor(),
     Normalize((0.485, 0.456, 0.406), (0.229, 0.224, 0.225)),
     Resize(resizeFactor*32, antialias=False)]),
-                                 download=True)
+                                 download=False)
 
 '''
 Create DataLoader

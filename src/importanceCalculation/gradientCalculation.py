@@ -10,11 +10,11 @@ import plotly.graph_objects as go
 import numpy as np
 import pandas as pd
 
-modelName = f'binaryVGGVerySmall'
+modelName = f'binaryVGGVerySmall_1000001_2'
 model = binaryVGGVerySmall()
 batch_size = 64
-perGradientSampling = 0.025
-dataFolder = '/home/carlosl/Dokumente/nn-accelerator-logic/data'
+perGradientSampling = 1
+dataFolder = './data'
 # Check mps maybe if working in MacOS
 device = 'cuda' if torch.cuda.is_available() else 'cpu'
 
@@ -23,8 +23,6 @@ Importing CIFAR10 dataset
 '''
 print(f'DOWNLOAD DATASET\n')
 train_dataset = datasets.CIFAR10(root=dataFolder, train=True, transform=Compose([
-	RandomHorizontalFlip(),
-	RandomCrop(32, 4),
 	ToTensor(),
 	Normalize((0.485, 0.456, 0.406), (0.229, 0.224, 0.225)),
  	Resize(64, antialias=False)]),
@@ -40,7 +38,7 @@ sampleSize = int(perGradientSampling * len(train_dataset.data))  # sample size t
 '''
 Load model
 '''
-model.load_state_dict(torch.load(f'/home/carlosl/Dokumente/nn-accelerator-logic/src/modelCreation/savedModels/{modelName}'))
+model.load_state_dict(torch.load(f'./src/modelCreation/savedModels/{modelName}'))
 
 '''
 Calculate importance per class per neuron
@@ -158,6 +156,3 @@ for grad in importancePerClassFilter:
 	# 	fig.add_trace(go.Bar(name=f'class{index}', y=row, x=aux.columns))
 	# fig.update_layout(title=f'{grad} importance per class', barmode='stack')
 	# fig.show()
-	pass
-
-
