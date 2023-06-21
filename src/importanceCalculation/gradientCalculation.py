@@ -47,7 +47,7 @@ Calculate importance per class per neuron
 # Input samples and get gradients and values in each neuron
 print(f'GET GRADIENTS AND ACTIVATION VALUES\n')
 
-model.registerHooks()
+model.registerHooks(gradients=False, onlyLinear=True)
 model.eval()
 
 for i in range(sampleSize):
@@ -62,91 +62,91 @@ for i in range(sampleSize):
 model.listToArray()  # Hopefully improves memory usage
 
 importances = model.computeImportance()
-# model.saveActivations(f'{dataFolder}/activations/{modelName}')
+model.saveActivations(f'{dataFolder}/activations/{modelName}')
 # model.saveGradients(f'{dataFolder}/gradients/{modelName}')
 
-'''
-Calculate importance scores
-'''
-threshold = 10e-50
-for i in range(len(importances)):
-	importances[i] = (importances[i] > threshold)
+# '''
+# Calculate importance scores
+# '''
+# threshold = 10e-50
+# for i in range(len(importances)):
+# 	importances[i] = (importances[i] > threshold)
 
-'''
-Calculate importance per class
-'''
-importancePerClassFilter = {}
-importancePerClassNeuron = {}
-# Initialize for 10 classes and layers
-for grad in model.helpHookList:
-	importancePerClassFilter[grad] = {}
-	importancePerClassNeuron[grad] = {}
-	for i in range(10):
-		importancePerClassFilter[grad][i] = []
-		importancePerClassNeuron[grad][i] = {}
+# '''
+# Calculate importance per class
+# '''
+# importancePerClassFilter = {}
+# importancePerClassNeuron = {}
+# # Initialize for 10 classes and layers
+# for grad in model.helpHookList:
+# 	importancePerClassFilter[grad] = {}
+# 	importancePerClassNeuron[grad] = {}
+# 	for i in range(10):
+# 		importancePerClassFilter[grad][i] = []
+# 		importancePerClassNeuron[grad][i] = {}
 
-# Iterate through the calculated importances and assign depending on the class
-imp = 0
-for grad in model.helpHookList:
-	importance = importances[imp]
-	for i in range(importance.shape[0]):
-		if importance.ndim > 2:
-			importancePerClassFilter[grad][train_dataset.targets[i]].append(importance[i, :, :])
-		else:
-			importancePerClassFilter[grad][train_dataset.targets[i]].append(importance[i, :])
-	imp += 1
+# # Iterate through the calculated importances and assign depending on the class
+# imp = 0
+# for grad in model.helpHookList:
+# 	importance = importances[imp]
+# 	for i in range(importance.shape[0]):
+# 		if importance.ndim > 2:
+# 			importancePerClassFilter[grad][train_dataset.targets[i]].append(importance[i, :, :])
+# 		else:
+# 			importancePerClassFilter[grad][train_dataset.targets[i]].append(importance[i, :])
+# 	imp += 1
  
- # Change from list to array each entry of importancePerClassFilter
-for grad in model.helpHookList:
-	for nClass in importancePerClassFilter[grad]:
-		importancePerClassFilter[grad][nClass] = np.array(importancePerClassFilter[grad][nClass])
+#  # Change from list to array each entry of importancePerClassFilter
+# for grad in model.helpHookList:
+# 	for nClass in importancePerClassFilter[grad]:
+# 		importancePerClassFilter[grad][nClass] = np.array(importancePerClassFilter[grad][nClass])
  
- # Iterate through the importance scores and convert them into importance values
-for grad in model.helpHookList:
-	for nClass in importancePerClassFilter[grad]:
-		if importancePerClassFilter[grad][nClass].ndim > 2: # Then it comes from a conv layer
-			importancePerClassFilter[grad][nClass] = importancePerClassFilter[grad][nClass].sum(0) / len(importancePerClassFilter[grad][nClass])
-			importancePerClassNeuron[grad][nClass] = importancePerClassFilter[grad][nClass].flatten() # To store information about all neurons
-			# Take the max score per filter
-			importancePerClassFilter[grad][nClass] = importancePerClassFilter[grad][nClass].max(1)
-		else: # Then it comes from a neural layer
-			importancePerClassFilter[grad][nClass] = importancePerClassFilter[grad][nClass].sum(0) / len(importancePerClassFilter[grad][nClass])
+#  # Iterate through the importance scores and convert them into importance values
+# for grad in model.helpHookList:
+# 	for nClass in importancePerClassFilter[grad]:
+# 		if importancePerClassFilter[grad][nClass].ndim > 2: # Then it comes from a conv layer
+# 			importancePerClassFilter[grad][nClass] = importancePerClassFilter[grad][nClass].sum(0) / len(importancePerClassFilter[grad][nClass])
+# 			importancePerClassNeuron[grad][nClass] = importancePerClassFilter[grad][nClass].flatten() # To store information about all neurons
+# 			# Take the max score per filter
+# 			importancePerClassFilter[grad][nClass] = importancePerClassFilter[grad][nClass].max(1)
+# 		else: # Then it comes from a neural layer
+# 			importancePerClassFilter[grad][nClass] = importancePerClassFilter[grad][nClass].sum(0) / len(importancePerClassFilter[grad][nClass])
 	
-# Join the lists so each row is a class and each column a filter/neuron
-for grad in importancePerClassFilter:
-	importancePerClassFilter[grad] = np.row_stack(tuple(importancePerClassFilter[grad].values()))
-	importancePerClassNeuron[grad] = np.row_stack(tuple(importancePerClassNeuron[grad].values()))
+# # Join the lists so each row is a class and each column a filter/neuron
+# for grad in importancePerClassFilter:
+# 	importancePerClassFilter[grad] = np.row_stack(tuple(importancePerClassFilter[grad].values()))
+# 	importancePerClassNeuron[grad] = np.row_stack(tuple(importancePerClassNeuron[grad].values()))
 	
-'''
-Print results
-'''
-for grad in importancePerClassFilter:
-    # Print aggregated importance
-	aux = importancePerClassFilter[grad].sum(0)
-	aux.sort()	
+# '''
+# Print results
+# '''
+# for grad in importancePerClassFilter:
+#     # Print aggregated importance
+# 	aux = importancePerClassFilter[grad].sum(0)
+# 	aux.sort()	
  
-	fig = go.Figure()
-	fig.add_trace(go.Scatter(x=list(range(len(aux))), y=aux))
-	fig.update_layout(title=f'{grad} total importance per filter ({len(aux)})')
-	fig.show()
+# 	fig = go.Figure()
+# 	fig.add_trace(go.Scatter(x=list(range(len(aux))), y=aux))
+# 	fig.update_layout(title=f'{grad} total importance per filter ({len(aux)})')
+# 	fig.show()
 	
-	# Print classes that are important
-	if grad.startswith('relul') or grad.startswith('stel'):
-		aux = (importancePerClassFilter[grad] > 0).sum(0)
-		aux.sort()
+# 	# Print classes that are important
+# 	if grad.startswith('relul') or grad.startswith('stel'):
+# 		aux = (importancePerClassFilter[grad] > 0).sum(0)
+# 		aux.sort()
 		
-		fig = go.Figure()
-		fig.add_trace(go.Scatter(y=aux))
-		fig.update_layout(title=f'{grad} number of important classes per neuron ({len(aux)})')
-		fig.show()
-	else:
-		aux = (importancePerClassNeuron[grad] > 0).sum(0)
-		aux.sort()
+# 		fig = go.Figure()
+# 		fig.add_trace(go.Scatter(y=aux))
+# 		fig.update_layout(title=f'{grad} number of important classes per neuron ({len(aux)})')
+# 		fig.show()
+# 	else:
+# 		aux = (importancePerClassNeuron[grad] > 0).sum(0)
+# 		aux.sort()
 		
-		fig = go.Figure()
-		fig.add_trace(go.Scatter(y=aux))
-		fig.update_layout(title=f'{grad} number of important classes per neuron ({len(aux)})')
-		fig.show()
+# 		fig = go.Figure()
+# 		fig.add_trace(go.Scatter(y=aux))
+# 		fig.update_layout(title=f'{grad} number of important classes per neuron ({len(aux)})')
+# 		fig.show()
  
  	# Print importance per class
 	# aux = pd.DataFrame(importancePerClassFilter[grad],

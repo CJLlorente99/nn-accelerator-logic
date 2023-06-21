@@ -131,24 +131,28 @@ class binaryVGGVerySmall(nn.Module):
 		return x
 
 	# Probably there exists a better way to do this
-	def registerHooks(self):
+	def registerHooks(self, activations: bool = True, gradients: bool = True, onlyLinear: bool = False):
 		# Forward hooks are needed to compute importance
-		self.relu0.register_forward_hook(self.forward_hook_relu0)
-		self.relu1.register_forward_hook(self.forward_hook_relu1)
-		self.relu21.register_forward_hook(self.forward_hook_relu21)
-		self.relu31.register_forward_hook(self.forward_hook_relu31)
-		self.relu41.register_forward_hook(self.forward_hook_relu41)
-		self.relul0.register_forward_hook(self.forward_hook_relul0)
-		self.relul1.register_forward_hook(self.forward_hook_relul1)
+		if activations:
+			if not onlyLinear:
+				self.relu0.register_forward_hook(self.forward_hook_relu0)
+				self.relu1.register_forward_hook(self.forward_hook_relu1)
+				self.relu21.register_forward_hook(self.forward_hook_relu21)
+				self.relu31.register_forward_hook(self.forward_hook_relu31)
+				self.relu41.register_forward_hook(self.forward_hook_relu41)
+			self.relul0.register_forward_hook(self.forward_hook_relul0)
+			self.relul1.register_forward_hook(self.forward_hook_relul1)
   
 		# Backward hooks are needed to compute importance
-		self.relu0.register_full_backward_hook(self.backward_hook_relu0)
-		self.relu1.register_full_backward_hook(self.backward_hook_relu1)
-		self.relu21.register_full_backward_hook(self.backward_hook_relu21)
-		self.relu31.register_full_backward_hook(self.backward_hook_relu31)
-		self.relu41.register_full_backward_hook(self.backward_hook_relu41)
-		self.relul0.register_full_backward_hook(self.backward_hook_relul0)
-		self.relul1.register_full_backward_hook(self.backward_hook_relul1)
+		if gradients:
+			if not onlyLinear:
+				self.relu0.register_full_backward_hook(self.backward_hook_relu0)
+				self.relu1.register_full_backward_hook(self.backward_hook_relu1)
+				self.relu21.register_full_backward_hook(self.backward_hook_relu21)
+				self.relu31.register_full_backward_hook(self.backward_hook_relu31)
+				self.relu41.register_full_backward_hook(self.backward_hook_relu41)
+			self.relul0.register_full_backward_hook(self.backward_hook_relul0)
+			self.relul1.register_full_backward_hook(self.backward_hook_relul1)
 
 	# Define all backward hooks
 	def backward_hook_relu0(self, module, grad_input, grad_output):
