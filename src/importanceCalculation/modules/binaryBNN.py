@@ -262,8 +262,15 @@ class BNNBinaryNeuralNetwork(nn.Module):
 		if self.mod:
 			pd.DataFrame(
 				self.valueSTE4, columns=columnsInLayer5).to_feather(f'{baseFilename}Input5')
+			
+	def loadActivations(self, baseFilename: str):
+		self.input0 = pd.read_feather(f'{baseFilename}Input0').to_numpy()
+		self.valueSTE0 = pd.read_feather(f'{baseFilename}Input1').to_numpy()
+		self.valueSTE1 = pd.read_feather(f'{baseFilename}Input2').to_numpy()
+		self.valueSTE2 = pd.read_feather(f'{baseFilename}Input3').to_numpy()
+		self.valueSTE3 = pd.read_feather(f'{baseFilename}Input4').to_numpy()
 
-	def saveGradients(self, baseFilename: str, targets: list):
+	def saveGradients(self, baseFilename: str):
 		columnsInLayer1 = [f'N{i}' for i in range(len(self.gradientsSTE0[0]))]
 		columnsInLayer2 = [f'N{i}' for i in range(len(self.gradientsSTE1[0]))]
 		columnsInLayer3 = [f'N{i}' for i in range(len(self.gradientsSTE2[0]))]
@@ -272,25 +279,29 @@ class BNNBinaryNeuralNetwork(nn.Module):
 			columnsInLayer5 = [f'N{i}' for i in range(len(self.gradientsSTE4[0]))]
 
 		aux = pd.DataFrame(self.gradientsSTE0, columns=columnsInLayer1)
-		aux['target'] = targets
 		aux.to_feather(f'{baseFilename}STE0')
 
 		aux = pd.DataFrame(self.gradientsSTE1, columns=columnsInLayer2)
-		aux['target'] = targets
 		aux.to_feather(f'{baseFilename}STE1')
 
 		aux = pd.DataFrame(self.gradientsSTE2, columns=columnsInLayer3)
-		aux['target'] = targets
 		aux.to_feather(f'{baseFilename}STE2')
 
 		aux = pd.DataFrame(self.gradientsSTE3, columns=columnsInLayer4)
-		aux['target'] = targets
 		aux.to_feather(f'{baseFilename}STE3')
 
 		if self.mod:
 			aux = pd.DataFrame(self.gradientsSTE4, columns=columnsInLayer5)
-			aux['target'] = targets
 			aux.to_feather(f'{baseFilename}STE4')
+
+	def loadGradients(self, baseFilename: str):
+		self.gradientsSTE0 = pd.read_feather(f'{baseFilename}STE0').to_numpy()
+		self.gradientsSTE1 = pd.read_feather(f'{baseFilename}STE1').to_numpy()
+		self.gradientsSTE2 = pd.read_feather(f'{baseFilename}STE2').to_numpy()
+		self.gradientsSTE3 = pd.read_feather(f'{baseFilename}STE3').to_numpy()
+
+		if self.mod:
+			self.gradientsSTE4 = pd.read_feather(f'{baseFilename}STE4').to_numpy()
 
 	def signToBinary(self):
 		self.input0[self.input0 == -1] = 0

@@ -4,13 +4,15 @@ from torchvision import datasets
 from torchvision.transforms import ToTensor, Compose
 from torch.utils.data import DataLoader
 from modules.binaryEnergyEfficiency import BinaryNeuralNetwork
+from modules.binaryBNN import BNNBinaryNeuralNetwork
 from ttUtilities.helpLayerNeuronGenerator import HelpGenerator
 import numpy as np
 import plotly.graph_objects as go
 import matplotlib.pyplot as plt
 
-neuronPerLayer = 100
-modelFilename = f'/home/carlosl/Dokumente/nn-accelerator-logic/src/modelCreation/savedModels/MNIST_bin_100NPL'
+neuronPerLayer = 4096
+modelName = 'bnn_50ep_4096npl'
+modelFilename = f'./src/modelCreation/savedModels/{modelName}'
 batch_size = 1
 perGradientSampling = 1
 # Check mps maybe if working in MacOS
@@ -22,7 +24,7 @@ Importing MNIST dataset
 print(f'IMPORT DATASET\n')
 
 training_data = datasets.MNIST(
-    root='/home/carlosl/Dokumente/nn-accelerator-logic/data',
+    root='./data',
     train=True,
     download=False,
     transform=Compose([
@@ -39,7 +41,7 @@ Create DataLoader
 '''
 train_dataloader = DataLoader(training_data, batch_size=batch_size)
 
-model = BinaryNeuralNetwork(neuronPerLayer)
+model = BNNBinaryNeuralNetwork(neuronPerLayer)
 model.load_state_dict(torch.load(modelFilename))
 
 '''
@@ -47,21 +49,25 @@ Calculate importance per class per neuron
 '''
 
 # Input samples and get gradients and values in each neuron
-print(f'GET GRADIENTS AND ACTIVATION VALUES\n')
+# print(f'GET GRADIENTS AND ACTIVATION VALUES\n')
 
-model.registerHooks()
-model.eval()
+# model.registerHooks()
+# model.eval()
 
-for i in range(sampleSize):
-    X, y = train_dataloader.dataset[i]
-    model.zero_grad()
-    pred = model(X)
-    pred[0, y].backward()
+# for i in range(sampleSize):
+#     X, y = train_dataloader.dataset[i]
+#     model.zero_grad()
+#     pred = model(X)
+#     pred[0, y].backward()
 
-    if (i+1) % 500 == 0:
-        print(f"Get Gradients and Activation Values [{i+1:>5d}/{sampleSize:>5d}]")
+#     if (i+1) % 500 == 0:
+#         print(f"Get Gradients and Activation Values [{i+1:>5d}/{sampleSize:>5d}]")
 
-model.listToArray(neuronPerLayer)  # Hopefully improves memory usage
+# model.listToArray(neuronPerLayer)  # Hopefully improves memory usage
+# model.saveActivations(f'./data/activations/{modelName}/')
+# model.saveGradients(f'./data/gradients/{modelName}/')
+model.loadActivations(f'./data/activations/{modelName}/')
+model.loadGradients(f'./data/gradients/{modelName}/')
 importanceList = model.computeImportance(neuronPerLayer)
 
 
@@ -147,7 +153,7 @@ for imp in importancePerClass:
 
     fig = go.Figure()
     fig.add_trace(go.Scatter(x=list(range(len(aux))), y=aux))
-    fig.update_layout(title=f'Layer {imp} total importance per neuron (EE-{neuronPerLayer})',
+    fig.update_layout(title=f'Layer {imp} total importance per neuron (BNN-{neuronPerLayer})',
                       xaxis_title="Neuron index",
                       yaxis_title="Neuron importance score",
                       paper_bgcolor='rgba(0,0,0,0)')
@@ -159,7 +165,7 @@ for imp in importancePerClass:
 
     fig = go.Figure()
     fig.add_trace(go.Scatter(y=aux))
-    fig.update_layout(title=f'Layer {imp} number of important classes per neuron (EE-{neuronPerLayer})',
+    fig.update_layout(title=f'Layer {imp} number of important classes per neuron (BNN-{neuronPerLayer})',
                       xaxis_title="Neuron index",
                       yaxis_title="Number of important classes",
                       paper_bgcolor='rgba(0,0,0,0)')
