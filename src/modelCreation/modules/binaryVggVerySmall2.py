@@ -57,31 +57,31 @@ class binaryVGGVerySmall2(nn.Module):
 		self.maxpool42 = nn.MaxPool2d(kernel_size=2, stride=2)
   
 		# Layer FC0
-		self.l0 = nn.Linear(resizeFactor*resizeFactor*512, 1024)
-		self.bnl0 = nn.BatchNorm1d(1024)
+		self.l0 = nn.Linear(resizeFactor*resizeFactor*512, 4096)
+		self.bnl0 = nn.BatchNorm1d(4096)
 		if relus[5]:
 			self.relul0 = nn.ReLU()
 		else:
 			self.relul0 = STEFunction()
   
 		# Layer FC1
-		self.l1 = nn.Linear(1024, 1024)
-		self.bnl1 = nn.BatchNorm1d(1024)
+		self.l1 = nn.Linear(4096, 4096)
+		self.bnl1 = nn.BatchNorm1d(4096)
 		if relus[6]:
 			self.relul1 = nn.ReLU()
 		else:
 			self.relul1 = STEFunction()
 
 		# Layer FC2
-		self.l1 = nn.Linear(1024, 250)
-		self.bnl1 = nn.BatchNorm1d(250)
+		self.l2 = nn.Linear(4096, 1000)
+		self.bnl2 = nn.BatchNorm1d(1000)
 		if relus[7]:
 			self.relul2 = nn.ReLU()
 		else:
 			self.relul2 = STEFunction()
   
 		# Layer FC2
-		self.l2 = nn.Linear(250, 10)
+		self.l3 = nn.Linear(1000, 10)
   
 		# Initialize
 		for m in self.modules():
@@ -133,8 +133,13 @@ class binaryVGGVerySmall2(nn.Module):
 		x = self.l1(x)
 		x = self.bnl1(x)
 		x = self.relul1(x)
-  
+
 		# Layer FC2
 		x = self.l2(x)
+		x = self.bnl2(x)
+		x = self.relul2(x)
+  
+		# Layer FC3
+		x = self.l3(x)
 
 		return x

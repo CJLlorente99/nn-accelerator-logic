@@ -19,17 +19,21 @@ import sys
 batch_size = 200
 epochs = 20
 
-resizeFactor = 2
+resizeFactor = 3
 relus = [1, 1, 1, 1, 0, 0, 0, 0]  # 0 = Sign, 1 = relu
 relusStr = ''.join(map(str, relus))
 modelName = 'binaryVGGVerySmall2'
 
 # Check mps maybe if working in MacOS
 device = 'cuda' if torch.cuda.is_available() else 'cpu'
+print(device)
+
 if modelName == 'binaryVGGVerySmall':
     model = binaryVGGVerySmall(resizeFactor, relus).to(device)
 elif modelName == 'binaryVGGVerySmall2':
     model = binaryVGGVerySmall2(resizeFactor, relus).to(device)
+
+print(model.named_modules)
 
 '''
 Importing CIFAR10 dataset
