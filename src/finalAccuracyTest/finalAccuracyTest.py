@@ -10,9 +10,9 @@ import numpy as np
 batch_size = 100
 neuronPerLayer = 100
 mod = True  # Change accordingly in modelFilename too
-modelFilename = f'./src/modelCreation/savedModels/MNISTSignbinNN100Epoch{neuronPerLayer}NPLnllCriterion'
+modelFilename = f'src\modelCreation\savedModels\eeb_100ep_100npl'
 precision = 'bin'
-lastLayerInputsTrainFilename = f'C:/Users/carlo/Desktop/data/inputSimulated/L0'
+lastLayerInputsTrainFilename = f'C:/Users/jcll/Documents/nn-accelerator-logic/data/L0'
 lastLayerInputsTestFilename = f'example'
 
 
@@ -25,14 +25,14 @@ Importing MNIST dataset
 print(f'IMPORT DATASET\n')
 
 training_data = datasets.MNIST(
-    root='C:/Users/carlo/OneDrive/Documentos/Universidad/MUIT/Segundo/TFM/Code/data',
+    root='data',
     train=True,
     download=False,
     transform=ToTensor()
     )
 
 test_data = datasets.MNIST(
-    root='C:/Users/carlo/OneDrive/Documentos/Universidad/MUIT/Segundo/TFM/Code/data',
+    root='data',
     train=False,
     download=False,
     transform=ToTensor()
@@ -68,7 +68,8 @@ with open(lastLayerInputsTrainFilename) as f:
         # x = x[-102:-2]
         if len(x):
             x.pop()
-            line = np.array(x, dtype=np.double)            
+            line = np.array(x, dtype=np.double)
+            line[line == 0] = -1            
             dfInputsLastLayerTrain = pd.concat([dfInputsLastLayerTrain,
                                                 pd.DataFrame(line, index=columnTags).transpose()])
             
@@ -77,10 +78,8 @@ with open(lastLayerInputsTrainFilename) as f:
                 print(f"Load inputs [{count+1:>5d}/{numLines:>5d}]")
         else:
             break         
-            
-dfInputsLastLayerTrain[dfInputsLastLayerTrain == 0] = -1
-            
-dfInputsLastLayerTest = pd.DataFrame(columns=columnTags)
+                        
+# dfInputsLastLayerTest = pd.DataFrame(columns=columnTags)
         
 # with open(lastLayerInputsTestFilename) as f:
 #         while True:

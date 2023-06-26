@@ -10,18 +10,19 @@ import torch.nn as nn
 
 # WARNING! The tt file is ordered
 
-layer = 1
+layer = 0
 
-inputFilename = f'data/inputs/layer{layer}'
-simulatedFilename = f'L{layer}_'
+inputFilename = f'data/inputs/trainInput'
+simulatedFilename = f'data/L0'
 neuronPerLayer = 100
-modelFilename = f'./src/modelCreation/savedModels/MNISTSignbinNN100Epoch{neuronPerLayer}NPLnllCriterion'
+modelFilename = f'src\modelCreation\savedModels\eeb_100ep_100npl'
 
 # Check mps maybe if working in MacOS
 device = 'cuda' if torch.cuda.is_available() else 'cpu'
 
 model = BinaryNeuralNetwork(neuronPerLayer).to(device)
 model.load_state_dict(torch.load(modelFilename))
+model.eval()
 
 correct = 0
 count = 0
@@ -33,14 +34,15 @@ with open(simulatedFilename) as f_sim:
             y_simulated = list(f_sim.readline())
             x_real = list(f_input.readline())
             if len(y_simulated):
-                y_simulated.pop()
+                y_simulated.pop()  # Cause last value is a \n
                 line_simulated = np.array(y_simulated, dtype=np.double)
+                line_simulated[line_simulated == 0] = -1
                 
                 x_real.pop()
                 line_real = np.array(x_real, dtype=np.double)
-                pred = model.forwardOneLayer(torch.tensor(line_real).type(torch.FloatTensor), layer)           
+                pred = model.forwardOneLayer(torch.tensor(line_real[None, :]).type(torch.FloatTensor), layer)           
                 
-                if pred == line_simulated:
+                if (pred.cpu().detach().numpy()[0] == line_simulated).all():
                     correct += 1
                 
                 count += 1
@@ -49,5 +51,5 @@ with open(simulatedFilename) as f_sim:
             else:
                 break     
             
-print(f'Correct {correct}/{len(numLines)} {correct/len(numLines)*100}%')
+print(f'Correct {correct}/{numLines} {correct/numLines*100}%')
     
