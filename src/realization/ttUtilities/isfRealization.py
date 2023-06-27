@@ -3,84 +3,39 @@ This file contains the methods needed to realize the NN into a HW compatible rea
 '''
 import pandas as pd
 import itertools
-from sklearn.neighbors import NearestNeighbors
-from sympy.logic import SOPform
-from sympy import symbols
-from ttUtilities.auxFunctions import integerToBinaryArray, binaryArrayToSingleValue
 import numpy as np
+import os
 
 
 class DNFRealization:
-	def __init__(self, nNeurons):
-		self.tt = pd.DataFrame()
-		self.nNeurons = nNeurons
-		self.outputTags = []
-		self.activationTags = []
-		self.lengthActivationTags = []
-		self.discriminationTags = []
-		self.lengthDiscriminationTags = []
-		self.tag = [f'N{i}' for i in range(self.nNeurons)]
-		self.discrimData = None
-		self.setOnOff = None
+	def __init__(self, ttFolderName):
+		self.ttFolderName = ttFolderName
 
-	def loadTT(self, filename: str):
-		"""
-		Method that loads a TT from a feather file
-		:param filename:
-		"""
-		self.tt = pd.read_feather(filename)
-		self.outputTags = [col for col in self.tt if col.startswith('output')]
-		self.activationTags = [col for col in self.tt if col.startswith('activation')]
-		self.lengthActivationTags = [col for col in self.tt if col.startswith('lengthActivation')]
-		self.discriminationTags = [col for col in self.tt if col.startswith('discriminator')]
-		self.lengthDiscriminationTags = [col for col in self.tt if col.startswith('lengthDiscriminator')]
-
-		print(f'Unrolling to binary array')
-		setOnOff = self.tt.drop(self.outputTags + self.discriminationTags + self.lengthDiscriminationTags, axis=1).apply(self._toBinaryArrayActivations, axis=1)
-		self.setOnOff = np.array([np.array(i) for i in setOnOff])
-		self.setOnOff = pd.DataFrame(self.setOnOff, columns=self.tag)
-		print(f'Unrolled to binary array')
-
-		if self.discriminationTags:
-			print(f'Unrolling discriminator')
-			discrimData = self.tt.drop(self.outputTags + self.activationTags + self.lengthActivationTags, axis=1).apply(self._toBinaryArrayDiscriminator, axis=1)
-			self.discrimData = np.array([np.array(i) for i in discrimData])
-			print(f'Unrolled discriminator')
-
-		self.tt = self.tt[self.outputTags]
-
-	def generateEspressoInput(self, df: pd.DataFrame, filename: str, neuron: str, joinOutput: bool = False):
+	def generateEspressoInput(self, df: pd.DataFrame, filename: str):
 		"""
 		Method that parses an ON-set and OFF-set defined TT into a PLA file that can be processed by Espresso SW
 		:param df:
 		:param filename:
 		"""
+		inTags = [col for col in df.columns if col.startswith('IN')]
+		outTag = [col for col in df.columns if col.startswith('OUT')]
+
 		with open(f'{filename}.pla', 'w') as f:
 			# Write header of PLA file
-			f.write(f'.i {self.nNeurons}\n')  # Number of input neurons
-			if joinOutput:
-				f.write(f'.o {len(neuron)}\n')  # Number of output per layer
-			else:
-				f.write(f'.o {1}\n')  # Number of output per neuron (just 1)
-			tags = [f'N{i}' for i in range(self.nNeurons)]
-			tags = ' '.join(tags)
+			f.write(f'.i {len(inTags)}\n')  # Number of input neurons
+			f.write(f'.o {1}\n')  # Number of output per neuron (just 1)
+			tags = ' '.join(inTags)
 			f.write(f'.ilb {tags}\n')  # Names of the input variables
-			if joinOutput:
-				outputText = ' '.join(neuron).split('\n')
-				f.write(f'.ob {outputText[0]}\n')  # Name of the output variable
-			else:
-				f.write(f'.ob {neuron}\n')  # Name of the output variable
+			f.write(f'.ob {outTag[0]}\n')  # Name of the output variable
 			f.write(f'.type fr\n')  # .pla contains ON-Set and OFF-Set
 			for index, row in df.iterrows():
-				text = ''.join(row[self.tag].to_string(header=False, index=False).split('\n'))
-				if joinOutput:
-					outputText = ''.join(row[neuron].to_string(header=False, index=False).split('\n'))
-				else:
-					outputText = row[neuron]
+				text = ''.join(row[inTags].to_string(header=False, index=False).split('\n'))
+				outputText = row[outTag[0]]
 				f.write(f'{text} {outputText}\n')
 			f.write(f'.e')
+		print(f'ESPRESSO PLA {filename} completed')
 
-	def generateABCInput(self, df: pd.DataFrame, filename: str, neuron, joinOutput: bool = False):
+	def generateABCInput(self, df: pd.DataFrame, filename: str):
 		"""
 		Method that parses an ON-set and OFF-set defined TT into a file that can be processed by ABC SW
 		:param df:
@@ -88,123 +43,56 @@ class DNFRealization:
 		"""
 		# ABC only assumes fd type in pla file. This means, the data in pla represents the ON-Set (1) and the
 		# DC-Set (-). As DC-Set is not supported, PLA file should only contain (1)
+		inTags = [col for col in df.columns if col.startswith('IN')]
+		outTag = [col for col in df.columns if col.startswith('OUT')]
 
 		with open(f'{filename}.pla', 'w') as f:
 			# Write header of PLA file
-			f.write(f'.i {self.nNeurons}\n')  # Number of input neurons
-			if joinOutput:
-				f.write(f'.o {len(neuron)}\n')  # Number of output per layer
-			else:
-				f.write(f'.o {1}\n')  # Number of output per neuron (just 1)
+			f.write(f'.i {len(inTags)}\n')  # Number of input neurons
+			f.write(f'.o {1}\n')  # Number of output per neuron (just 1)
 			# tags = [f'N{i}' for i in range(self.nNeurons)]
 			# tags = ' '.join(tags)
 			# f.write(f'.ilb {tags}\n')  # Names of the input variables
 			# f.write(f'.ob {neuron}\n')  # Name of the output variable
 			f.write(f'.p {len(df)}\n')
 			for index, row in df.iterrows():
-				text = ''.join(row[self.tag].to_string(header=False, index=False).split('\n'))
-				if joinOutput:
-					outputText = ''.join(row[neuron].to_string(header=False, index=False).split('\n'))
-				else:
-					outputText = row[neuron]
+				text = ''.join(row[inTags].to_string(header=False, index=False).split('\n'))
+				outputText = row[outTag[0]]
 				f.write(f'{text} {outputText}\n')
 			f.write(f'.e')
+		print(f'ABC PLA {filename} completed')
    
-	def generateAIG(self, df: pd.DataFrame, filename: str, neuron: str):
-		"""
-		Method that parses an ON-set  defined TT into a AIG file
-		:param df:
-		:param filename;
-		"""
-		pass
    
-	def createPLAFileEspresso(self, baseFilename: str, discriminated: bool = False, joinOutput: bool = False):
-		i = 0
-		if not joinOutput:
-			for neuron in self.outputTags:
-				df = self.tt[neuron].copy()
-				df = pd.concat([df, self.setOnOff], axis=1)
-				# df.rename(columns={neuron: 'output'}, inplace=True)
+	def createPLAFileEspresso(self, baseFilename: str):
+		# Care about the output folder
+		dirs = os.scandir(self.ttFolderName)
 
-				if discriminated:
-					print(f'Applying discriminator')
-					discrimData = self.discrimData[:, i]
-					df['drop'] = discrimData
-					df = df[df['drop'] == 1]
+		for dir in dirs:
+			if not os.path.isdir(f'{baseFilename}/{dir.name}'):
+				os.makedirs(f'{baseFilename}/{dir.name}')
 
+		# Loop over the dirs and their files
+		dirs = os.scandir(self.ttFolderName)
+		for dir in dirs:
+			files = os.scandir(f'{self.ttFolderName}/{dir.name}')
+			for file in files:
+				df = pd.read_csv(f'{self.ttFolderName}/{dir.name}/{file.name}', index_col=False)
 				df = df.astype('int')
+				self.generateEspressoInput(df, f'{baseFilename}/{dir.name}/{file.name}')
 
-				self.generateEspressoInput(df, f'{baseFilename}{neuron}', neuron)
-				del df  # caring about memory
-				print(f"Realize Espresso neurons [{i + 1:>5d}/{len(self.outputTags):>5d}]")
-				i += 1
-		if joinOutput:
-			df = self.tt[self.outputTags].copy()
-			df = pd.concat([df, self.setOnOff], axis=1)
-			# df.rename(columns={neuron: 'output'}, inplace=True)
+	def createPLAFileABC(self, baseFilename: str):
+		# Care about the output folder
+		dirs = os.scandir(self.ttFolderName)
 
-			if discriminated:
-				print(f'Applying discriminator')
-				discrimData = self.discrimData[:, i]
-				df['drop'] = discrimData
-				df = df[df['drop'] == 1]
+		for dir in dirs:
+			if not os.path.isdir(f'{baseFilename}/{dir.name}'):
+				os.makedirs(f'{baseFilename}/{dir.name}')
 
-			df = df.astype('int')
-
-			self.generateEspressoInput(df, f'{baseFilename}', self.outputTags, joinOutput)
-			del df  # caring about memory
-
-	def createPLAFileABC(self, baseFilename: str, discriminated: bool = False, joinOutput: bool = False):
-		i = 0
-		if not joinOutput:
-			for neuron in self.outputTags:
-				df = self.tt[neuron].copy()
-				df = pd.concat([df, self.setOnOff], axis=1)
-				# df.rename(columns={neuron: 'output'}, inplace=True)
-
-				if discriminated:
-					print(f'Applying discriminator')
-					discrimData = self.discrimData[:, i]
-					df['drop'] = discrimData
-					df = df[df['drop'] == 1]
-
-				# Take out entries out of the ON-Set
-				# Select only ON-Set
-				# df = df[df[neuron] == 1]
-
+		# Loop over the dirs and their files
+		dirs = os.scandir(self.ttFolderName)
+		for dir in dirs:
+			files = os.scandir(f'{self.ttFolderName}/{dir.name}')
+			for file in files:
+				df = pd.read_csv(f'{self.ttFolderName}/{dir.name}/{file.name}', index_col=False)
 				df = df.astype('int')
-
-				self.generateABCInput(df, f'{baseFilename}{neuron}', neuron)
-				del df  # caring about memory
-				print(f"Realize ABC neurons [{i + 1:>5d}/{len(self.outputTags):>5d}]")
-				i += 1
-		if joinOutput:
-			df = self.tt[self.outputTags].copy()
-			df = pd.concat([df, self.setOnOff], axis=1)
-			
-			if discriminated:
-				print(f'Applying discriminator')
-				discrimData = self.discrimData[:, i]
-				df['drop'] = discrimData
-				df = df[df['drop'] == 1]
-    
-			df = df.astype('int')
-
-			self.generateABCInput(df, f'{baseFilename}', self.outputTags, joinOutput)
-			del df  # caring about memory
-   
-	def _toBinaryArrayActivations(self, row):
-		"""
-		Private method
-		:param row:
-		:return:
-		"""
-		return integerToBinaryArray(row[self.activationTags], row[self.lengthActivationTags])
-
-	def _toBinaryArrayDiscriminator(self, row):
-		"""
-		Private method
-		:param row:
-		:return:
-		"""
-		return integerToBinaryArray(row[self.discriminationTags], row[self.lengthDiscriminationTags])
+				self.generateABCInput(df, f'{baseFilename}/{dir.name}/{file.name}')

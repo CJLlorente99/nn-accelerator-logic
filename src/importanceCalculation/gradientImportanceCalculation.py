@@ -15,7 +15,7 @@ neuronPerLayer = 100
 modelName = 'eeb_100ep_100npl'
 modelFilename = f'./src/modelCreation/savedModels/{modelName}'
 batch_size = 1
-perGradientSampling = 0.01
+perGradientSampling = 1
 # Check mps maybe if working in MacOS
 device = 'cuda' if torch.cuda.is_available() else 'cpu'
 
@@ -172,35 +172,39 @@ for iImp in range(len(importanceList)):
 #                       paper_bgcolor='rgba(0,0,0,0)')
 #     fig.show()
 
-# Create TT per layer
+# Create TT per layer (not optimized)
 # Layer 0
 for neuron in range(model.valueSTE0.shape[1]):
     columnsTags = [f'IN{i}' for i in range(model.input0.shape[1])]
     df = pd.DataFrame(model.input0, columns=columnsTags)
-    df[f'OUT{neuron}'] = model.valueSTE0[:, neuron]
+    df[f'OUT{neuron:02d}'] = model.valueSTE0[:, neuron]
     df[df == -1] = 0
     df.to_csv(f'data/layersTT/{modelName}/layer0/N{neuron:02d}', index=False)
+    print(f'data/layersTT/{modelName}/layer0/N{neuron:02d} created')
 
 # Layer 1
 for neuron in range(model.valueSTE1.shape[1]):
     columnsTags = [f'IN{i}' for i in range(model.valueSTE0.shape[1])]
     df = pd.DataFrame(model.valueSTE0, columns=columnsTags)
-    df[f'OUT{neuron}'] = model.valueSTE1[:, neuron]
+    df[f'OUT{neuron:02d}'] = model.valueSTE1[:, neuron]
     df[df == -1] = 0
     df.to_csv(f'data/layersTT/{modelName}/layer1/N{neuron:02d}', index=False)
+    print(f'data/layersTT/{modelName}/layer1/N{neuron:02d} created')
 
 # Layer 2
 for neuron in range(model.valueSTE2.shape[1]):
     columnsTags = [f'IN{i}' for i in range(model.valueSTE1.shape[1])]
     df = pd.DataFrame(model.valueSTE1, columns=columnsTags)
-    df[f'OUT{neuron}'] = model.valueSTE2[:, neuron]
+    df[f'OUT{neuron:02d}'] = model.valueSTE2[:, neuron]
     df[df == -1] = 0
     df.to_csv(f'data/layersTT/{modelName}/layer2/N{neuron:02d}', index=False)
+    print(f'data/layersTT/{modelName}/layer2/N{neuron:02d} created')
 
 # Layer 3
 for neuron in range(model.valueSTE3.shape[1]):
     columnsTags = [f'IN{i}' for i in range(model.valueSTE2.shape[1])]
     df = pd.DataFrame(model.valueSTE2, columns=columnsTags)
-    df[f'OUT{neuron}'] = model.valueSTE3[:, neuron]
+    df[f'OUT{neuron:02d}'] = model.valueSTE3[:, neuron]
     df[df == -1] = 0
     df.to_csv(f'data/layersTT/{modelName}/layer3/N{neuron:02d}', index=False)
+    print(f'data/layersTT/{modelName}/layer3/N{neuron:02d} created')
