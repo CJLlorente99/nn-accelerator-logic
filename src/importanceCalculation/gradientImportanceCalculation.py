@@ -9,12 +9,13 @@ from ttUtilities.helpLayerNeuronGenerator import HelpGenerator
 import numpy as np
 import plotly.graph_objects as go
 import matplotlib.pyplot as plt
+import pandas as pd
 
-neuronPerLayer = 4096
-modelName = 'bnn_50ep_4096npl'
+neuronPerLayer = 100
+modelName = 'eeb_100ep_100npl'
 modelFilename = f'./src/modelCreation/savedModels/{modelName}'
 batch_size = 1
-perGradientSampling = 1
+perGradientSampling = 0.01
 # Check mps maybe if working in MacOS
 device = 'cuda' if torch.cuda.is_available() else 'cpu'
 
@@ -41,7 +42,7 @@ Create DataLoader
 '''
 train_dataloader = DataLoader(training_data, batch_size=batch_size)
 
-model = BNNBinaryNeuralNetwork(neuronPerLayer)
+model = BinaryNeuralNetwork(neuronPerLayer)
 model.load_state_dict(torch.load(modelFilename))
 
 '''
@@ -49,25 +50,25 @@ Calculate importance per class per neuron
 '''
 
 # Input samples and get gradients and values in each neuron
-# print(f'GET GRADIENTS AND ACTIVATION VALUES\n')
+print(f'GET GRADIENTS AND ACTIVATION VALUES\n')
 
-# model.registerHooks()
-# model.eval()
+model.registerHooks()
+model.eval()
 
-# for i in range(sampleSize):
-#     X, y = train_dataloader.dataset[i]
-#     model.zero_grad()
-#     pred = model(X)
-#     pred[0, y].backward()
+for i in range(sampleSize):
+    X, y = train_dataloader.dataset[i]
+    model.zero_grad()
+    pred = model(X)
+    pred[0, y].backward()
 
-#     if (i+1) % 500 == 0:
-#         print(f"Get Gradients and Activation Values [{i+1:>5d}/{sampleSize:>5d}]")
+    if (i+1) % 500 == 0:
+        print(f"Get Gradients and Activation Values [{i+1:>5d}/{sampleSize:>5d}]")
 
-# model.listToArray(neuronPerLayer)  # Hopefully improves memory usage
+model.listToArray(neuronPerLayer)  # Hopefully improves memory usage
 # model.saveActivations(f'./data/activations/{modelName}/')
 # model.saveGradients(f'./data/gradients/{modelName}/')
-model.loadActivations(f'./data/activations/{modelName}/')
-model.loadGradients(f'./data/gradients/{modelName}/')
+# model.loadActivations(f'./data/activations/{modelName}/')
+# model.loadGradients(f'./data/gradients/{modelName}/')
 importanceList = model.computeImportance(neuronPerLayer)
 
 
@@ -146,27 +147,60 @@ for iImp in range(len(importanceList)):
     importancePerClass[iImp] = np.row_stack(tuple(importancePerClass[iImp].values()))
     
 # Print results
-for imp in importancePerClass:
-    # Print aggregated importance
-    aux = importancePerClass[imp].sum(0)
-    aux.sort()
+# for imp in importancePerClass:
+#     # Print aggregated importance
+#     aux = importancePerClass[imp].sum(0)
+#     aux.sort()
 
-    fig = go.Figure()
-    fig.add_trace(go.Scatter(x=list(range(len(aux))), y=aux))
-    fig.update_layout(title=f'Layer {imp} total importance per neuron (BNN-{neuronPerLayer})',
-                      xaxis_title="Neuron index",
-                      yaxis_title="Neuron importance score",
-                      paper_bgcolor='rgba(0,0,0,0)')
-    fig.show()
+#     fig = go.Figure()
+#     fig.add_trace(go.Scatter(x=list(range(len(aux))), y=aux))
+#     fig.update_layout(title=f'Layer {imp} total importance per neuron (BNN-{neuronPerLayer})',
+#                       xaxis_title="Neuron index",
+#                       yaxis_title="Neuron importance score",
+#                       paper_bgcolor='rgba(0,0,0,0)')
+#     fig.show()
 
-    # Print classes that are important
-    aux = (importancePerClass[imp] > 0).sum(0)
-    aux.sort()
+#     # Print classes that are important
+#     aux = (importancePerClass[imp] > 0).sum(0)
+#     aux.sort()
 
-    fig = go.Figure()
-    fig.add_trace(go.Scatter(y=aux))
-    fig.update_layout(title=f'Layer {imp} number of important classes per neuron (BNN-{neuronPerLayer})',
-                      xaxis_title="Neuron index",
-                      yaxis_title="Number of important classes",
-                      paper_bgcolor='rgba(0,0,0,0)')
-    fig.show()
+#     fig = go.Figure()
+#     fig.add_trace(go.Scatter(y=aux))
+#     fig.update_layout(title=f'Layer {imp} number of important classes per neuron (BNN-{neuronPerLayer})',
+#                       xaxis_title="Neuron index",
+#                       yaxis_title="Number of important classes",
+#                       paper_bgcolor='rgba(0,0,0,0)')
+#     fig.show()
+
+# Create TT per layer
+# Layer 0
+for neuron in range(model.valueSTE0.shape[1]):
+    columnsTags = [f'IN{i}' for i in range(model.input0.shape[1])]
+    df = pd.DataFrame(model.input0, columns=columnsTags)
+    df[f'OUT{neuron}'] = model.valueSTE0[:, neuron]
+    df[df == -1] = 0
+    df.to_csv(f'data/layersTT/{modelName}/layer0/N{neuron:02d}', index=False)
+
+# Layer 1
+for neuron in range(model.valueSTE1.shape[1]):
+    columnsTags = [f'IN{i}' for i in range(model.valueSTE0.shape[1])]
+    df = pd.DataFrame(model.valueSTE0, columns=columnsTags)
+    df[f'OUT{neuron}'] = model.valueSTE1[:, neuron]
+    df[df == -1] = 0
+    df.to_csv(f'data/layersTT/{modelName}/layer1/N{neuron:02d}', index=False)
+
+# Layer 2
+for neuron in range(model.valueSTE2.shape[1]):
+    columnsTags = [f'IN{i}' for i in range(model.valueSTE1.shape[1])]
+    df = pd.DataFrame(model.valueSTE1, columns=columnsTags)
+    df[f'OUT{neuron}'] = model.valueSTE2[:, neuron]
+    df[df == -1] = 0
+    df.to_csv(f'data/layersTT/{modelName}/layer2/N{neuron:02d}', index=False)
+
+# Layer 3
+for neuron in range(model.valueSTE3.shape[1]):
+    columnsTags = [f'IN{i}' for i in range(model.valueSTE2.shape[1])]
+    df = pd.DataFrame(model.valueSTE2, columns=columnsTags)
+    df[f'OUT{neuron}'] = model.valueSTE3[:, neuron]
+    df[df == -1] = 0
+    df.to_csv(f'data/layersTT/{modelName}/layer3/N{neuron:02d}', index=False)

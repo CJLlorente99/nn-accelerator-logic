@@ -1,16 +1,17 @@
 import torch
-from models.auxFunctionsEnergyEfficiency import trainAndTest, ToBlackAndWhite, test, ToSign
+from modelsCommon.auxFunctionsEnergyEfficiency import trainAndTest, test
+from modelsCommon.auxTransformations import *
 from torchvision import datasets
 from torchvision.transforms import ToTensor, Compose
 from torch.utils.data import DataLoader
-from models.binaryEnergyEfficiency import BinaryNeuralNetwork
-from models.fpNN import FPNeuralNetwork
+from modules.binaryEnergyEfficiency import BinaryNeuralNetwork
+from modules.fpNN import FPNeuralNetwork
 import torch.nn as nn
 
 batch_size = 100
 neuronPerLayer = 100
 mod = True  # Change accordingly in modelFilename too
-modelFilename = f'../models/savedModels/MNISTbinNN100Epoch{neuronPerLayer}NPLnllCriterion'
+modelFilename = f'src\modelCreation\savedModels\eeb_100ep_100npl'
 criterionName = 'nll'
 # criterionName = 'cel'
 precision = 'bin'
