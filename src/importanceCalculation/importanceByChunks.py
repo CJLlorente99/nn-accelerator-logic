@@ -5,13 +5,16 @@ from torchvision.transforms import ToTensor, Compose, Normalize, RandomHorizonta
 from torch.utils.data import DataLoader
 from modules.vggSmall import VGGSmall
 from modules.binaryVggVerySmall import binaryVGGVerySmall
+from modules.binaryVggVerySmall2 import binaryVGGVerySmall2
 import plotly.graph_objects as go
 import numpy as np
 import pandas as pd
 import os
 
-modelName = 'binaryVGGVerySmall_1000001_2'
+modelName = 'binaryVGGVerySmall2_11110000_3'
 modelFilename = f'src\modelCreation\savedModels\{modelName}'
+dataFolder = 'E:/'
+resizeFactor = 3
 # Check mps maybe if working in MacOS
 device = 'cuda' if torch.cuda.is_available() else 'cpu'
 
@@ -29,15 +32,15 @@ train_dataset = datasets.CIFAR10(root='./data', train=True, transform=Compose([
 '''
 Load model
 '''
-model = binaryVGGVerySmall()
+model = binaryVGGVerySmall2(resizeFactor=resizeFactor, relus=[1, 1, 1, 1, 0, 0, 0, 0])
 model.load_state_dict(torch.load(modelFilename))
 
 """
 Process by chunks
 """
 numberRowsPerChunk = 2.5 * 10 ** 3  # 2500
-gradientBaseFilename = f'data/gradients/{modelName}'
-activationBaseFilename = f'data/activations/{modelName}'
+gradientBaseFilename = f'{dataFolder}/gradients/{modelName}'
+activationBaseFilename = f'{dataFolder}/activations/{modelName}'
 
 # Create list for reader
 readerFromHooks = {}
