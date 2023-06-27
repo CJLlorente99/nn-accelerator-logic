@@ -52,7 +52,7 @@ print(f'GET GRADIENTS AND ACTIVATION VALUES\n')
 model.registerHooks()
 model.eval()
 
-start = 30000
+start = 0
 for i in range(start, sampleSize):
 	X, y = train_dataloader.dataset[i]
 	model.zero_grad()
