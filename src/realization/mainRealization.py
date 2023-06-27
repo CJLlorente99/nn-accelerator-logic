@@ -8,7 +8,7 @@ dnf = DNFRealization(ttFolderName)
 
 # Create PLA file for Espresso
 
-dnf.createPLAFileEspresso(f'./data/plas/{modelName}/ESPRESSO')
+# dnf.createPLAFileEspresso(f'./data/plas/{modelName}/ESPRESSO')
 
 # Create PLA file for ABC
 
