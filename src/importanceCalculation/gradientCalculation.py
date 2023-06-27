@@ -16,7 +16,7 @@ batch_size = 64
 perGradientSampling = 1
 resizeFactor = 3
 model = binaryVGGVerySmall2(resizeFactor=resizeFactor, relus=[1, 1, 1, 1, 0, 0, 0, 0])
-dataFolder = './data'
+dataFolder = 'E:/'
 # Check mps maybe if working in MacOS
 device = 'cuda' if torch.cuda.is_available() else 'cpu'
 
@@ -24,7 +24,7 @@ device = 'cuda' if torch.cuda.is_available() else 'cpu'
 Importing CIFAR10 dataset
 '''
 print(f'DOWNLOAD DATASET\n')
-train_dataset = datasets.CIFAR10(root=dataFolder, train=True, transform=Compose([
+train_dataset = datasets.CIFAR10(root='data', train=True, transform=Compose([
 	ToTensor(),
 	Normalize((0.485, 0.456, 0.406), (0.229, 0.224, 0.225)),
  	Resize(resizeFactor*32, antialias=False)]),
@@ -52,18 +52,18 @@ print(f'GET GRADIENTS AND ACTIVATION VALUES\n')
 model.registerHooks()
 model.eval()
 
-start = 0
+start = 40000
 for i in range(start, sampleSize):
 	X, y = train_dataloader.dataset[i]
 	model.zero_grad()
 	pred = model(X[None, :, :, :])
-	pred[0, y].backward()
+	# pred[0, y].backward()
 
 	if (i+1) % 10000 == 0:
 		print(f"Appending new values [{i+1:>5d}/{sampleSize:>5d}]")
 		model.listToArray()
-		# model.saveActivations(f'{dataFolder}/activations/{modelName}')
-		model.saveGradients(f'{dataFolder}/gradients/{modelName}')
+		model.saveActivations(f'{dataFolder}/activations/{modelName}')
+		# model.saveGradients(f'{dataFolder}/gradients/{modelName}')
 		model.resetHookLists()
 
 	if (i+1) % 500 == 0:
@@ -71,5 +71,5 @@ for i in range(start, sampleSize):
 
 model.listToArray()
 model.saveActivations(f'{dataFolder}/activations/{modelName}')
-model.saveGradients(f'{dataFolder}/gradients/{modelName}')
+# model.saveGradients(f'{dataFolder}/gradients/{modelName}')
 model.resetHookLists()

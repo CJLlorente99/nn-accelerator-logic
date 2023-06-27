@@ -168,26 +168,26 @@ class binaryVGGVerySmall2(nn.Module):
 	# Probably there exists a better way to do this
 	def registerHooks(self, activations: bool = True, gradients: bool = True):
 		# Forward hooks are needed to compute importance
-		# if activations:
-		# 	self.relu0.register_forward_hook(self.forward_hook_relu0)
-		# 	self.relu1.register_forward_hook(self.forward_hook_relu1)
-		# 	self.relu21.register_forward_hook(self.forward_hook_relu21)
-		# 	self.relu31.register_forward_hook(self.forward_hook_relu31)
-		# 	self.relu41.register_forward_hook(self.forward_hook_relu41)
-		# 	self.relul0.register_forward_hook(self.forward_hook_relul0)
-		# 	self.relul1.register_forward_hook(self.forward_hook_relul1)
-		# 	self.relul2.register_forward_hook(self.forward_hook_relul2)
+		if activations:
+			self.relu0.register_forward_hook(self.forward_hook_relu0)
+			self.relu1.register_forward_hook(self.forward_hook_relu1)
+			self.relu21.register_forward_hook(self.forward_hook_relu21)
+			self.relu31.register_forward_hook(self.forward_hook_relu31)
+			self.relu41.register_forward_hook(self.forward_hook_relu41)
+			self.relul0.register_forward_hook(self.forward_hook_relul0)
+			self.relul1.register_forward_hook(self.forward_hook_relul1)
+			self.relul2.register_forward_hook(self.forward_hook_relul2)
   
 		# Backward hooks are needed to compute importance
-		if gradients:
-			self.relu0.register_full_backward_hook(self.backward_hook_relu0)
-			self.relu1.register_full_backward_hook(self.backward_hook_relu1)
-			self.relu21.register_full_backward_hook(self.backward_hook_relu21)
-			self.relu31.register_full_backward_hook(self.backward_hook_relu31)
-			self.relu41.register_full_backward_hook(self.backward_hook_relu41)
-			self.relul0.register_full_backward_hook(self.backward_hook_relul0)
-			self.relul1.register_full_backward_hook(self.backward_hook_relul1)
-			self.relul2.register_full_backward_hook(self.backward_hook_relul2)
+		# if gradients:
+		# 	self.relu0.register_full_backward_hook(self.backward_hook_relu0)
+		# 	self.relu1.register_full_backward_hook(self.backward_hook_relu1)
+		# 	self.relu21.register_full_backward_hook(self.backward_hook_relu21)
+		# 	self.relu31.register_full_backward_hook(self.backward_hook_relu31)
+		# 	self.relu41.register_full_backward_hook(self.backward_hook_relu41)
+		# 	self.relul0.register_full_backward_hook(self.backward_hook_relul0)
+		# 	self.relul1.register_full_backward_hook(self.backward_hook_relul1)
+		# 	self.relul2.register_full_backward_hook(self.backward_hook_relul2)
 
 	# Define all backward hooks
 	def backward_hook_relu0(self, module, grad_input, grad_output):
@@ -252,8 +252,8 @@ class binaryVGGVerySmall2(nn.Module):
 	# Change each hook list to an equivalent array
 	def listToArray(self):
 		for grads in self.dataFromHooks:
-			# self.dataFromHooks[grads]['forward'] = np.array(self.dataFromHooks[grads]['forward'], dtype='float16')
-			self.dataFromHooks[grads]['backward'] = np.array(self.dataFromHooks[grads]['backward'], dtype='float16')
+			self.dataFromHooks[grads]['forward'] = np.array(self.dataFromHooks[grads]['forward'], dtype='float16')
+			# self.dataFromHooks[grads]['backward'] = np.array(self.dataFromHooks[grads]['backward'], dtype='float16')
 
 	# Clean hooks list
 	def resetHookLists(self):
