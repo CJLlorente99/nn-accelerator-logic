@@ -8,15 +8,14 @@ from ttUtilities.auxFunctions import binaryArrayToSingleValue, integerToBinaryAr
 import math
 import os
 
-class binaryVGGVerySmall(nn.Module):
+class binaryVGGVerySmallnoBN(nn.Module):
 	def __init__(self, resizeFactor, relus: list):
-		super(binaryVGGVerySmall, self).__init__()
+		super(binaryVGGVerySmallnoBN, self).__init__()
   
 		self.helpHookList = []
 
 		# Layer 0
 		self.conv0 = nn.Conv2d(3, 64, kernel_size=3, padding=1)
-		self.bn0 = nn.BatchNorm2d(64)
 		if relus[0]:
 			self.relu0 = nn.ReLU()
 			self.helpHookList.append('relu0')
@@ -27,7 +26,6 @@ class binaryVGGVerySmall(nn.Module):
 
 		# Layer 1
 		self.conv1 = nn.Conv2d(64, 128, kernel_size=3, padding=1)
-		self.bn1 = nn.BatchNorm2d(128)
 		if relus[1]:
 			self.relu1 = nn.ReLU()
 			self.helpHookList.append('relu1')
@@ -38,7 +36,6 @@ class binaryVGGVerySmall(nn.Module):
 
 		# Layer 2.1
 		self.conv21 = nn.Conv2d(128, 256, kernel_size=3, padding=1)
-		self.bn21 = nn.BatchNorm2d(256)
 		if relus[2]:
 			self.relu21 = nn.ReLU()
 			self.helpHookList.append('relu21')
@@ -49,7 +46,6 @@ class binaryVGGVerySmall(nn.Module):
 
 		# Layer 3.1
 		self.conv31 = nn.Conv2d(256, 512, kernel_size=3, padding=1)
-		self.bn31 = nn.BatchNorm2d(512)
 		if relus[3]:
 			self.relu31 = nn.ReLU()
 			self.helpHookList.append('relu31')
@@ -60,7 +56,6 @@ class binaryVGGVerySmall(nn.Module):
 
 		# Layer 4.1
 		self.conv41 = nn.Conv2d(512, 512, kernel_size=3, padding=1)
-		self.bn41 = nn.BatchNorm2d(512)
 		if relus[4]:
 			self.relu41 = nn.ReLU()
 			self.helpHookList.append('relu41')
@@ -71,7 +66,6 @@ class binaryVGGVerySmall(nn.Module):
 
 		# Layer FC0
 		self.l0 = nn.Linear(resizeFactor*resizeFactor*512, 1024)
-		self.bnl0 = nn.BatchNorm1d(1024)
 		if relus[5]:
 			self.relul0 = nn.ReLU()
 			self.helpHookList.append('relul0')
@@ -81,7 +75,6 @@ class binaryVGGVerySmall(nn.Module):
 
 		# Layer FC1
 		self.l1 = nn.Linear(1024, 250)
-		self.bnl1 = nn.BatchNorm1d(250)
 		if relus[6]:
 			self.relul1 = nn.ReLU()
 			self.helpHookList.append('relul1')
@@ -113,31 +106,26 @@ class binaryVGGVerySmall(nn.Module):
 	def forward(self, x):
 		# Layer 0
 		x = self.conv0(x)
-		x = self.bn0(x)
 		x = self.relu0(x)
 		x = self.maxpool0(x)
 
 		# Layer 1
 		x = self.conv1(x)
-		x = self.bn1(x)
 		x = self.relu1(x)
 		x = self.maxpool1(x)
   
 		# Layer 2.1
 		x = self.conv21(x)
-		x = self.bn21(x)
 		x = self.relu21(x)
 		x = self.maxpool22(x)
   
 		# Layer 3.1
 		x = self.conv31(x)
-		x = self.bn31(x)
 		x = self.relu31(x)
 		x = self.maxpool32(x)
   
 		# Layer 4.1
 		x = self.conv41(x)
-		x = self.bn41(x)
 		x = self.relu41(x)
 		x = self.maxpool42(x)
   
@@ -145,12 +133,10 @@ class binaryVGGVerySmall(nn.Module):
   
 		# Layer FC0
 		x = self.l0(x)
-		x = self.bnl0(x)
 		x = self.relul0(x)
   
 		# Layer FC1
 		x = self.l1(x)
-		x = self.bnl1(x)
 		x = self.relul1(x)
   
 		# Layer FC2

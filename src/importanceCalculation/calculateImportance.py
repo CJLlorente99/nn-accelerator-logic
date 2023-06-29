@@ -37,6 +37,7 @@ importances = model.computeImportance()
 Calculate importance scores
 '''
 threshold = 10e-50
+# threshold = 10e-5 # when model has BN
 for i in range(len(importances)):
 	importances[i] = (importances[i] > threshold)
 

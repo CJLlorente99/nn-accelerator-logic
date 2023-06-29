@@ -12,9 +12,10 @@ import pandas as pd
 import os
 
 modelName = 'binaryVGGVerySmall2_11110000_3'
-modelFilename = f'src\modelCreation\savedModels\{modelName}'
-dataFolder = 'E:/'
+# modelFilename = f'src\modelCreation\savedModels\{modelName}'
+dataFolder = '/media/carlosl/CHAR/data'
 resizeFactor = 3
+relus = [1, 1, 1, 1, 0, 0, 0, 0]
 # Check mps maybe if working in MacOS
 device = 'cuda' if torch.cuda.is_available() else 'cpu'
 
@@ -22,7 +23,7 @@ device = 'cuda' if torch.cuda.is_available() else 'cpu'
 Importing CIFAR10 dataset
 '''
 print(f'DOWNLOAD DATASET\n')
-train_dataset = datasets.CIFAR10(root='./data', train=True, transform=Compose([
+train_dataset = datasets.CIFAR10(root=f'{dataFolder}', train=True, transform=Compose([
 	RandomHorizontalFlip(),
 	RandomCrop(32, 4),
 	ToTensor(),
@@ -32,13 +33,13 @@ train_dataset = datasets.CIFAR10(root='./data', train=True, transform=Compose([
 '''
 Load model
 '''
-model = binaryVGGVerySmall2(resizeFactor=resizeFactor, relus=[1, 1, 1, 1, 0, 0, 0, 0])
-model.load_state_dict(torch.load(modelFilename))
+model = binaryVGGVerySmall2(resizeFactor=resizeFactor, relus=relus)
+# model.load_state_dict(torch.load(modelFilename))
 
 """
 Process by chunks
 """
-numberRowsPerChunk = 2.5 * 10 ** 3  # 2500
+numberRowsPerChunk = 0.25 * 10 ** 3  # 250
 gradientBaseFilename = f'{dataFolder}/gradients/{modelName}'
 activationBaseFilename = f'{dataFolder}/activations/{modelName}'
 
@@ -127,7 +128,8 @@ while True:
 		'''
 		Calculate importance scores and sum the entries below the threshold
 		'''
-		threshold = 10e-50
+		# threshold = 10e-50
+		threshold = 10e-5  # acceptable when in presence of BN
 		for i in range(len(importances)):
 			importances[i] = (importances[i] > threshold)
 			aux = importances[i].sum()
@@ -175,6 +177,8 @@ while True:
 					lenImportanceAccum[grad][nClass] += len(importancePerClassFilter[grad][nClass])
 		print(f"Processed samples [{int((nChunk+1)*numberRowsPerChunk)}/50000]")
 		nChunk += 1
+		if nChunk == 10:
+			break
 	except StopIteration:  # No more chunks
 		break
 

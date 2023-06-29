@@ -6,7 +6,9 @@ from torch.utils.data import DataLoader
 from modules.vggSmall import VGGSmall
 from modules.vggVerySmall import VGGVerySmall
 from modules.binaryVggVerySmall import binaryVGGVerySmall
+from modules.binaryVggVerySmallnoBN import binaryVGGVerySmallnoBN
 from modules.binaryVggVerySmall2 import binaryVGGVerySmall2
+from modules.binaryVggVerySmall2noBN import binaryVGGVerySmall2noBN
 import plotly.graph_objects as go
 import numpy as np
 import pandas as pd
@@ -15,8 +17,8 @@ modelName = f'binaryVGGVerySmall2_11110000_3'
 batch_size = 64
 perGradientSampling = 1
 resizeFactor = 3
-model = binaryVGGVerySmall2(resizeFactor=resizeFactor, relus=[1, 1, 1, 1, 0, 0, 0, 0])
-dataFolder = 'E:/'
+relus = [1, 1, 1, 1, 0, 0, 0, 0]
+dataFolder = '/media/carlosl/CHAR/data'
 # Check mps maybe if working in MacOS
 device = 'cuda' if torch.cuda.is_available() else 'cpu'
 
@@ -24,7 +26,7 @@ device = 'cuda' if torch.cuda.is_available() else 'cpu'
 Importing CIFAR10 dataset
 '''
 print(f'DOWNLOAD DATASET\n')
-train_dataset = datasets.CIFAR10(root='data', train=True, transform=Compose([
+train_dataset = datasets.CIFAR10(root='/media/carlosl/CHAR/data', train=True, transform=Compose([
 	ToTensor(),
 	Normalize((0.485, 0.456, 0.406), (0.229, 0.224, 0.225)),
  	Resize(resizeFactor*32, antialias=False)]),
@@ -40,7 +42,16 @@ sampleSize = int(perGradientSampling * len(train_dataset.data))  # sample size t
 '''
 Load model
 '''
-model.load_state_dict(torch.load(f'./src/modelCreation/savedModels/{modelName}'))
+if modelName.startswith('binaryVGGVerySmall_'):
+	model = binaryVGGVerySmall(resizeFactor=resizeFactor, relus=relus)
+elif modelName.startswith('binaryVGGVerySmall2_'):
+	model = binaryVGGVerySmall2(resizeFactor=resizeFactor, relus=relus)
+elif modelName.startswith('binaryVGGVerySmallnoBN_'):
+	model = binaryVGGVerySmallnoBN(resizeFactor=resizeFactor, relus=relus)
+elif modelName.startswith('binaryVGGVerySmall2noBN_'):
+	model = binaryVGGVerySmall2noBN(resizeFactor=resizeFactor, relus=relus)
+
+model.load_state_dict(torch.load(f'/media/carlosl/CHAR/data/savedModels/{modelName}'))
 
 '''
 Calculate importance per class per neuron
@@ -52,18 +63,18 @@ print(f'GET GRADIENTS AND ACTIVATION VALUES\n')
 model.registerHooks()
 model.eval()
 
-start = 40000
+start = 0
 for i in range(start, sampleSize):
 	X, y = train_dataloader.dataset[i]
 	model.zero_grad()
 	pred = model(X[None, :, :, :])
-	# pred[0, y].backward()
+	pred[0, y].backward()
 
 	if (i+1) % 10000 == 0:
 		print(f"Appending new values [{i+1:>5d}/{sampleSize:>5d}]")
 		model.listToArray()
 		model.saveActivations(f'{dataFolder}/activations/{modelName}')
-		# model.saveGradients(f'{dataFolder}/gradients/{modelName}')
+		model.saveGradients(f'{dataFolder}/gradients/{modelName}')
 		model.resetHookLists()
 
 	if (i+1) % 500 == 0:
@@ -71,5 +82,5 @@ for i in range(start, sampleSize):
 
 model.listToArray()
 model.saveActivations(f'{dataFolder}/activations/{modelName}')
-# model.saveGradients(f'{dataFolder}/gradients/{modelName}')
+model.saveGradients(f'{dataFolder}/gradients/{modelName}')
 model.resetHookLists()

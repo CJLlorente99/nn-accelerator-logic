@@ -8,15 +8,14 @@ from ttUtilities.auxFunctions import binaryArrayToSingleValue, integerToBinaryAr
 import math
 import os
 
-class binaryVGGVerySmall(nn.Module):
-	def __init__(self, resizeFactor, relus: list):
-		super(binaryVGGVerySmall, self).__init__()
+class binaryVGGVerySmall2noBN(nn.Module):
+	def __init__(self, resizeFactor, relus):
+		super(binaryVGGVerySmall2noBN, self).__init__()
   
 		self.helpHookList = []
 
 		# Layer 0
 		self.conv0 = nn.Conv2d(3, 64, kernel_size=3, padding=1)
-		self.bn0 = nn.BatchNorm2d(64)
 		if relus[0]:
 			self.relu0 = nn.ReLU()
 			self.helpHookList.append('relu0')
@@ -27,7 +26,6 @@ class binaryVGGVerySmall(nn.Module):
 
 		# Layer 1
 		self.conv1 = nn.Conv2d(64, 128, kernel_size=3, padding=1)
-		self.bn1 = nn.BatchNorm2d(128)
 		if relus[1]:
 			self.relu1 = nn.ReLU()
 			self.helpHookList.append('relu1')
@@ -38,7 +36,6 @@ class binaryVGGVerySmall(nn.Module):
 
 		# Layer 2.1
 		self.conv21 = nn.Conv2d(128, 256, kernel_size=3, padding=1)
-		self.bn21 = nn.BatchNorm2d(256)
 		if relus[2]:
 			self.relu21 = nn.ReLU()
 			self.helpHookList.append('relu21')
@@ -49,7 +46,6 @@ class binaryVGGVerySmall(nn.Module):
 
 		# Layer 3.1
 		self.conv31 = nn.Conv2d(256, 512, kernel_size=3, padding=1)
-		self.bn31 = nn.BatchNorm2d(512)
 		if relus[3]:
 			self.relu31 = nn.ReLU()
 			self.helpHookList.append('relu31')
@@ -60,7 +56,6 @@ class binaryVGGVerySmall(nn.Module):
 
 		# Layer 4.1
 		self.conv41 = nn.Conv2d(512, 512, kernel_size=3, padding=1)
-		self.bn41 = nn.BatchNorm2d(512)
 		if relus[4]:
 			self.relu41 = nn.ReLU()
 			self.helpHookList.append('relu41')
@@ -70,8 +65,7 @@ class binaryVGGVerySmall(nn.Module):
 		self.maxpool42 = nn.MaxPool2d(kernel_size=2, stride=2)
 
 		# Layer FC0
-		self.l0 = nn.Linear(resizeFactor*resizeFactor*512, 1024)
-		self.bnl0 = nn.BatchNorm1d(1024)
+		self.l0 = nn.Linear(resizeFactor*resizeFactor*512, 4096)
 		if relus[5]:
 			self.relul0 = nn.ReLU()
 			self.helpHookList.append('relul0')
@@ -80,8 +74,7 @@ class binaryVGGVerySmall(nn.Module):
 			self.helpHookList.append('stel0')
 
 		# Layer FC1
-		self.l1 = nn.Linear(1024, 250)
-		self.bnl1 = nn.BatchNorm1d(250)
+		self.l1 = nn.Linear(4096, 4096)
 		if relus[6]:
 			self.relul1 = nn.ReLU()
 			self.helpHookList.append('relul1')
@@ -90,7 +83,16 @@ class binaryVGGVerySmall(nn.Module):
 			self.helpHookList.append('stel1')
 
 		# Layer FC2
-		self.l2 = nn.Linear(250, 10)
+		self.l2 = nn.Linear(4096, 1000)
+		if relus[7]:
+			self.relul2 = nn.ReLU()
+			self.helpHookList.append('relul2')
+		else:
+			self.relul2 = STEFunction()
+			self.helpHookList.append('stel2')
+
+		# Layer FC3
+		self.l3 = nn.Linear(1000, 10)
   
 		# Initialize
 		for m in self.modules():
@@ -113,31 +115,26 @@ class binaryVGGVerySmall(nn.Module):
 	def forward(self, x):
 		# Layer 0
 		x = self.conv0(x)
-		x = self.bn0(x)
 		x = self.relu0(x)
 		x = self.maxpool0(x)
 
 		# Layer 1
 		x = self.conv1(x)
-		x = self.bn1(x)
 		x = self.relu1(x)
 		x = self.maxpool1(x)
   
 		# Layer 2.1
 		x = self.conv21(x)
-		x = self.bn21(x)
 		x = self.relu21(x)
 		x = self.maxpool22(x)
   
 		# Layer 3.1
 		x = self.conv31(x)
-		x = self.bn31(x)
 		x = self.relu31(x)
 		x = self.maxpool32(x)
   
 		# Layer 4.1
 		x = self.conv41(x)
-		x = self.bn41(x)
 		x = self.relu41(x)
 		x = self.maxpool42(x)
   
@@ -145,16 +142,18 @@ class binaryVGGVerySmall(nn.Module):
   
 		# Layer FC0
 		x = self.l0(x)
-		x = self.bnl0(x)
 		x = self.relul0(x)
   
 		# Layer FC1
 		x = self.l1(x)
-		x = self.bnl1(x)
 		x = self.relul1(x)
-  
+
 		# Layer FC2
 		x = self.l2(x)
+		x = self.relul2(x)
+  
+		# Layer FC3
+		x = self.l3(x)
 
 		return x
 
@@ -169,16 +168,18 @@ class binaryVGGVerySmall(nn.Module):
 			self.relu41.register_forward_hook(self.forward_hook_relu41)
 			self.relul0.register_forward_hook(self.forward_hook_relul0)
 			self.relul1.register_forward_hook(self.forward_hook_relul1)
+			self.relul2.register_forward_hook(self.forward_hook_relul2)
   
 		# Backward hooks are needed to compute importance
-		if gradients:
-			self.relu0.register_full_backward_hook(self.backward_hook_relu0)
-			self.relu1.register_full_backward_hook(self.backward_hook_relu1)
-			self.relu21.register_full_backward_hook(self.backward_hook_relu21)
-			self.relu31.register_full_backward_hook(self.backward_hook_relu31)
-			self.relu41.register_full_backward_hook(self.backward_hook_relu41)
-			self.relul0.register_full_backward_hook(self.backward_hook_relul0)
-			self.relul1.register_full_backward_hook(self.backward_hook_relul1)
+		# if gradients:
+		# 	self.relu0.register_full_backward_hook(self.backward_hook_relu0)
+		# 	self.relu1.register_full_backward_hook(self.backward_hook_relu1)
+		# 	self.relu21.register_full_backward_hook(self.backward_hook_relu21)
+		# 	self.relu31.register_full_backward_hook(self.backward_hook_relu31)
+		# 	self.relu41.register_full_backward_hook(self.backward_hook_relu41)
+		# 	self.relul0.register_full_backward_hook(self.backward_hook_relul0)
+		# 	self.relul1.register_full_backward_hook(self.backward_hook_relul1)
+		# 	self.relul2.register_full_backward_hook(self.backward_hook_relul2)
 
 	# Define all backward hooks
 	def backward_hook_relu0(self, module, grad_input, grad_output):
@@ -205,7 +206,10 @@ class binaryVGGVerySmall(nn.Module):
 		self.dataFromHooks['stel0']['backward'].append(np.float16(grad_output[0].cpu().detach().numpy()[0]))
   
 	def backward_hook_relul1(self, module, grad_input, grad_output):
-		self.dataFromHooks['relul1']['backward'].append(np.float16(grad_output[0].cpu().detach().numpy()[0]))
+		self.dataFromHooks['stel1']['backward'].append(np.float16(grad_output[0].cpu().detach().numpy()[0]))
+
+	def backward_hook_relul2(self, module, grad_input, grad_output):
+		self.dataFromHooks['stel2']['backward'].append(np.float16(grad_output[0].cpu().detach().numpy()[0]))
   
 	# Define all forward hooks
 	def forward_hook_relu0(self, module, val_input, val_output):
@@ -232,13 +236,16 @@ class binaryVGGVerySmall(nn.Module):
 		self.dataFromHooks['stel0']['forward'].append(np.float16(val_output[0].cpu().detach().numpy()))
   
 	def forward_hook_relul1(self, module, val_input, val_output):
-		self.dataFromHooks['relul1']['forward'].append(np.float16(val_output[0].cpu().detach().numpy()))
+		self.dataFromHooks['stel1']['forward'].append(np.float16(val_output[0].cpu().detach().numpy()))
+
+	def forward_hook_relul2(self, module, val_input, val_output):
+		self.dataFromHooks['stel2']['forward'].append(np.float16(val_output[0].cpu().detach().numpy()))
   
 	# Change each hook list to an equivalent array
 	def listToArray(self):
 		for grads in self.dataFromHooks:
 			self.dataFromHooks[grads]['forward'] = np.array(self.dataFromHooks[grads]['forward'], dtype='float16')
-			self.dataFromHooks[grads]['backward'] = np.array(self.dataFromHooks[grads]['backward'], dtype='float16')
+			# self.dataFromHooks[grads]['backward'] = np.array(self.dataFromHooks[grads]['backward'], dtype='float16')
 
 	# Clean hooks list
 	def resetHookLists(self):
