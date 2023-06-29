@@ -78,6 +78,7 @@ class DNFRealization:
 			for file in files:
 				df = pd.read_csv(f'{self.ttFolderName}/{dir.name}/{file.name}', index_col=False)
 				df = df.astype('int')
+				df.drop_duplicates(inplace=True)
 				self.generateEspressoInput(df, f'{baseFilename}/{dir.name}/{file.name}')
 
 	def createPLAFileABC(self, baseFilename: str):
@@ -95,4 +96,5 @@ class DNFRealization:
 			for file in files:
 				df = pd.read_csv(f'{self.ttFolderName}/{dir.name}/{file.name}', index_col=False)
 				df = df.astype('int')
+				df.drop_duplicates(inplace=True)
 				self.generateABCInput(df, f'{baseFilename}/{dir.name}/{file.name}')

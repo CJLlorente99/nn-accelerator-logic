@@ -1,7 +1,7 @@
 from ttUtilities.isfRealization import DNFRealization
 
 modelName = 'eeb_100ep_100npl'
-ttFolderName = f'./data/layersTT/{modelName}'
+ttFolderName = f'/media/carlosl/CHAR/data/layersTT/{modelName}'
 
 # Create DNFRealization object
 dnf = DNFRealization(ttFolderName)
@@ -12,4 +12,4 @@ dnf = DNFRealization(ttFolderName)
 
 # Create PLA file for ABC
 
-dnf.createPLAFileABC(f'./data/plas/{modelName}/ABC')
+dnf.createPLAFileABC(f'/media/carlosl/CHAR/data/plas/{modelName}/ABC')
