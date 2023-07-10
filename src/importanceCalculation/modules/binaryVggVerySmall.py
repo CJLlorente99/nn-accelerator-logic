@@ -9,7 +9,7 @@ import math
 import os
 
 class binaryVGGVerySmall(nn.Module):
-	def __init__(self):
+	def __init__(self, resizeFactor, relus: list):
 		super(binaryVGGVerySmall, self).__init__()
   
 		self.helpHookList = []
@@ -17,50 +17,78 @@ class binaryVGGVerySmall(nn.Module):
 		# Layer 0
 		self.conv0 = nn.Conv2d(3, 64, kernel_size=3, padding=1)
 		self.bn0 = nn.BatchNorm2d(64)
-		self.relu0 = nn.ReLU()
+		if relus[0]:
+			self.relu0 = nn.ReLU()
+			self.helpHookList.append('relu0')
+		else:
+			self.relu0 = STEFunction()
+			self.helpHookList.append('ste0')
 		self.maxpool0 = nn.MaxPool2d(kernel_size=2, stride=2)
-		self.helpHookList.append('relu0')
 
 		# Layer 1
 		self.conv1 = nn.Conv2d(64, 128, kernel_size=3, padding=1)
 		self.bn1 = nn.BatchNorm2d(128)
-		self.relu1 = STEFunction()
+		if relus[1]:
+			self.relu1 = nn.ReLU()
+			self.helpHookList.append('relu1')
+		else:
+			self.relu1 = STEFunction()
+			self.helpHookList.append('ste1')
 		self.maxpool1 = nn.MaxPool2d(kernel_size=2, stride=2)
-		self.helpHookList.append('ste1')
-  
+
 		# Layer 2.1
 		self.conv21 = nn.Conv2d(128, 256, kernel_size=3, padding=1)
 		self.bn21 = nn.BatchNorm2d(256)
-		self.relu21 = STEFunction()
+		if relus[2]:
+			self.relu21 = nn.ReLU()
+			self.helpHookList.append('relu21')
+		else:
+			self.relu21 = STEFunction()
+			self.helpHookList.append('ste21')
 		self.maxpool22 = nn.MaxPool2d(kernel_size=2, stride=2)
-		self.helpHookList.append('ste21')
-  
+
 		# Layer 3.1
 		self.conv31 = nn.Conv2d(256, 512, kernel_size=3, padding=1)
 		self.bn31 = nn.BatchNorm2d(512)
-		self.relu31 = STEFunction()
+		if relus[3]:
+			self.relu31 = nn.ReLU()
+			self.helpHookList.append('relu31')
+		else:
+			self.relu31 = STEFunction()
+			self.helpHookList.append('ste31')
 		self.maxpool32 = nn.MaxPool2d(kernel_size=2, stride=2)
-		self.helpHookList.append('ste31')
-  
+
 		# Layer 4.1
 		self.conv41 = nn.Conv2d(512, 512, kernel_size=3, padding=1)
 		self.bn41 = nn.BatchNorm2d(512)
-		self.relu41 = STEFunction()
+		if relus[4]:
+			self.relu41 = nn.ReLU()
+			self.helpHookList.append('relu41')
+		else:
+			self.relu41 = STEFunction()
+			self.helpHookList.append('ste41')
 		self.maxpool42 = nn.MaxPool2d(kernel_size=2, stride=2)
-		self.helpHookList.append('ste41')
-  
+
 		# Layer FC0
-		self.l0 = nn.Linear(2*2*512, 1024)
+		self.l0 = nn.Linear(resizeFactor*resizeFactor*512, 1024)
 		self.bnl0 = nn.BatchNorm1d(1024)
-		self.relul0 = STEFunction()
-		self.helpHookList.append('stel0')
-  
+		if relus[5]:
+			self.relul0 = nn.ReLU()
+			self.helpHookList.append('relul0')
+		else:
+			self.relul0 = STEFunction()
+			self.helpHookList.append('stel0')
+
 		# Layer FC1
 		self.l1 = nn.Linear(1024, 250)
 		self.bnl1 = nn.BatchNorm1d(250)
-		self.relul1 = nn.ReLU()
-		self.helpHookList.append('relul1')
-  
+		if relus[6]:
+			self.relul1 = nn.ReLU()
+			self.helpHookList.append('relul1')
+		else:
+			self.relul1 = STEFunction()
+			self.helpHookList.append('stel1')
+
 		# Layer FC2
 		self.l2 = nn.Linear(250, 10)
   
@@ -131,24 +159,26 @@ class binaryVGGVerySmall(nn.Module):
 		return x
 
 	# Probably there exists a better way to do this
-	def registerHooks(self):
+	def registerHooks(self, activations: bool = True, gradients: bool = True):
 		# Forward hooks are needed to compute importance
-		self.relu0.register_forward_hook(self.forward_hook_relu0)
-		self.relu1.register_forward_hook(self.forward_hook_relu1)
-		self.relu21.register_forward_hook(self.forward_hook_relu21)
-		self.relu31.register_forward_hook(self.forward_hook_relu31)
-		self.relu41.register_forward_hook(self.forward_hook_relu41)
-		self.relul0.register_forward_hook(self.forward_hook_relul0)
-		self.relul1.register_forward_hook(self.forward_hook_relul1)
+		if activations:
+			self.relu0.register_forward_hook(self.forward_hook_relu0)
+			self.relu1.register_forward_hook(self.forward_hook_relu1)
+			self.relu21.register_forward_hook(self.forward_hook_relu21)
+			self.relu31.register_forward_hook(self.forward_hook_relu31)
+			self.relu41.register_forward_hook(self.forward_hook_relu41)
+			self.relul0.register_forward_hook(self.forward_hook_relul0)
+			self.relul1.register_forward_hook(self.forward_hook_relul1)
   
 		# Backward hooks are needed to compute importance
-		self.relu0.register_full_backward_hook(self.backward_hook_relu0)
-		self.relu1.register_full_backward_hook(self.backward_hook_relu1)
-		self.relu21.register_full_backward_hook(self.backward_hook_relu21)
-		self.relu31.register_full_backward_hook(self.backward_hook_relu31)
-		self.relu41.register_full_backward_hook(self.backward_hook_relu41)
-		self.relul0.register_full_backward_hook(self.backward_hook_relul0)
-		self.relul1.register_full_backward_hook(self.backward_hook_relul1)
+		if gradients:
+			self.relu0.register_full_backward_hook(self.backward_hook_relu0)
+			self.relu1.register_full_backward_hook(self.backward_hook_relu1)
+			self.relu21.register_full_backward_hook(self.backward_hook_relu21)
+			self.relu31.register_full_backward_hook(self.backward_hook_relu31)
+			self.relu41.register_full_backward_hook(self.backward_hook_relu41)
+			self.relul0.register_full_backward_hook(self.backward_hook_relul0)
+			self.relul1.register_full_backward_hook(self.backward_hook_relul1)
 
 	# Define all backward hooks
 	def backward_hook_relu0(self, module, grad_input, grad_output):
@@ -209,16 +239,35 @@ class binaryVGGVerySmall(nn.Module):
 		for grads in self.dataFromHooks:
 			self.dataFromHooks[grads]['forward'] = np.array(self.dataFromHooks[grads]['forward'], dtype='float16')
 			self.dataFromHooks[grads]['backward'] = np.array(self.dataFromHooks[grads]['backward'], dtype='float16')
+
+	# Clean hooks list
+	def resetHookLists(self):
+		for grad in self.dataFromHooks:
+			for direction in self.dataFromHooks[grad]:
+				self.dataFromHooks[grad][direction] = []
    
 	# Compute importance
 	def computeImportance(self):
 		importances = []
 
-		for grad in self.dataFromHooks:			
+		for grad in self.dataFromHooks:
+			aux = self.dataFromHooks[grad]['backward'].shape
+			print(f'Shape backward {grad} is {aux}')
+			aux = self.dataFromHooks[grad]['forward'].shape
+			print(f'Shape forward {grad} is {aux}')
 			importances.append(np.abs(np.multiply(self.dataFromHooks[grad]['backward'], self.dataFromHooks[grad]['forward'])))
 			print(f'Shape importance {grad} is {importances[-1].shape}')
 	
 		return importances
+	
+	# Compute importance layer by layer
+	def computeImportanceLayer(self, layerName):
+		aux = self.dataFromHooks[layerName]['backward'].shape
+		print(f'Shape backward {layerName} is {aux}')
+		aux = self.dataFromHooks[layerName]['forward'].shape
+		print(f'Shape forward {layerName} is {aux}')
+		return np.abs(np.multiply(self.dataFromHooks[layerName]['backward'], self.dataFromHooks[layerName]['forward']))
+	
 
 	# Load and return importances in the right order
 	# TODO create save correctly
@@ -246,8 +295,8 @@ class binaryVGGVerySmall(nn.Module):
 			if grad.startswith('relul') or grad.startswith('stel'): # then it is linear layer
 				columnTags = [f'{i}' for i in range(self.dataFromHooks[grad]['forward'].shape[1])]
 				pd.DataFrame(
-						self.dataFromHooks[grad]['forward'], columns=columnTags).to_feather(
-							f'{baseFilename}/{grad}')
+						self.dataFromHooks[grad]['forward'], columns=columnTags).to_csv(
+							f'{baseFilename}/{grad}', mode='a', index=False, header=False)
 			else:
 				if not os.path.exists(f'{baseFilename}/{grad}'):
 					os.makedirs(f'{baseFilename}/{grad}')
@@ -255,8 +304,8 @@ class binaryVGGVerySmall(nn.Module):
 				for iDepth in range(self.dataFromHooks[grad]['forward'].shape[1]):
 					columnTags = [f'{i}' for i in range(self.dataFromHooks[grad]['forward'].shape[2])]
 					pd.DataFrame(
-						self.dataFromHooks[grad]['forward'][:, iDepth, :], columns=columnTags).to_feather(
-							f'{baseFilename}/{grad}/{iDepth}')
+						self.dataFromHooks[grad]['forward'][:, iDepth, :], columns=columnTags).to_csv(
+							f'{baseFilename}/{grad}/{iDepth}', mode='a', index=False, header=False)
 			print(f'Saved activations {grad}')
     
     # Load activations
@@ -285,8 +334,8 @@ class binaryVGGVerySmall(nn.Module):
 			if grad.startswith('relul') or grad.startswith('stel'):
 				columnTags = [f'{i}' for i in range(self.dataFromHooks[grad]['backward'].shape[1])]
 				pd.DataFrame(
-					self.dataFromHooks[grad]['backward'], columns=columnTags).to_feather(
-						f'{baseFilename}/{grad}')
+					self.dataFromHooks[grad]['backward'], columns=columnTags).to_csv(
+						f'{baseFilename}/{grad}', mode='a', index=False, header=False)
 			else:
 				if not os.path.exists(f'{baseFilename}/{grad}'):
 					os.makedirs(f'{baseFilename}/{grad}')
@@ -294,24 +343,24 @@ class binaryVGGVerySmall(nn.Module):
 				for iDepth in range(self.dataFromHooks[grad]['backward'].shape[1]):
 					columnTags = [f'{i}' for i in range(self.dataFromHooks[grad]['backward'].shape[2])]
 					pd.DataFrame(
-						self.dataFromHooks[grad]['backward'][:, iDepth, :], columns=columnTags).to_feather(
-							f'{baseFilename}/{grad}/{iDepth}')
-			print(f'Saved gradients {grad} \n')
+						self.dataFromHooks[grad]['backward'][:, iDepth, :], columns=columnTags).to_csv(
+							f'{baseFilename}/{grad}/{iDepth}', mode='a', index=False, header=False)
+			print(f'Saved gradients {grad}')
     
 	# Load gradients
 	def loadGradients(self, baseFilename):
 		for grad in self.dataFromHooks:
-			if grad.startswith('relul') or grad.startswith('stel'):
+			if grad.startswith('relul'):
 				self.dataFromHooks[grad]['backward'] = pd.read_feather(f'{baseFilename}/{grad}').to_numpy()
+				print(self.dataFromHooks[grad]['backward'].shape)
 			else:
 				self.dataFromHooks[grad]['backward'] = []
 				for file in os.scandir(f'{baseFilename}/{grad}'):
 					self.dataFromHooks[grad]['backward'].append(pd.read_feather(f'{file.path}').to_numpy())
 				self.dataFromHooks[grad]['backward'] = np.array(self.dataFromHooks[grad]['backward'])
 				self.dataFromHooks[grad]['backward'] = np.moveaxis(self.dataFromHooks[grad]['backward'], 0, 1)
+				print(self.dataFromHooks[grad]['backward'].shape)
 			print(f'Gradients from {grad} loaded')
-			print(self.dataFromHooks[grad]['backward'].shape)
-			print()
     
 	# SqueezeActivationToUniqueValues (only binary)
 	def individualActivationsToUniqueValue(self):
