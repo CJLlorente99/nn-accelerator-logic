@@ -13,10 +13,10 @@ import plotly.graph_objects as go
 import numpy as np
 import pandas as pd
 
-modelName = f'binaryVGGVerySmall2_11110000_2'
+modelName = f'binaryVGGVerySmall2_11110000_4'
 batch_size = 64
 perGradientSampling = 1
-resizeFactor = 2
+resizeFactor = 4
 relus = [1, 1, 1, 1, 0, 0, 0, 0]
 dataFolder = 'data'
 # Check mps maybe if working in MacOS

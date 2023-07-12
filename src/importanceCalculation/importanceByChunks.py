@@ -13,7 +13,7 @@ import os
 
 modelName = 'binaryVGGVerySmall2_11110000_3'
 # modelFilename = f'src\modelCreation\savedModels\{modelName}'
-dataFolder = '/media/carlosl/CHAR/data'
+dataFolder = 'data'
 resizeFactor = 3
 relus = [1, 1, 1, 1, 0, 0, 0, 0]
 # Check mps maybe if working in MacOS
@@ -39,7 +39,7 @@ model = binaryVGGVerySmall2(resizeFactor=resizeFactor, relus=relus)
 """
 Process by chunks
 """
-numberRowsPerChunk = 0.25 * 10 ** 3  # 250
+numberRowsPerChunk = 10 * 10 ** 3  # 10000
 gradientBaseFilename = f'{dataFolder}/gradients/{modelName}'
 activationBaseFilename = f'{dataFolder}/activations/{modelName}'
 
@@ -101,10 +101,14 @@ while True:
 					# print(f'Activations from {grad}_{i} loaded')
 					# print(model.dataFromHooks[grad]['forward'][i].shape)
 					i += 1
-				model.dataFromHooks[grad]['forward'] = np.array(model.dataFromHooks[grad]['forward'])
-				model.dataFromHooks[grad]['forward'] = np.moveaxis(model.dataFromHooks[grad]['forward'], 0, 1)
+				if len(model.dataFromHooks[grad]['forward']) > 0:
+					model.dataFromHooks[grad]['forward'] = np.array(model.dataFromHooks[grad]['forward'])
+					model.dataFromHooks[grad]['forward'] = np.moveaxis(model.dataFromHooks[grad]['forward'], 0, 1)
 			print(f'Activations from {grad} loaded')
-			print(model.dataFromHooks[grad]['forward'].shape)
+			try:
+				print(model.dataFromHooks[grad]['forward'].shape)
+			except:
+				print(len(model.dataFromHooks[grad]['forward']))
 		
 		# Load gradients
 		for grad in model.dataFromHooks:
@@ -118,10 +122,14 @@ while True:
 					# print(f'Gradients from {grad}_{i} loaded')
 					# print(model.dataFromHooks[grad]['backward'][i].shape)
 					i += 1
-				model.dataFromHooks[grad]['backward'] = np.array(model.dataFromHooks[grad]['backward'])
-				model.dataFromHooks[grad]['backward'] = np.moveaxis(model.dataFromHooks[grad]['backward'], 0, 1)
+				if len(model.dataFromHooks[grad]['backward']) > 0:
+					model.dataFromHooks[grad]['backward'] = np.array(model.dataFromHooks[grad]['backward'])
+					model.dataFromHooks[grad]['backward'] = np.moveaxis(model.dataFromHooks[grad]['backward'], 0, 1)
 			print(f'Gradients from {grad} loaded')
-			print(model.dataFromHooks[grad]['backward'].shape)
+			try:
+				print(model.dataFromHooks[grad]['backward'].shape)
+			except:
+				print(len(model.dataFromHooks[grad]['backward']))
 
 		importances = model.computeImportance()
 
@@ -131,13 +139,14 @@ while True:
 		# threshold = 10e-50
 		threshold = 10e-5  # acceptable when in presence of BN
 		for i in range(len(importances)):
-			importances[i] = (importances[i] > threshold)
-			aux = importances[i].sum()
-			if aux.ndim > 2:
-				aux = aux.sum()
-			print(f'Chunk {nChunk} layer {model.helpHookList[i]} has {aux} entries below threshold out of {importances[i].size}. Reduction {(1 - aux/importances[i].size)*100:.2f}%')
-			entriesBelowThreshold[model.helpHookList[i]] += aux
-			totalEntries[model.helpHookList[i]] += importances[i].size
+			if len(importances[i]) > 0:
+				importances[i] = (importances[i] > threshold)
+				aux = importances[i].sum()
+				if aux.ndim > 2:
+					aux = aux.sum()
+				print(f'Chunk {nChunk} layer {model.helpHookList[i]} has {aux} entries below threshold out of {importances[i].size}. Reduction {(1 - aux/importances[i].size)*100:.2f}%')
+				entriesBelowThreshold[model.helpHookList[i]] += aux
+				totalEntries[model.helpHookList[i]] += importances[i].size
 
 		'''
 		Calculate importance per class
@@ -154,8 +163,9 @@ while True:
 		imp = 0
 		for grad in model.helpHookList:
 			importance = importances[imp]
-			for i in range(importance.shape[0]):
-				importancePerClassFilter[grad][train_dataset.targets[i + targetsOffset]].append(importance[i])
+			if len(importance) > 0:
+				for i in range(importance.shape[0]):
+					importancePerClassFilter[grad][train_dataset.targets[i + targetsOffset]].append(importance[i])
 			imp += 1
 		targetsOffset += i+1  # Should have the last sample in the importance class characterization
 
@@ -176,9 +186,9 @@ while True:
 					importancePerClassFilterGlobal[grad][nClass].append(importancePerClassFilter[grad][nClass].sum(0))
 					lenImportanceAccum[grad][nClass] += len(importancePerClassFilter[grad][nClass])
 		print(f"Processed samples [{int((nChunk+1)*numberRowsPerChunk)}/50000]")
-		nChunk += 1
-		if nChunk == 10:
+		if int((nChunk+1)*numberRowsPerChunk) == 50000:
 			break
+		nChunk += 1
 	except StopIteration:  # No more chunks
 		break
 
@@ -198,13 +208,14 @@ for grad in model.helpHookList:
 # Actual calculation of importance
 for grad in model.helpHookList:
 	for nClass in importancePerClassFilterGlobal[grad]:
-		if not(grad.startswith('stel') or grad.startswith('relul')): # Then it comes from a conv layer
-			importancePerClassFilterGlobal[grad][nClass] = importancePerClassFilterGlobal[grad][nClass] / lenImportanceAccum[grad][nClass]
-			importancePerClassNeuronGlobal[grad][nClass] = importancePerClassNeuronGlobal[grad][nClass] / lenImportanceAccum[grad][nClass] # To store information about all neurons
-			# Take the max score per filter
-			importancePerClassFilterGlobal[grad][nClass] = importancePerClassFilterGlobal[grad][nClass].max(0)
-		else: # Then it comes from a neural layer
-			importancePerClassFilterGlobal[grad][nClass] = importancePerClassFilterGlobal[grad][nClass] / lenImportanceAccum[grad][nClass]
+		if lenImportanceAccum[grad][nClass] != 0:
+			if not(grad.startswith('stel') or grad.startswith('relul')): # Then it comes from a conv layer
+				importancePerClassFilterGlobal[grad][nClass] = importancePerClassFilterGlobal[grad][nClass] / lenImportanceAccum[grad][nClass]
+				importancePerClassNeuronGlobal[grad][nClass] = importancePerClassNeuronGlobal[grad][nClass] / lenImportanceAccum[grad][nClass] # To store information about all neurons
+				# Take the max score per filter
+				importancePerClassFilterGlobal[grad][nClass] = importancePerClassFilterGlobal[grad][nClass].max(0)
+			else: # Then it comes from a neural layer
+				importancePerClassFilterGlobal[grad][nClass] = importancePerClassFilterGlobal[grad][nClass] / lenImportanceAccum[grad][nClass]
 
 # Join the lists so each row is a class and each column a filter/neuron
 for grad in importancePerClassFilterGlobal:
@@ -214,7 +225,7 @@ for grad in importancePerClassFilterGlobal:
 # Print potential class-based and entry-based optimization
 for grad in importancePerClassFilterGlobal:
 	lenghts = np.array([lenImportanceAccum[grad][nClass] for nClass in lenImportanceAccum[grad]])
-	if grad.startswith('relul') or grad.startswith('stel'):
+	if (grad.startswith('relul') or grad.startswith('stel')) and (total.sum() != 0):
 		aux = (importancePerClassFilterGlobal[grad] > 0) * lenghts[:, np.newaxis]
 		total = np.ones(importancePerClassFilterGlobal[grad].shape) * lenghts[:, np.newaxis]
 		print(f'Total entries following the class-based optimization in {grad} are {aux.sum(dtype=np.int64)} out of all {total.sum(dtype=np.int64)}. Reduction {(1 - aux.sum().sum()/total.sum())*100:.2f}%')
@@ -222,23 +233,25 @@ for grad in importancePerClassFilterGlobal:
 		aux = (importancePerClassNeuronGlobal[grad] > 0) * lenghts[:, np.newaxis]
 		total = np.ones(importancePerClassNeuronGlobal[grad].shape) * lenghts[:, np.newaxis]
 		print(f'Total entries following the class-based optimization in {grad} are {aux.sum(dtype=np.int64)} out of all {total.sum(dtype=np.int64)}. Reduction {(1 - aux.sum()/total.sum())*100:.2f}%')
-	print(f'Total entries following the entry-based optimization in {grad} are {entriesBelowThreshold[grad]} out of all {totalEntries[grad]}. Reduction {(1 - entriesBelowThreshold[grad]/totalEntries[grad])*100:.2f}%\n')
+	if totalEntries[grad] != 0:
+		print(f'Total entries following the entry-based optimization in {grad} are {entriesBelowThreshold[grad]} out of all {totalEntries[grad]}. Reduction {(1 - entriesBelowThreshold[grad]/totalEntries[grad])*100:.2f}%\n')
 
 '''
 Print results
 '''
 for grad in importancePerClassFilterGlobal:
 	# Print aggregated importance
-	aux = importancePerClassFilterGlobal[grad].sum(0)
-	aux.sort()
- 
-	fig = go.Figure()
-	fig.add_trace(go.Scatter(y=aux))
-	fig.update_layout(title=f'{grad} total importance per filter ({len(aux)})')
-	fig.show()
+	if grad.startswith('relul') or grad.startswith('stel'):
+		aux = importancePerClassFilterGlobal[grad].sum(0)
+		aux.sort()
+	
+		fig = go.Figure()
+		fig.add_trace(go.Scatter(y=aux))
+		fig.update_layout(title=f'{grad} total importance per filter ({len(aux)})')
+		fig.show()
  
 	# Print aggregated importance
-	if not grad.startswith('relul') or grad.startswith('stel'):
+	if not (grad.startswith('relul') or grad.startswith('stel')):
 		aux = importancePerClassNeuronGlobal[grad].sum(0)
 		aux.sort()
 	
@@ -258,11 +271,12 @@ for grad in importancePerClassFilterGlobal:
 		fig.update_layout(title=f'{grad} number of important classes per neuron ({len(aux)})')
 		fig.show()
 	else:
-		aux = (importancePerClassNeuronGlobal[grad] > 0).sum(0)
-		aux.sort()
+		# aux = (importancePerClassNeuronGlobal[grad] > 0).sum(0)
+		# aux.sort()
 		
-		fig = go.Figure()
-		fig.add_trace(go.Scatter(y=aux))
-		fig.update_layout(title=f'{grad} number of important classes per neuron ({len(aux)})')
-		fig.show()
+		# fig = go.Figure()
+		# fig.add_trace(go.Scatter(y=aux))
+		# fig.update_layout(title=f'{grad} number of important classes per neuron ({len(aux)})')
+		# fig.show()
+		pass
 	

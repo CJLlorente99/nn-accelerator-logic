@@ -251,12 +251,21 @@ class binaryVGGVerySmall(nn.Module):
 		importances = []
 
 		for grad in self.dataFromHooks:
-			aux = self.dataFromHooks[grad]['backward'].shape
-			print(f'Shape backward {grad} is {aux}')
-			aux = self.dataFromHooks[grad]['forward'].shape
-			print(f'Shape forward {grad} is {aux}')
-			importances.append(np.abs(np.multiply(self.dataFromHooks[grad]['backward'], self.dataFromHooks[grad]['forward'])))
-			print(f'Shape importance {grad} is {importances[-1].shape}')
+			try:
+				aux = self.dataFromHooks[grad]['backward'].shape
+				print(f'Shape backward {grad} is {aux}')
+			except:
+				pass
+			try:
+				aux = self.dataFromHooks[grad]['forward'].shape
+				print(f'Shape forward {grad} is {aux}')
+			except:
+				pass
+			try:
+				importances.append(np.abs(np.multiply(self.dataFromHooks[grad]['backward'], self.dataFromHooks[grad]['forward'])))
+			except:
+				importances.append([])
+				print(f'Importance {grad} is not calculated')
 	
 		return importances
 	
@@ -300,28 +309,31 @@ class binaryVGGVerySmall(nn.Module):
 			else:
 				if not os.path.exists(f'{baseFilename}/{grad}'):
 					os.makedirs(f'{baseFilename}/{grad}')
-     
-				for iDepth in range(self.dataFromHooks[grad]['forward'].shape[1]):
-					columnTags = [f'{i}' for i in range(self.dataFromHooks[grad]['forward'].shape[2])]
-					pd.DataFrame(
-						self.dataFromHooks[grad]['forward'][:, iDepth, :], columns=columnTags).to_csv(
-							f'{baseFilename}/{grad}/{iDepth}', mode='a', index=False, header=False)
+
+				try:
+					for iDepth in range(self.dataFromHooks[grad]['forward'].shape[1]):
+						columnTags = [f'{i}' for i in range(self.dataFromHooks[grad]['forward'].shape[2])]
+						pd.DataFrame(
+							self.dataFromHooks[grad]['forward'][:, iDepth, :], columns=columnTags).to_csv(
+								f'{baseFilename}/{grad}/{iDepth}', mode='a', index=False, header=False)
+				except:
+					pass
 			print(f'Saved activations {grad}')
     
     # Load activations
 	def loadActivations(self, baseFilename):
 		for grad in self.dataFromHooks:
-			if grad.startswith('relul') or grad.startswith('stel'):
+			if grad.startswith('relul'):
 				self.dataFromHooks[grad]['forward'] = pd.read_feather(f'{baseFilename}/{grad}').to_numpy()
+				print(self.dataFromHooks[grad]['forward'].shape)
 			else:
 				self.dataFromHooks[grad]['forward'] = []
 				for file in os.scandir(f'{baseFilename}/{grad}'):
 					self.dataFromHooks[grad]['forward'].append(pd.read_feather(f'{file.path}').to_numpy())
 				self.dataFromHooks[grad]['forward'] = np.array(self.dataFromHooks[grad]['forward'])
 				self.dataFromHooks[grad]['forward'] = np.moveaxis(self.dataFromHooks[grad]['forward'], 0, 1)
+				print(self.dataFromHooks[grad]['forward'].shape)
 			print(f'Activations from {grad} loaded')
-			print(self.dataFromHooks[grad]['forward'].shape)
-			print()
 				
     
     # Save gradients
@@ -340,11 +352,14 @@ class binaryVGGVerySmall(nn.Module):
 				if not os.path.exists(f'{baseFilename}/{grad}'):
 					os.makedirs(f'{baseFilename}/{grad}')
      
-				for iDepth in range(self.dataFromHooks[grad]['backward'].shape[1]):
-					columnTags = [f'{i}' for i in range(self.dataFromHooks[grad]['backward'].shape[2])]
-					pd.DataFrame(
-						self.dataFromHooks[grad]['backward'][:, iDepth, :], columns=columnTags).to_csv(
-							f'{baseFilename}/{grad}/{iDepth}', mode='a', index=False, header=False)
+				try:
+					for iDepth in range(self.dataFromHooks[grad]['backward'].shape[1]):
+						columnTags = [f'{i}' for i in range(self.dataFromHooks[grad]['backward'].shape[2])]
+						pd.DataFrame(
+							self.dataFromHooks[grad]['backward'][:, iDepth, :], columns=columnTags).to_csv(
+								f'{baseFilename}/{grad}/{iDepth}', mode='a', index=False, header=False)
+				except:
+					pass
 			print(f'Saved gradients {grad}')
     
 	# Load gradients

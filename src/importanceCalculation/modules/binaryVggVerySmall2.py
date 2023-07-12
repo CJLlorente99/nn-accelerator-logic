@@ -274,11 +274,21 @@ class binaryVGGVerySmall2(nn.Module):
 		importances = []
 
 		for grad in self.dataFromHooks:
-			aux = self.dataFromHooks[grad]['backward'].shape
-			print(f'Shape backward {grad} is {aux}')
-			aux = self.dataFromHooks[grad]['forward'].shape
-			print(f'Shape forward {grad} is {aux}')
-			importances.append(np.abs(np.multiply(self.dataFromHooks[grad]['backward'], self.dataFromHooks[grad]['forward'])))
+			try:
+				aux = self.dataFromHooks[grad]['backward'].shape
+				print(f'Shape backward {grad} is {aux}')
+			except:
+				pass
+			try:
+				aux = self.dataFromHooks[grad]['forward'].shape
+				print(f'Shape forward {grad} is {aux}')
+			except:
+				pass
+			try:
+				importances.append(np.abs(np.multiply(self.dataFromHooks[grad]['backward'], self.dataFromHooks[grad]['forward'])))
+			except:
+				importances.append([])
+				print(f'Importance {grad} is not calculated')
 	
 		return importances
 	
