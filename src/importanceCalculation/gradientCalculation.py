@@ -13,12 +13,12 @@ import plotly.graph_objects as go
 import numpy as np
 import pandas as pd
 
-modelName = f'binaryVGGVerySmall2_11110000_3'
+modelName = f'binaryVGGVerySmall2_11110000_2'
 batch_size = 64
 perGradientSampling = 1
-resizeFactor = 3
+resizeFactor = 2
 relus = [1, 1, 1, 1, 0, 0, 0, 0]
-dataFolder = '/media/carlosl/CHAR/data'
+dataFolder = 'data'
 # Check mps maybe if working in MacOS
 device = 'cuda' if torch.cuda.is_available() else 'cpu'
 
@@ -26,7 +26,7 @@ device = 'cuda' if torch.cuda.is_available() else 'cpu'
 Importing CIFAR10 dataset
 '''
 print(f'DOWNLOAD DATASET\n')
-train_dataset = datasets.CIFAR10(root='/media/carlosl/CHAR/data', train=True, transform=Compose([
+train_dataset = datasets.CIFAR10(root='data', train=True, transform=Compose([
 	ToTensor(),
 	Normalize((0.485, 0.456, 0.406), (0.229, 0.224, 0.225)),
  	Resize(resizeFactor*32, antialias=False)]),
@@ -51,7 +51,7 @@ elif modelName.startswith('binaryVGGVerySmallnoBN_'):
 elif modelName.startswith('binaryVGGVerySmall2noBN_'):
 	model = binaryVGGVerySmall2noBN(resizeFactor=resizeFactor, relus=relus)
 
-model.load_state_dict(torch.load(f'/media/carlosl/CHAR/data/savedModels/{modelName}'))
+model.load_state_dict(torch.load(f'data/savedModels/{modelName}'))
 
 '''
 Calculate importance per class per neuron
