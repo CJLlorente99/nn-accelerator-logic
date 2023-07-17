@@ -9,9 +9,9 @@ from modules.binaryBNN import BNNBinaryNeuralNetwork
 import torch.optim as optim
 from torchmetrics.classification import MulticlassHingeLoss
 
-batch_size = 200
+batch_size = 128
 neuronPerLayer = 4096
-epochs = 15
+epochs = 100
 precision = 'bin'
 
 # Check mps maybe if working in MacOS

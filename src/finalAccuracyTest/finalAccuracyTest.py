@@ -11,11 +11,11 @@ import torch.nn.functional as F
 
 batch_size = 1
 neuronPerLayer = 100
-modelFilename = f'src\modelCreation\savedModels\eeb_100ep_100npl'
-simulatedFilenameL0 = f'data/L0'
-simulatedFilenameL1 = f'data/L1'
-simulatedFilenameL2 = f'data/L2'
-simulatedFilenameL3 = f'data/L3'
+modelFilename = f'data\savedModels\eeb_100ep_100npl'
+simulatedFilenameL0 = f'D:\data\inputSimulated\eeb_100ep_100npl\opt_espresso_testlayer0'
+simulatedFilenameL1 = f'D:\data\inputSimulated\eeb_100ep_100npl\layer1'
+simulatedFilenameL2 = f'D:\data\inputSimulated\eeb_100ep_100npl\layer2'
+simulatedFilenameL3 = f'D:\data\inputSimulated\eeb_100ep_100npl\layer3'
 inputFilename = f'data/inputs/trainInput'
 lastLayerInputsTestFilename = f'example'
 
@@ -118,30 +118,24 @@ with open(simulatedFilenameL0) as f_simL0:
                             predL1 = model.forwardOneLayer(predL0, 1)           
                             predL2 = model.forwardOneLayer(predL1, 2)           
                             predL3 = model.forwardOneLayer(predL2, 3)
-                            pred = F.log_softmax(model.forwardOneLayer(predL2.type(torch.FloatTensor), 4) , dim=1)
+                            pred = F.log_softmax(model.forwardOneLayer(predL3.type(torch.FloatTensor), 4) , dim=1)
 
                             if (X.cpu().detach().numpy()[0] == inputSample.cpu().detach().numpy()[0]).all():
-                                print('Input Equal')
                                 correctInput += 1
                             
                             if (predL0.cpu().detach().numpy()[0] == line_simulatedL0).all():
-                                print('L0 Equal')
                                 correctL0 += 1
 
                             if (predL1.cpu().detach().numpy()[0] == line_simulatedL1).all():
-                                print('L1 Equal')
                                 correctL1 += 1
 
                             if (predL2.cpu().detach().numpy()[0] == line_simulatedL2).all():
-                                print('L2 Equal')
                                 correctL2 += 1
 
                             if (predL3.cpu().detach().numpy()[0] == line_simulatedL3).all():
-                                print('L3 Equal')
                                 correctL3 += 1
 
                             if (pred.argmax(1) == training_data.targets[count].item()).type(torch.float).sum().item():
-                                print('Result Equal')
                                 correctAllModel += 1
                             
                             count += 1

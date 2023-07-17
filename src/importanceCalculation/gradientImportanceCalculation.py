@@ -8,7 +8,6 @@ from modules.binaryBNN import BNNBinaryNeuralNetwork
 from ttUtilities.helpLayerNeuronGenerator import HelpGenerator
 import numpy as np
 import plotly.graph_objects as go
-import matplotlib.pyplot as plt
 import pandas as pd
 import os
 
@@ -105,11 +104,12 @@ threshold = 10e-5
 for iImp in range(len(importanceList)):
     importanceList[iImp] = importanceList[iImp] > threshold
     # Save importance for minimization per entry
-    columnsTags = [f'N{i}' for i in importanceList[iImp].shape[1]]
-    df = pd.DataFrame(importanceList[iImp], columns=columnsTags)
+    columnsTags = [f'N{i}' for i in range(importanceList[iImp].shape[1])]
+    df = pd.DataFrame(importanceList[iImp], columns=columnsTags).astype(int)
     if not os.path.exists(f'data/importance/{modelName}/'):
         os.makedirs(f'data/importance/{modelName}/')
     df.to_csv(f'data/importance/{modelName}/PerEntrylayer{iImp}.csv', index=False)
+    print(f'File data/importance/{modelName}/PerEntrylayer{iImp}.csv created')
     for dup in dupList[iImp]:
         if len(dup) != 0:
             importanceList[iImp][dup[0], :] = np.sum(importanceList[iImp][dup, :], axis=0)
@@ -151,13 +151,17 @@ for iImp in range(len(importanceList)):
 
 # Save class-based importance for minimization per class
 for iImp in range(len(importanceList)):
-    columnsTags = [f'N{i}' for i in importanceList[iImp].shape[1]]
+    columnsTags = [f'N{i}' for i in range(importanceList[iImp].shape[1])]
     df = pd.DataFrame(columns=columnsTags)
     for i in range(sampleSize):
         df = pd.concat([df,
-                        pd.DataFrame((importancePerClass[iImp][training_data.targets[i].item()] > 0), columns=columnsTags)],
+                        pd.DataFrame((importancePerClass[iImp][training_data.targets[i].item()] > 0), columns=[0], index=columnsTags).transpose()],
                         axis=0, ignore_index=True)
+        if (i+1) % 500 == 0:
+            print(f"Layer {iImp} entry {i+1:>5d}/{sampleSize:>5d}")
+    df = df.astype(int)
     df.to_csv(f'data/importance/{modelName}/PerClasslayer{iImp}.csv', index=False)
+    print(f'File data/importance/{modelName}/PerEntrylayer{iImp}.csv created')
 
 # Group all importances in same array
 for iImp in range(len(importanceList)):
