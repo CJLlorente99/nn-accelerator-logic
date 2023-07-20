@@ -30,6 +30,7 @@ class DNFRealization:
 			f.write(f'.type fr\n')  # .pla contains ON-Set and OFF-Set
 			for index, row in df.iterrows():
 				text = ''.join(row[inTags].to_string(header=False, index=False).split('\n'))
+				text = text.replace('2', '-')
 				outputText = row[outTag[0]]
 				f.write(f'{text} {outputText}\n')
 			f.write(f'.e')
@@ -57,6 +58,7 @@ class DNFRealization:
 			f.write(f'.p {len(df)}\n')
 			for index, row in df.iterrows():
 				text = ''.join(row[inTags].to_string(header=False, index=False).split('\n'))
+				text = text.replace('2', '-')
 				outputText = row[outTag[0]]
 				f.write(f'{text} {outputText}\n')
 			f.write(f'.e')

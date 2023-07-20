@@ -12,10 +12,10 @@ import torch.nn.functional as F
 batch_size = 1
 neuronPerLayer = 100
 modelFilename = f'data\savedModels\eeb_100ep_100npl'
-simulatedFilenameL0 = f'D:\data\inputSimulated\eeb_100ep_100npl\opt_espresso_testlayer0'
-simulatedFilenameL1 = f'D:\data\inputSimulated\eeb_100ep_100npl\layer1'
-simulatedFilenameL2 = f'D:\data\inputSimulated\eeb_100ep_100npl\layer2'
-simulatedFilenameL3 = f'D:\data\inputSimulated\eeb_100ep_100npl\layer3'
+simulatedFilenameL0 = f'data\inputSimulated\eeb_100ep_100npl\ABCOptimizedPerEntry/trainlayer1'
+simulatedFilenameL1 = f'data\inputSimulated\eeb_100ep_100npl\ABCOptimizedPerEntry/trainlayer2'
+simulatedFilenameL2 = f'data\inputSimulated\eeb_100ep_100npl\ABCOptimizedPerEntry/trainlayer3'
+simulatedFilenameL3 = f'data\inputSimulated\eeb_100ep_100npl\ABCOptimizedPerEntry/trainlayer4'
 inputFilename = f'data/inputs/trainInput'
 lastLayerInputsTestFilename = f'example'
 
@@ -70,9 +70,13 @@ Load the simulated inputs to the last layer (provided by minimized network)
 
 correctInput = 0
 correctL0 = 0
+correctAllModelFromL0 = 0
 correctL1 = 0
+correctAllModelFromL1 = 0
 correctL2 = 0
+correctAllModelFromL2 = 0
 correctL3 = 0
+correctAllModelFromL3 = 0
 correctAllModel = 0
 count = 0
 model.eval()
@@ -123,18 +127,49 @@ with open(simulatedFilenameL0) as f_simL0:
                             if (X.cpu().detach().numpy()[0] == inputSample.cpu().detach().numpy()[0]).all():
                                 correctInput += 1
                             
+                            # L0 Checks
                             if (predL0.cpu().detach().numpy()[0] == line_simulatedL0).all():
                                 correctL0 += 1
 
+                            x = torch.tensor(line_simulatedL0[None, :]).type(torch.FloatTensor)
+                            x = model.forwardOneLayer(x, 1)
+                            x = model.forwardOneLayer(x, 2)
+                            x = model.forwardOneLayer(x, 3)
+                            x = model.forwardOneLayer(x, 4)
+                            if (x.argmax(1) == training_data.targets[count].item()).type(torch.float).sum().item():
+                                correctAllModelFromL0 += 1
+
+                            # L1 Checks
                             if (predL1.cpu().detach().numpy()[0] == line_simulatedL1).all():
                                 correctL1 += 1
+                            
+                            x = torch.tensor(line_simulatedL1[None, :]).type(torch.FloatTensor)
+                            x = model.forwardOneLayer(x, 2)
+                            x = model.forwardOneLayer(x, 3)
+                            x = model.forwardOneLayer(x, 4)
+                            if (x.argmax(1) == training_data.targets[count].item()).type(torch.float).sum().item():
+                                correctAllModelFromL1 += 1
 
+                            # L2 Checks
                             if (predL2.cpu().detach().numpy()[0] == line_simulatedL2).all():
                                 correctL2 += 1
+                            
+                            x = torch.tensor(line_simulatedL2[None, :]).type(torch.FloatTensor)
+                            x = model.forwardOneLayer(x, 3)
+                            x = model.forwardOneLayer(x, 4)
+                            if (x.argmax(1) == training_data.targets[count].item()).type(torch.float).sum().item():
+                                correctAllModelFromL2 += 1
 
+                            # L3 Checks
                             if (predL3.cpu().detach().numpy()[0] == line_simulatedL3).all():
                                 correctL3 += 1
 
+                            x = torch.tensor(line_simulatedL3[None, :]).type(torch.FloatTensor)
+                            x = model.forwardOneLayer(x, 4)
+                            if (x.argmax(1) == training_data.targets[count].item()).type(torch.float).sum().item():
+                                correctAllModelFromL3 += 1
+
+                            # Original Accuracy
                             if (pred.argmax(1) == training_data.targets[count].item()).type(torch.float).sum().item():
                                 correctAllModel += 1
                             
@@ -160,10 +195,14 @@ Print results
 
 print(f'Correct Input {correctInput}/{numLines} {correctInput/numLines*100}%')
 print(f'Correct L0 {correctL0}/{numLines} {correctL0/numLines*100}%')
+print(f"Train Error from L0: \n Accuracy: {(100 * correctAllModelFromL0 / numLines):>0.2f}%\n")
 print(f'Correct L1 {correctL1}/{numLines} {correctL1/numLines*100}%')
+print(f"Train Error from L1: \n Accuracy: {(100 * correctAllModelFromL1 / numLines):>0.2f}%\n")
 print(f'Correct L2 {correctL2}/{numLines} {correctL2/numLines*100}%')
+print(f"Train Error from L2: \n Accuracy: {(100 * correctAllModelFromL2 / numLines):>0.2f}%\n")
 print(f'Correct L3 {correctL3}/{numLines} {correctL3/numLines*100}%')
-print(f"Train Error: \n Accuracy: {(100 * correctAllModel / numLines):>0.2f}%\n")
+print(f"Train Error from L3: \n Accuracy: {(100 * correctAllModelFromL3 / numLines):>0.2f}%\n")
+print(f"Train Error Original: \n Accuracy: {(100 * correctAllModel / numLines):>0.2f}%\n")
     
 # print(f'TEST Test\n')
 

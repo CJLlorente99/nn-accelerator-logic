@@ -1,5 +1,5 @@
 import torch
-from modelsCommon.auxFunctionsEnergyEfficiency import trainAndTest
+from modelsCommon.auxFunctionsEnergyEfficiency import trainAndTest, testReturn
 from modelsCommon.auxTransformations import *
 from torchvision import datasets
 from torchvision.transforms import ToTensor, Compose
@@ -8,10 +8,12 @@ from modules.binaryEnergyEfficiency import BinaryNeuralNetwork
 from modules.binaryEnergyEfficiencyNoBN import BinaryNeuralNetworkNoBN
 import torch.optim as optim
 import torch.nn as nn
+import pandas as pd
 
 batch_size = 64
 neuronPerLayer = 100
-epochs = 50
+epochs = 100
+pruned = True
 
 # Check mps maybe if working in MacOS
 device = 'cuda' if torch.cuda.is_available() else 'cpu'
@@ -22,7 +24,7 @@ Importing MNIST dataset
 print(f'IMPORT DATASET\n')
 
 training_data = datasets.MNIST(
-    root='/home/carlosl/Dokumente/nn-accelerator-logic/data',
+    root='/srv/data/image_dataset/MNIST',
     train=True,
     download=False,
     transform=Compose([
@@ -33,7 +35,7 @@ training_data = datasets.MNIST(
 )
 
 test_data = datasets.MNIST(
-    root='/home/carlosl/Dokumente/nn-accelerator-logic/data',
+    root='/srv/data/image_dataset/MNIST',
     train=False,
     download=False,
     transform=Compose([
@@ -70,5 +72,22 @@ trainAndTest(epochs, train_dataloader, test_dataloader, model, opt, criterion)
 '''
 Save
 '''
+print(f'SAVING\n')
 
-torch.save(model.state_dict(), f'/home/carlosl/Dokumente/nn-accelerator-logic/src/modelCreation/savedModels/MNIST_bin_100NPL')
+if pruned:
+    prunedConnections = model.pruningSparsification(neuronPerLayer - 30)
+    for layer in prunedConnections:
+        columnTags = [f'N{i}' for i in range(prunedConnections[layer].shape[0])]
+        df = pd.DataFrame(prunedConnections[layer].T, columns=columnTags)
+        df.to_csv(f'savedModels/eeb_pruned_{epochs}ep_{neuronPerLayer}npl_prunnedInfo{layer}.csv', index=False)
+
+metrics = '\n'.join(testReturn(test_dataloader, train_dataloader, model, criterion))
+print(metrics)
+with open(f'savedModels/eeb_pruned_{epochs}ep_{neuronPerLayer}npl.txt', 'w') as f:
+    f.write(metrics)
+    f.write('\n')
+    f.write(f'epochs {epochs}\n')
+    f.write(f'batch {batch_size}\n')
+    f.close()
+
+torch.save(model.state_dict(), f'savedModels/eeb_pruned_{epochs}ep_{neuronPerLayer}npl')

@@ -5,6 +5,7 @@ import numpy as np
 from ttUtilities.auxFunctions import binaryArrayToSingleValue, integerToBinaryArray
 import torch
 import pandas as pd
+import heapq
 
 
 class BinaryNeuralNetwork(nn.Module):
@@ -235,68 +236,43 @@ class BinaryNeuralNetwork(nn.Module):
 		self.valueSTE2[self.valueSTE2 == -1] = 0
 		self.valueSTE3[self.valueSTE3 == -1] = 0
 
-	def individualActivationsToUniqueValue(self):
-		aux = []
-		i = 0
-		for activation in self.input0:
-			aux.append(binaryArrayToSingleValue(activation))
+	def pruningSparsification(self, inputsToPrune):
+		prunedConnections = {}
 
-			if (i + 1) % 250 == 0:
-				print(f"Activations to Unique Value (Input0) [{i + 1:>4d}/{len(self.input0):>4d}]")
-			i += 1
-		self.input0 = np.array(aux)
-		self.activationSizeInput = int(self.input0.shape[1] / 2)
+		with torch.no_grad():
+			# First hidden layer
+			prunedConnections['l1'] = []
+			for j in range(len(self.l1.weight)):
+				weights = self.l1.weight[j, :]
+				auxWeights = torch.abs(weights).detach().numpy()
+				idxToPrune = np.argpartition(auxWeights, inputsToPrune)[:inputsToPrune]
+				nums = weights[idxToPrune]
+				weights[idxToPrune] = 0
+				prunedConnections['l1'].append(idxToPrune)
+			prunedConnections['l1'] = np.array(prunedConnections['l1'])
 
-		aux = []
-		i = 0
-		for activation in self.valueSTE0:
-			aux.append(binaryArrayToSingleValue(activation))
+			# Second hidden layer
+			prunedConnections['l2'] = []
+			for j in range(len(self.l2.weight)):
+				weights = self.l2.weight[j, :]
+				nums = heapq.nsmallest(inputsToPrune, weights)
+				indexes = []
+				for n in nums:
+					indexes.append(np.where(weights == n)[0][0])  # Care, weight could be repeated
+					weights[weights == n] = 0
+				prunedConnections['l2'].append(indexes)
+			prunedConnections['l2'] = np.array(prunedConnections['l2'])
 
-			if (i + 1) % 250 == 0:
-				print(f"Activations to Unique Value (STE0) [{i + 1:>4d}/{len(self.valueSTE0):>4d}]")
-			i += 1
-		self.valueSTE0 = np.array(aux)
+			# Third hidden layer
+			prunedConnections['l3'] = []
+			for j in range(len(self.l3.weight)):
+				weights = self.l3.weight[j, :]
+				nums = heapq.nsmallest(inputsToPrune, weights)
+				indexes = []
+				for n in nums:
+					indexes.append(np.where(weights == n)[0][0])  # Care, weight could be repeated
+					weights[weights == n] = 0
+				prunedConnections['l3'].append(indexes)
+			prunedConnections['l3'] = np.array(prunedConnections['l3'])
 
-		aux = []
-		i = 0
-		for activation in self.valueSTE1:
-			aux.append(binaryArrayToSingleValue(activation))
-
-			if (i + 1) % 250 == 0:
-				print(f"Activations to Unique Value (STE1) [{i + 1:>4d}/{len(self.valueSTE1):>4d}]")
-			i += 1
-		self.valueSTE1 = np.array(aux)
-
-		aux = []
-		i = 0
-		for activation in self.valueSTE2:
-			aux.append(binaryArrayToSingleValue(activation))
-
-			if (i + 1) % 250 == 0:
-				print(f"Activations to Unique Value (STE2) [{i + 1:>4d}/{len(self.valueSTE2):>4d}]")
-			i += 1
-		self.valueSTE2 = np.array(aux)
-
-		aux = []
-		i = 0
-		for activation in self.valueSTE3:
-			aux.append(binaryArrayToSingleValue(activation))
-
-			if (i + 1) % 250 == 0:
-				print(f"Activations to Unique Value (STE3) [{i + 1:>4d}/{len(self.valueSTE3):>4d}]")
-			i += 1
-		self.valueSTE3 = np.array(aux)
-
-		# Activation size of the output layer will always be considered to be 10
-		# aux = []
-		# i = 0
-		# for activation in self.valueIden:
-		# 	aux.append(binaryArrayToSingleValue(activation))
-		#
-		# 	if (i + 1) % 250 == 0:
-		# 		print(f"Activations to Unique Value (Iden) [{i + 1:>4d}/{len(self.valueIden):>4d}]")
-		# 	i += 1
-		# self.valueIden = np.array(aux)
-		# self.activationSizeOutput = int(self.valueIden.shape[1] / 2)
-
-		self.activationSize = int(self.valueSTE3.shape[1] / 2)  # It has the info of the lengths too
+		return prunedConnections
