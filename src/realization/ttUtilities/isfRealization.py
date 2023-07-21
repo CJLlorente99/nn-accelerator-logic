@@ -65,7 +65,7 @@ class DNFRealization:
 		print(f'ABC PLA {filename} completed')
    
    
-	def createPLAFileEspresso(self, baseFilename: str):
+	def createPLAFileEspresso(self, baseFilename: str, pruned=False, prunedBaseFilename=None):
 		# Care about the output folder
 		dirs = os.scandir(self.ttFolderName)
 
@@ -75,15 +75,21 @@ class DNFRealization:
 
 		# Loop over the dirs and their files
 		dirs = os.scandir(self.ttFolderName)
+		i = 1
 		for dir in dirs:
+			if pruned:
+				dfPruned = pd.read_csv(f'{prunedBaseFilename}{i}.csv')
 			files = os.scandir(f'{self.ttFolderName}/{dir.name}')
 			for file in files:
 				df = pd.read_csv(f'{self.ttFolderName}/{dir.name}/{file.name}', index_col=False)
 				df = df.astype('int')
 				df.drop_duplicates(inplace=True)
+				if pruned:
+					df.drop(df.columns[dfPruned[file.name].values], axis=1, inplace=True)
 				self.generateEspressoInput(df, f'{baseFilename}/{dir.name}/{file.name}')
+			i += 1
 
-	def createPLAFileABC(self, baseFilename: str):
+	def createPLAFileABC(self, baseFilename: str, pruned=False, prunedBaseFilename=None):
 		# Care about the output folder
 		dirs = os.scandir(self.ttFolderName)
 
@@ -93,10 +99,16 @@ class DNFRealization:
 
 		# Loop over the dirs and their files
 		dirs = os.scandir(self.ttFolderName)
+		i = 1
 		for dir in dirs:
+			if pruned:
+				dfPruned = pd.read_csv(f'{prunedBaseFilename}{i}.csv')
 			files = os.scandir(f'{self.ttFolderName}/{dir.name}')
 			for file in files:
 				df = pd.read_csv(f'{self.ttFolderName}/{dir.name}/{file.name}', index_col=False)
 				df = df.astype('int')
 				df.drop_duplicates(inplace=True)
+				if pruned:
+					df.drop(df.columns[dfPruned[file.name].values], axis=1, inplace=True)
 				self.generateABCInput(df, f'{baseFilename}/{dir.name}/{file.name}')
+			i += 1

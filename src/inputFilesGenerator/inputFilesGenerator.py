@@ -2,9 +2,22 @@ import torch
 from torchvision import datasets
 from torchvision.transforms import ToTensor, Compose
 from torch.utils.data import DataLoader
-import torch.optim as optim
+from modules.binaryEnergyEfficiency import BinaryNeuralNetwork
 import torch.nn as nn
+import pandas as pd
+import numpy as np
 from modelsCommon.auxTransformations import *
+import torch.nn.functional as F
+
+batch_size = 1
+neuronPerLayer = 100
+modelFilename = f'data\savedModels\eeb_pruned_100ep_100npl'
+outputFilenameTrain = f'data/inputs/trainlayer1'
+outputFilenameTest = f'data/inputs/testlayer1'
+
+
+# Check mps maybe if working in MacOS
+device = 'cuda' if torch.cuda.is_available() else 'cpu'
 
 '''
 Importing MNIST dataset
@@ -12,53 +25,62 @@ Importing MNIST dataset
 print(f'IMPORT DATASET\n')
 
 training_data = datasets.MNIST(
-    root='C:/Users/carlo/OneDrive/Documentos/Universidad/MUIT/Segundo/TFM/Code/data',
+    root='data',
     train=True,
     download=False,
     transform=Compose([
             ToTensor(),
-            ToBlackAndWhite()
+            ToBlackAndWhite(),
+            ToSign()
         ])
-)
+    )
 
 test_data = datasets.MNIST(
-    root='C:/Users/carlo/OneDrive/Documentos/Universidad/MUIT/Segundo/TFM/Code/data',
+    root='data',
     train=False,
     download=False,
     transform=Compose([
-        ToTensor(),
-        ToBlackAndWhite()
-    ])
-)
+            ToTensor(),
+            ToBlackAndWhite(),
+            ToSign()
+        ])
+    )
 
 '''
 Create DataLoader
 '''
-train_dataloader = DataLoader(training_data, batch_size=1)
-test_dataloader = DataLoader(test_data, batch_size=1)
+train_dataloader = DataLoader(training_data, batch_size=batch_size)
+test_dataloader = DataLoader(test_data, batch_size=batch_size)
 
 '''
-Create input files
+Instantiate NN models
 '''
-trainInputFile = 'data/inputs/trainInput'
-testInputFile = 'data/inputs/testInput'
+print(f'MODEL INSTANTIATION\n')
 
-with open(trainInputFile, 'w') as f:
-    for i in range(len(training_data.data)):
-        X, y = train_dataloader.dataset[i]
-        f.write(''.join(map(str, X.flatten().type(torch.int).tolist())))
+model = BinaryNeuralNetwork(neuronPerLayer).to(device)
+model.load_state_dict(torch.load(modelFilename, map_location=torch.device(device)))
+
+'''
+Load the simulated inputs to the last layer (provided by minimized network)
+'''
+
+model.eval()
+with open(outputFilenameTrain, 'w') as f:
+    for X, y in train_dataloader:
+        X = torch.flatten(X, start_dim=1)
+        predL0 = model.forwardOneLayer(X , 0)
+        x = predL0.detach().cpu().numpy()
+        x[x < 0] = 0
+        x = list(x.astype(int)[0])
+        f.write(''.join(str(e) for e in x))
         f.write('\n')
 
-        if (i+1) % 500 == 0:
-            print(f"Write Inputs [{i+1:>5d}/{len(training_data.data):>5d}]")
-    f.close()
-            
-with open(testInputFile, 'w') as f:
-    for i in range(len(test_data.data)):
-        X, y = test_dataloader.dataset[i]
-        f.write(''.join(map(str, X.flatten().type(torch.int).tolist())))
+with open(outputFilenameTest, 'w') as f:
+    for X, y in test_dataloader:
+        X = torch.flatten(X, start_dim=1)
+        predL0 = model.forwardOneLayer(X , 0)
+        x = predL0.detach().cpu().numpy()
+        x[x < 0] = 0
+        x = list(x.astype(int)[0])
+        f.write(''.join(str(e) for e in x))
         f.write('\n')
-
-        if (i+1) % 500 == 0:
-            print(f"Write Inputs [{i+1:>5d}/{len(test_data.data):>5d}]")
-    f.close()

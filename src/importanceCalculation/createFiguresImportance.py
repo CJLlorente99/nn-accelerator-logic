@@ -7,7 +7,7 @@ from torchvision import datasets
 from torchvision.transforms import ToTensor, Compose
 from torch.utils.data import DataLoader
 
-modelName = 'eeb_100ep_100npl'
+modelName = 'eeb_pruned_100ep_100npl'
 nLayers = 4
 neuronPerLayer = 100
 
@@ -72,19 +72,21 @@ for iImp in range(len(importanceList)):
 # Print results
 for imp in importancePerClass:
     # Print aggregated importance
-    # aux = importancePerClass[imp].sum(0)
-    # aux.sort()
+    aux = importancePerClass[imp].sum(0)
+    aux.sort()
 
-    # plt.hist(aux, bins=100, range=(0, 10), color='b')
-    # plt.xlabel('Neuron importance score')
-    # plt.ylabel('Number of neurons')
-    # plt.savefig(f'img/importance/{modelName}/accImportanceLayer{imp}.png', transparent=True)
+    fig = plt.figure()
+    plt.hist(aux, bins=100, range=(0, 10), color='b')
+    plt.xlabel('Neuron importance score')
+    plt.ylabel('Number of neurons')
+    fig.savefig(f'img/importance/{modelName}/accImportanceLayer{imp}.png', transparent=True)
 
     # Print classes that are important
     aux = (importancePerClass[imp] > 0).sum(0)
     aux.sort()
 
+    fig = plt.figure()
     plt.hist(aux, bins=100, range=(0, 10), color='b')
     plt.xlabel('Number of important classes')
     plt.ylabel('Number of neurons')
-    plt.savefig(f'img/importance/{modelName}/importanClassesLayer{imp}.png', transparent=True)
+    fig.savefig(f'img/importance/{modelName}/importanClassesLayer{imp}.png', transparent=True)

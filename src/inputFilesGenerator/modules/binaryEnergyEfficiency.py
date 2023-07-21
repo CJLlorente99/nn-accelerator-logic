@@ -7,9 +7,9 @@ import torch
 import pandas as pd
 
 
-class BinaryNeuralNetworkNoBN(nn.Module):
+class BinaryNeuralNetwork(nn.Module):
 	def __init__(self, neuronPerLayer=100):
-		super(BinaryNeuralNetworkNoBN, self).__init__()
+		super(BinaryNeuralNetwork, self).__init__()
 		self.flatten = nn.Flatten()
 
 		self.l0 = nn.Linear(28 * 28, neuronPerLayer)
@@ -21,6 +21,7 @@ class BinaryNeuralNetworkNoBN(nn.Module):
 		self.ste1 = STEFunction()
 
 		self.l2 = nn.Linear(neuronPerLayer, neuronPerLayer)
+		self.bn2 = nn.BatchNorm1d(neuronPerLayer)
 		self.ste2 = STEFunction()
 
 		self.l3 = nn.Linear(neuronPerLayer, neuronPerLayer)
@@ -67,6 +68,7 @@ class BinaryNeuralNetworkNoBN(nn.Module):
 		x = self.ste1(x)
 
 		x = self.l2(x)
+		x = self.bn2(x)
 		x = self.ste2(x)
 
 		x = self.l3(x)
@@ -79,6 +81,49 @@ class BinaryNeuralNetworkNoBN(nn.Module):
 		x = self.iden(x)
 
 		return F.log_softmax(x, dim=1)
+
+	def forwardLastLayer(self, x):
+		x = self.l1(x)
+		x = self.bn1(x)
+		x = self.ste1(x)
+
+		x = self.l2(x)
+		x = self.bn2(x)
+		x = self.ste2(x)
+
+		x = self.l3(x)
+		x = self.bn3(x)
+		x = self.ste3(x)
+
+		x = self.l4(x)
+		x = self.bn4(x)
+
+		x = self.iden(x)
+
+		return F.log_softmax(x, dim=1)
+
+	def forwardOneLayer(self, x, layer):
+		if layer == 0:
+			x = self.l0(x)
+			x = self.bn0(x)
+			x = self.ste0(x)
+		elif layer == 1:
+			x = self.l1(x)
+			x = self.bn1(x)
+			x = self.ste1(x)
+		elif layer == 2:
+			x = self.l2(x)
+			x = self.bn2(x)
+			x = self.ste2(x)
+		elif layer == 3:
+			x = self.l3(x)
+			x = self.bn3(x)
+			x = self.ste3(x)
+		elif layer == 4:
+			x = self.l4(x)
+			x = self.bn4(x)
+   
+		return x
 
 	def registerHooks(self):
 		self.l0.register_forward_hook(self.forward_hook_l0)

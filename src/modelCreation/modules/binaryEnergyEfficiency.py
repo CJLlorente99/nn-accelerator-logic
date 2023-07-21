@@ -6,10 +6,11 @@ from ttUtilities.auxFunctions import binaryArrayToSingleValue, integerToBinaryAr
 import torch
 import pandas as pd
 import heapq
+import torch.nn.utils.prune as prune
 
 
 class BinaryNeuralNetwork(nn.Module):
-	def __init__(self, neuronPerLayer=100):
+	def __init__(self, neuronPerLayer=100, connectionsToPrune=0):
 		super(BinaryNeuralNetwork, self).__init__()
 		self.flatten = nn.Flatten()
 
@@ -32,26 +33,23 @@ class BinaryNeuralNetwork(nn.Module):
 		self.l4 = nn.Linear(neuronPerLayer, 10)
 		self.bn4 = nn.BatchNorm1d(10)
 
-		self.iden = nn.Identity()
+		# Regular pruning
+		self.l1 = prune.random_structured(self.l1, name="weight", amount=connectionsToPrune, dim=-1)
+		self.l2 = prune.random_structured(self.l2, name="weight", amount=connectionsToPrune, dim=-1)
+		self.l3 = prune.random_structured(self.l3, name="weight", amount=connectionsToPrune, dim=-1)
 
 		# Lists for hook data
 		self.gradientsSTE0 = []
 		self.gradientsSTE1 = []
 		self.gradientsSTE2 = []
 		self.gradientsSTE3 = []
-		self.gradientsIden = []
 
 		self.valueSTE0 = []
 		self.valueSTE1 = []
 		self.valueSTE2 = []
 		self.valueSTE3 = []
-		self.valueIden = []
 
 		self.input0 = []  # The rest are the same as the self.value...
-
-		self.activationSize = 0
-		self.activationSizeInput = 0
-		self.activationSizeOutput = 0
 
 		# Flag to enable importance calculation through forward (instead of estimation through gradient)
 		self.legacyImportance = False
@@ -79,7 +77,6 @@ class BinaryNeuralNetwork(nn.Module):
 		x = self.l4(x)
 		x = self.bn4(x)
 
-		x = self.iden(x)
 
 		return F.log_softmax(x, dim=1)
 
@@ -89,7 +86,6 @@ class BinaryNeuralNetwork(nn.Module):
 		self.ste1.register_forward_hook(self.forward_hook_ste1)
 		self.ste2.register_forward_hook(self.forward_hook_ste2)
 		self.ste3.register_forward_hook(self.forward_hook_ste3)
-		self.iden.register_forward_hook(self.forward_hook_iden)
 
 		if not self.legacyImportance:
 			# Register hooks
@@ -141,11 +137,6 @@ class BinaryNeuralNetwork(nn.Module):
 			if self.neuronSwitchedOff[0] == 3:
 				val_output[0][self.neuronSwitchedOff[1]] = 0
 
-	def forward_hook_iden(self, module, val_input, val_output):
-		a = val_output.argmax(1)
-		# TODO. Could be wrong
-		self.valueIden.append(torch.zeros(val_output.shape).scatter(1, a.unsqueeze(1), 1.0).cpu().detach().numpy()[0])
-
 	def listToArray(self, neuronPerLayer):
 		self.input0 = np.array(self.input0).squeeze().reshape(len(self.input0), 28 * 28)
 
@@ -158,8 +149,6 @@ class BinaryNeuralNetwork(nn.Module):
 		self.valueSTE1 = np.array(self.valueSTE1).squeeze().reshape(len(self.valueSTE1), neuronPerLayer)
 		self.valueSTE2 = np.array(self.valueSTE2).squeeze().reshape(len(self.valueSTE2), neuronPerLayer)
 		self.valueSTE3 = np.array(self.valueSTE3).squeeze().reshape(len(self.valueSTE3), neuronPerLayer)
-
-		# self.valueIden = np.array(self.valueIden).squeeze().reshape(len(self.valueIden), 10)
 
 	def computeImportance(self, neuronPerLayer):
 		# CAREFUL, as values are either +1 or -1, importance is equal to gradient
@@ -203,10 +192,6 @@ class BinaryNeuralNetwork(nn.Module):
 			self.valueSTE3, columns=columnsInLayer4).to_feather(
 			f'{baseFilename}Input4')
 
-		# pd.DataFrame(
-		# 	np.array(self.valueIden), columns=columnsOutLayer5).to_feather(
-		# 	f'{baseFilename}Out5')
-
 	def saveGradients(self, baseFilename: str, targets: list):
 		columnsInLayer1 = [f'N{i}' for i in range(len(self.gradientsSTE0[0]))]
 		columnsInLayer2 = [f'N{i}' for i in range(len(self.gradientsSTE1[0]))]
@@ -244,7 +229,7 @@ class BinaryNeuralNetwork(nn.Module):
 			prunedConnections['l1'] = []
 			for j in range(len(self.l1.weight)):
 				weights = self.l1.weight[j, :]
-				auxWeights = torch.abs(weights).detach().numpy()
+				auxWeights = torch.abs(weights).cpu().detach().numpy()
 				idxToPrune = np.argpartition(auxWeights, inputsToPrune)[:inputsToPrune]
 				nums = weights[idxToPrune]
 				weights[idxToPrune] = 0
@@ -255,24 +240,22 @@ class BinaryNeuralNetwork(nn.Module):
 			prunedConnections['l2'] = []
 			for j in range(len(self.l2.weight)):
 				weights = self.l2.weight[j, :]
-				nums = heapq.nsmallest(inputsToPrune, weights)
-				indexes = []
-				for n in nums:
-					indexes.append(np.where(weights == n)[0][0])  # Care, weight could be repeated
-					weights[weights == n] = 0
-				prunedConnections['l2'].append(indexes)
+				auxWeights = torch.abs(weights).cpu().detach().numpy()
+				idxToPrune = np.argpartition(auxWeights, inputsToPrune)[:inputsToPrune]
+				nums = weights[idxToPrune]
+				weights[idxToPrune] = 0
+				prunedConnections['l2'].append(idxToPrune)
 			prunedConnections['l2'] = np.array(prunedConnections['l2'])
 
 			# Third hidden layer
 			prunedConnections['l3'] = []
 			for j in range(len(self.l3.weight)):
 				weights = self.l3.weight[j, :]
-				nums = heapq.nsmallest(inputsToPrune, weights)
-				indexes = []
-				for n in nums:
-					indexes.append(np.where(weights == n)[0][0])  # Care, weight could be repeated
-					weights[weights == n] = 0
-				prunedConnections['l3'].append(indexes)
+				auxWeights = torch.abs(weights).cpu().detach().numpy()
+				idxToPrune = np.argpartition(auxWeights, inputsToPrune)[:inputsToPrune]
+				nums = weights[idxToPrune]
+				weights[idxToPrune] = 0
+				prunedConnections['l3'].append(idxToPrune)
 			prunedConnections['l3'] = np.array(prunedConnections['l3'])
 
 		return prunedConnections

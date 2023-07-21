@@ -6,7 +6,6 @@ import torch.nn.functional as F
 import numpy as np
 from ttUtilities.auxFunctions import binaryArrayToSingleValue, integerToBinaryArray
 import heapq
-import torch.nn.utils.prune as prune
 
 # BN parameters
 alpha = .1
@@ -14,8 +13,9 @@ epsilon = 1e-4
 
 
 class BNNBinaryNeuralNetwork(nn.Module):
-	def __init__(self, neuronPerLayer=100, connectionsToPrune=0):
+	def __init__(self, neuronPerLayer=100, mod=False):
 		super(BNNBinaryNeuralNetwork, self).__init__()
+		self.mod = mod
 		self.flatten = nn.Flatten()
 
 		self.l0 = nn.Linear(28 * 28, neuronPerLayer)
@@ -38,13 +38,16 @@ class BNNBinaryNeuralNetwork(nn.Module):
 		self.ste3 = STEFunction()
 		self.d3 = nn.Dropout(0.5)
 
-		self.l4 = nn.Linear(neuronPerLayer, 10)
-		self.bn4 = nn.BatchNorm1d(10)
+		if self.mod:
+			self.l4 = nn.Linear(neuronPerLayer, neuronPerLayer)
+			self.bn4 = nn.BatchNorm1d(neuronPerLayer, momentum=alpha, eps=epsilon)
+			self.ste4 = STEFunction()
+			self.d4 = nn.Dropout(0.5)
 
-		# Regular pruning
-		prune.random_unstructured(self.l1, name="weight", amount=connectionsToPrune)
-		prune.random_unstructured(self.l2, name="weight", amount=connectionsToPrune)
-		prune.random_unstructured(self.l3, name="weight", amount=connectionsToPrune)
+		self.l5 = nn.Linear(neuronPerLayer, 10)
+		self.bn5 = nn.BatchNorm1d(10)
+
+		self.iden = nn.Identity()
 
 		# Lists for hook data
 		self.gradientsSTE0 = []
@@ -52,12 +55,14 @@ class BNNBinaryNeuralNetwork(nn.Module):
 		self.gradientsSTE2 = []
 		self.gradientsSTE3 = []
 		self.gradientsSTE4 = []
+		self.gradientsIden = []
 
 		self.valueSTE0 = []
 		self.valueSTE1 = []
 		self.valueSTE2 = []
 		self.valueSTE3 = []
 		self.valueSTE4 = []
+		self.valueIden = []
 
 		self.input0 = []  # The rest are the same as the self.value...
 
@@ -92,8 +97,16 @@ class BNNBinaryNeuralNetwork(nn.Module):
 		x = self.ste3(x)
 		x = self.d3(x)
 
-		x = self.l4(x)
-		x = self.bn4(x)
+		if self.mod:
+			x = self.l4(x)
+			x = self.bn4(x)
+			x = self.ste4(x)
+			x = self.d4(x)
+
+		x = self.l5(x)
+		x = self.bn5(x)
+
+		x = self.iden(x)
 
 		return x
 
@@ -102,6 +115,9 @@ class BNNBinaryNeuralNetwork(nn.Module):
 		self.ste1.register_forward_hook(self.forward_hook_ste1)
 		self.ste2.register_forward_hook(self.forward_hook_ste2)
 		self.ste3.register_forward_hook(self.forward_hook_ste3)
+		if self.mod:
+			self.ste4.register_forward_hook(self.forward_hook_ste4)
+		# self.iden.register_forward_hook(self.forward_hook_iden)
 
 		self.l0.register_forward_hook(self.forward_hook_l0)
 
@@ -111,6 +127,8 @@ class BNNBinaryNeuralNetwork(nn.Module):
 			self.ste1.register_full_backward_hook(self.backward_hook_ste1)
 			self.ste2.register_full_backward_hook(self.backward_hook_ste2)
 			self.ste3.register_full_backward_hook(self.backward_hook_ste3)
+			if self.mod:
+				self.ste4.register_full_backward_hook(self.backward_hook_ste4)
 
 	def backward_hook_ste0(self, module, grad_input, grad_output):
 		self.gradientsSTE0.append(grad_input[0].cpu().detach().numpy()[0])
@@ -123,6 +141,9 @@ class BNNBinaryNeuralNetwork(nn.Module):
 
 	def backward_hook_ste3(self, module, grad_input, grad_output):
 		self.gradientsSTE3.append(grad_input[0].cpu().detach().numpy()[0])
+
+	def backward_hook_ste4(self, module, grad_input, grad_output):
+		self.gradientsSTE4.append(grad_input[0].cpu().detach().numpy()[0])
 
 	def forward_hook_l0(self, module, val_input, val_output):
 		self.input0.append(val_input[0].cpu().detach().numpy().tolist())
@@ -155,6 +176,18 @@ class BNNBinaryNeuralNetwork(nn.Module):
 			if self.neuronSwitchedOff[0] == 3:
 				val_output[0][self.neuronSwitchedOff[1]] = 0
 
+	def forward_hook_ste4(self, module, val_input, val_output):
+		if not self.legacyImportance:
+			self.valueSTE4.append(val_output.cpu().detach().numpy().tolist())
+		else:
+			if self.neuronSwitchedOff[0] == 4:
+				val_output[0][self.neuronSwitchedOff[1]] = 0
+
+	def forward_hook_iden(self, module, val_input, val_output):
+		a = val_output.argmax(1)
+		# TODO. Could be wrong
+		self.valueIden.append(torch.zeros(val_output.shape).scatter(1, a.unsqueeze(1), 1.0).cpu().detach().numpy()[0])
+
 	def listToArray(self, neuronPerLayer):
 		self.input0 = np.array(self.input0).squeeze().reshape(len(self.input0), 28 * 28)
 
@@ -162,11 +195,17 @@ class BNNBinaryNeuralNetwork(nn.Module):
 		self.gradientsSTE1 = np.array(self.gradientsSTE1).squeeze().reshape(len(self.gradientsSTE1), neuronPerLayer)
 		self.gradientsSTE2 = np.array(self.gradientsSTE2).squeeze().reshape(len(self.gradientsSTE2), neuronPerLayer)
 		self.gradientsSTE3 = np.array(self.gradientsSTE3).squeeze().reshape(len(self.gradientsSTE3), neuronPerLayer)
+		if self.mod:
+			self.gradientsSTE4 = np.array(self.gradientsSTE4).squeeze().reshape(len(self.gradientsSTE4), neuronPerLayer)
 
 		self.valueSTE0 = np.array(self.valueSTE0).squeeze().reshape(len(self.valueSTE0), neuronPerLayer)
 		self.valueSTE1 = np.array(self.valueSTE1).squeeze().reshape(len(self.valueSTE1), neuronPerLayer)
 		self.valueSTE2 = np.array(self.valueSTE2).squeeze().reshape(len(self.valueSTE2), neuronPerLayer)
 		self.valueSTE3 = np.array(self.valueSTE3).squeeze().reshape(len(self.valueSTE3), neuronPerLayer)
+		if self.mod:
+			self.valueSTE4 = np.array(self.valueSTE4).squeeze().reshape(len(self.valueSTE4), neuronPerLayer)
+
+	# self.valueIden = np.array(self.valueIden).squeeze().reshape(len(self.valueIden), 10)
 
 	def computeImportance(self, neuronPerLayer):
 		# CAREFUL, as values are either +1 or -1, importance is equal to gradient
@@ -178,8 +217,14 @@ class BNNBinaryNeuralNetwork(nn.Module):
 		print('Importance STE2 calculated')
 		importanceSTE3 = np.abs(self.gradientsSTE3)
 		print('Importance STE3 calculated')
-		
-		return [importanceSTE0, importanceSTE1, importanceSTE2, importanceSTE3]
+		if self.mod:
+			importanceSTE4 = np.abs(self.gradientsSTE4)
+			print('Importance STE4 calculated')
+
+		if self.mod:
+			return [importanceSTE0, importanceSTE1, importanceSTE2, importanceSTE3, importanceSTE4]
+		else:
+			return [importanceSTE0, importanceSTE1, importanceSTE2, importanceSTE3]
 
 	def saveActivations(self, baseFilename):
 		columnsInLayer0 = [f'N{i}' for i in range(len(self.input0[0]))]
@@ -187,7 +232,9 @@ class BNNBinaryNeuralNetwork(nn.Module):
 		columnsInLayer2 = [f'N{i}' for i in range(len(self.valueSTE1[0]))]
 		columnsInLayer3 = [f'N{i}' for i in range(len(self.valueSTE2[0]))]
 		columnsInLayer4 = [f'N{i}' for i in range(len(self.valueSTE3[0]))]
-
+		if self.mod:
+			columnsInLayer5 = [f'N{i}' for i in range(len(self.valueSTE4[0]))]
+		# columnsOutLayer5 = [f'N{i}' for i in range(len(self.valueIden[0]))]
 
 		pd.DataFrame(
 			self.input0, columns=columnsInLayer0).to_feather(
@@ -209,11 +256,21 @@ class BNNBinaryNeuralNetwork(nn.Module):
 			self.valueSTE3, columns=columnsInLayer4).to_feather(
 			f'{baseFilename}Input4')
 
+		# pd.DataFrame(
+		# 	np.array(self.valueIden), columns=columnsOutLayer5).to_feather(
+		# 	f'{baseFilename}Out5')
+
+		if self.mod:
+			pd.DataFrame(
+				self.valueSTE4, columns=columnsInLayer5).to_feather(f'{baseFilename}Input5')
+
 	def saveGradients(self, baseFilename: str, targets: list):
 		columnsInLayer1 = [f'N{i}' for i in range(len(self.gradientsSTE0[0]))]
 		columnsInLayer2 = [f'N{i}' for i in range(len(self.gradientsSTE1[0]))]
 		columnsInLayer3 = [f'N{i}' for i in range(len(self.gradientsSTE2[0]))]
 		columnsInLayer4 = [f'N{i}' for i in range(len(self.gradientsSTE3[0]))]
+		if self.mod:
+			columnsInLayer5 = [f'N{i}' for i in range(len(self.gradientsSTE4[0]))]
 
 		aux = pd.DataFrame(self.gradientsSTE0, columns=columnsInLayer1)
 		aux['target'] = targets
@@ -231,12 +288,19 @@ class BNNBinaryNeuralNetwork(nn.Module):
 		aux['target'] = targets
 		aux.to_feather(f'{baseFilename}STE3')
 
+		if self.mod:
+			aux = pd.DataFrame(self.gradientsSTE4, columns=columnsInLayer5)
+			aux['target'] = targets
+			aux.to_feather(f'{baseFilename}STE4')
+
 	def signToBinary(self):
 		self.input0[self.input0 == -1] = 0
 		self.valueSTE0[self.valueSTE0 == -1] = 0
 		self.valueSTE1[self.valueSTE1 == -1] = 0
 		self.valueSTE2[self.valueSTE2 == -1] = 0
 		self.valueSTE3[self.valueSTE3 == -1] = 0
+		if self.mod:
+			self.valueSTE4[self.valueSTE4 == -1] = 0
 
 	def pruningSparsification(self, inputsToPrune):
 		prunedConnections = {}

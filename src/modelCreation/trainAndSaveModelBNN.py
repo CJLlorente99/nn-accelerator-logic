@@ -13,7 +13,15 @@ import pandas as pd
 batch_size = 128
 neuronPerLayer = 4096
 epochs = 200
-pruned = True
+irregularPrune = True # Regular False, Irregular True
+# If regular prune
+inputsAfterRegularPrune = 0
+if irregularPrune:
+    inputsAfterRegularPrune = neuronPerLayer
+# If irregular prune
+inputsAfterIrregularPrune = 30
+if not irregularPrune:
+    inputsAfterIrregularPrune = neuronPerLayer
 
 # Check mps maybe if working in MacOS
 device = 'cuda' if torch.cuda.is_available() else 'cpu'
@@ -56,7 +64,7 @@ Instantiate NN models
 '''
 print(f'MODEL INSTANTIATION\n')
 
-model = BNNBinaryNeuralNetwork(neuronPerLayer, False).to(device)
+model = BNNBinaryNeuralNetwork(neuronPerLayer, neuronPerLayer - inputsAfterRegularPrune).to(device)
 
 '''
 Train and test
@@ -85,7 +93,7 @@ tailoredParamList = [{'params': base_params,
 
 opt = optim.Adam(tailoredParamList, lr=initialLr)
 
-criterion = MulticlassHingeLoss(num_classes=10, squared=True, multiclass_mode='one-vs-all')
+criterion = MulticlassHingeLoss(num_classes=10, squared=True, multiclass_mode='one-vs-all').to(device)
 
 trainAndTest(epochs, train_dataloader, test_dataloader, model, opt, criterion, step)
 
@@ -94,12 +102,42 @@ Save
 '''
 print(f'SAVING\n')
 
-if pruned:
-    prunedConnections = model.pruningSparsification(neuronPerLayer - 30)
+if irregularPrune:
+    prunedConnections = model.pruningSparsification(neuronPerLayer - inputsAfterIrregularPrune)
     for layer in prunedConnections:
         columnTags = [f'N{i}' for i in range(prunedConnections[layer].shape[0])]
         df = pd.DataFrame(prunedConnections[layer].T, columns=columnTags)
         df.to_csv(f'savedModels/bnn_pruned_{epochs}ep_{neuronPerLayer}npl_prunnedInfo{layer}.csv', index=False)
+else:
+    # First layer
+    weightMask = list(model.l1.named_buffers())[0][1]
+    idxs = []
+    for iNeuron in range(len(weightMask)):
+        weights = weightMask[iNeuron].detach().cpu().numpy()
+        idxs.append(np.where(weights == 0))
+    columnTags = [f'N{i}' for i in range(len(weightMask))]
+    df = pd.DataFrame(np.array(idxs), columns=columnTags)
+    df.to_csv(f'savedModels/bnn_pruned_{epochs}ep_{neuronPerLayer}npl_prunnedInfo{1}.csv', index=False)
+
+    # Second layer
+    weightMask = list(model.l2.named_buffers())[0][1]
+    idxs = []
+    for iNeuron in range(len(weightMask)):
+        weights = weightMask[iNeuron].detach().cpu().numpy()
+        idxs.append(np.where(weights == 0))
+    columnTags = [f'N{i}' for i in range(len(weightMask))]
+    df = pd.DataFrame(np.array(idxs), columns=columnTags)
+    df.to_csv(f'savedModels/bnn_pruned_{epochs}ep_{neuronPerLayer}npl_prunnedInfo{2}.csv', index=False)
+
+    # Third layer
+    weightMask = list(model.l3.named_buffers())[0][1]
+    idxs = []
+    for iNeuron in range(len(weightMask)):
+        weights = weightMask[iNeuron].detach().cpu().numpy()
+        idxs.append(np.where(weights == 0))
+    columnTags = [f'N{i}' for i in range(len(weightMask))]
+    df = pd.DataFrame(np.array(idxs), columns=columnTags)
+    df.to_csv(f'savedModels/bnn_pruned_{epochs}ep_{neuronPerLayer}npl_prunnedInfo{3}.csv', index=False)
 
 metrics = '\n'.join(testReturn(test_dataloader, train_dataloader, model, criterion))
 print(metrics)
