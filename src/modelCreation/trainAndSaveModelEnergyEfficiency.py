@@ -13,9 +13,9 @@ import numpy as np
 batch_size = 64
 neuronPerLayer = 100
 epochs = 1
-irregularPrune = True # Regular False, Irregular True
+irregularPrune = False # Regular False, Irregular True
 # If regular prune
-inputsAfterRegularPrune = 50
+inputsAfterRegularPrune = 30
 if irregularPrune:
     inputsAfterRegularPrune = neuronPerLayer
 # If irregular prune
