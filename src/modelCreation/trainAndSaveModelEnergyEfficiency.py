@@ -15,7 +15,7 @@ neuronPerLayer = 100
 epochs = 1
 irregularPrune = True # Regular False, Irregular True
 # If regular prune
-inputsAfterRegularPrune = 30
+inputsAfterRegularPrune = 50
 if irregularPrune:
     inputsAfterRegularPrune = neuronPerLayer
 # If irregular prune

@@ -7,6 +7,7 @@ import torch
 import pandas as pd
 import heapq
 import torch.nn.utils.prune as prune
+from modelsCommon.customPruning import random_pruning_per_neuron
 
 
 class BinaryNeuralNetwork(nn.Module):
@@ -34,9 +35,9 @@ class BinaryNeuralNetwork(nn.Module):
 		self.bn4 = nn.BatchNorm1d(10)
 
 		# Regular pruning
-		self.l1 = prune.random_structured(self.l1, name="weight", amount=connectionsToPrune, dim=-1)
-		self.l2 = prune.random_structured(self.l2, name="weight", amount=connectionsToPrune, dim=-1)
-		self.l3 = prune.random_structured(self.l3, name="weight", amount=connectionsToPrune, dim=-1)
+		self.l1 = random_pruning_per_neuron(self.l1, name="weight", connectionsToPrune=connectionsToPrune)
+		self.l2 = random_pruning_per_neuron(self.l2, name="weight", connectionsToPrune=connectionsToPrune)
+		self.l3 = random_pruning_per_neuron(self.l3, name="weight", connectionsToPrune=connectionsToPrune)
 
 		# Lists for hook data
 		self.gradientsSTE0 = []
