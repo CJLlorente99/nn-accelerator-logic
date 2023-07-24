@@ -6,9 +6,10 @@ import torch.nn.functional as F
 import numpy as np
 from ttUtilities.auxFunctions import binaryArrayToSingleValue, integerToBinaryArray
 import math
+from modelsCommon.customPruning import random_pruning_per_neuron
 
 class binaryVGGVerySmall2(nn.Module):
-	def __init__(self, resizeFactor, relus: list):
+	def __init__(self, resizeFactor, relus: list, connectionsAfterPrune=0):
 		super(binaryVGGVerySmall2, self).__init__()
 
 		# Layer 0
@@ -82,6 +83,12 @@ class binaryVGGVerySmall2(nn.Module):
   
 		# Layer FC2
 		self.l3 = nn.Linear(1000, 10)
+
+		# Regular pruning
+		if connectionsAfterPrune != -1:
+			self.l0 = random_pruning_per_neuron(self.l0, name="weight", connectionsToPrune=resizeFactor*resizeFactor*512-connectionsAfterPrune)
+			self.l1 = random_pruning_per_neuron(self.l1, name="weight", connectionsToPrune=4096-connectionsAfterPrune)
+			self.l2 = random_pruning_per_neuron(self.l2, name="weight", connectionsToPrune=4096-connectionsAfterPrune)
   
 		# Initialize
 		for m in self.modules():
@@ -143,3 +150,45 @@ class binaryVGGVerySmall2(nn.Module):
 		x = self.l3(x)
 
 		return x
+	
+	def pruningSparsification(self, inputsAfterPrune):
+		prunedConnections = {}
+
+		with torch.no_grad():
+			# First hidden layer
+			prunedConnections['l0'] = []
+			inputsToPrune = 4096 - inputsAfterPrune
+			for j in range(len(self.l0.weight)):
+				weights = self.l0.weight[j, :]
+				auxWeights = torch.abs(weights).cpu().detach().numpy()
+				idxToPrune = np.argpartition(auxWeights, inputsToPrune)[:inputsToPrune]
+				nums = weights[idxToPrune]
+				weights[idxToPrune] = 0
+				prunedConnections['l0'].append(idxToPrune)
+			prunedConnections['l0'] = np.array(prunedConnections['l0'])
+
+			# Second hidden layer
+			prunedConnections['l1'] = []
+			inputsToPrune = 4096 - inputsAfterPrune
+			for j in range(len(self.l1.weight)):
+				weights = self.l1.weight[j, :]
+				auxWeights = torch.abs(weights).cpu().detach().numpy()
+				idxToPrune = np.argpartition(auxWeights, inputsToPrune)[:inputsToPrune]
+				nums = weights[idxToPrune]
+				weights[idxToPrune] = 0
+				prunedConnections['l1'].append(idxToPrune)
+			prunedConnections['l1'] = np.array(prunedConnections['l1'])
+
+			# Third hidden layer
+			prunedConnections['l2'] = []
+			inputsToPrune = 1000 - inputsAfterPrune
+			for j in range(len(self.l2.weight)):
+				weights = self.l2.weight[j, :]
+				auxWeights = torch.abs(weights).cpu().detach().numpy()
+				idxToPrune = np.argpartition(auxWeights, inputsToPrune)[:inputsToPrune]
+				nums = weights[idxToPrune]
+				weights[idxToPrune] = 0
+				prunedConnections['l2'].append(idxToPrune)
+			prunedConnections['l2'] = np.array(prunedConnections['l2'])
+
+		return prunedConnections

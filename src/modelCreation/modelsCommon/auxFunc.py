@@ -25,7 +25,7 @@ def train(dataloader, model, optimizer, criterion):
 		loss.backward()
 		optimizer.step()
 
-		if batch % 10 == 0:
+		if batch % 100 == 0:
 			loss, current = loss.item(), (batch + 1) * len(X)
 			print(f"loss: {loss:>7f}  [{current:>5d}/{size:>5d}]")
 
@@ -90,5 +90,5 @@ def trainAndTest(epochs, train_dataloader, test_dataloader, model, opt, criterio
 		if t in [99, 149, 299]:
 			opt.param_groups['lr'] /= 10
 		train(train_dataloader, model, opt, criterion)
-		test(test_dataloader, train_dataloader, model, criterion)
+		# test(test_dataloader, train_dataloader, model, criterion)
 

@@ -8,9 +8,9 @@ from ttUtilities.auxFunctions import binaryArrayToSingleValue, integerToBinaryAr
 import math
 import os
 
-class binaryVGGVerySmall(nn.Module):
-	def __init__(self, resizeFactor, relus: list):
-		super(binaryVGGVerySmall, self).__init__()
+class binaryVGGVerySmall2(nn.Module):
+	def __init__(self, resizeFactor, relus):
+		super(binaryVGGVerySmall2, self).__init__()
   
 		self.helpHookList = []
 
@@ -45,34 +45,64 @@ class binaryVGGVerySmall(nn.Module):
 		else:
 			self.relu21 = STEFunction()
 			self.helpHookList.append('ste21')
+
+		# Layer 2.2
+		self.conv22 = nn.Conv2d(256, 256, kernel_size=3, padding=1)
+		self.bn22 = nn.BatchNorm2d(256)
+		if relus[3]:
+			self.relu22 = nn.ReLU()
+			self.helpHookList.append('relu22')
+		else:
+			self.relu22 = STEFunction()
+			self.helpHookList.append('ste22')
 		self.maxpool22 = nn.MaxPool2d(kernel_size=2, stride=2)
 
 		# Layer 3.1
 		self.conv31 = nn.Conv2d(256, 512, kernel_size=3, padding=1)
 		self.bn31 = nn.BatchNorm2d(512)
-		if relus[3]:
+		if relus[4]:
 			self.relu31 = nn.ReLU()
 			self.helpHookList.append('relu31')
 		else:
 			self.relu31 = STEFunction()
 			self.helpHookList.append('ste31')
+
+		# Layer 3.2
+		self.conv32 = nn.Conv2d(512, 512, kernel_size=3, padding=1)
+		self.bn32 = nn.BatchNorm2d(512)
+		if relus[5]:
+			self.relu32 = nn.ReLU()
+			self.helpHookList.append('relu32')
+		else:
+			self.relu32 = STEFunction()
+			self.helpHookList.append('ste32')
 		self.maxpool32 = nn.MaxPool2d(kernel_size=2, stride=2)
 
 		# Layer 4.1
 		self.conv41 = nn.Conv2d(512, 512, kernel_size=3, padding=1)
 		self.bn41 = nn.BatchNorm2d(512)
-		if relus[4]:
+		if relus[6]:
 			self.relu41 = nn.ReLU()
 			self.helpHookList.append('relu41')
 		else:
 			self.relu41 = STEFunction()
 			self.helpHookList.append('ste41')
+
+		# Layer 4.2
+		self.conv42 = nn.Conv2d(512, 512, kernel_size=3, padding=1)
+		self.bn42 = nn.BatchNorm2d(512)
+		if relus[7]:
+			self.relu42 = nn.ReLU()
+			self.helpHookList.append('relu42')
+		else:
+			self.relu42 = STEFunction()
+			self.helpHookList.append('ste42')
 		self.maxpool42 = nn.MaxPool2d(kernel_size=2, stride=2)
 
 		# Layer FC0
-		self.l0 = nn.Linear(resizeFactor*resizeFactor*512, 1024)
-		self.bnl0 = nn.BatchNorm1d(1024)
-		if relus[5]:
+		self.l0 = nn.Linear(resizeFactor*resizeFactor*512, 4096)
+		self.bnl0 = nn.BatchNorm1d(4096)
+		if relus[8]:
 			self.relul0 = nn.ReLU()
 			self.helpHookList.append('relul0')
 		else:
@@ -80,9 +110,9 @@ class binaryVGGVerySmall(nn.Module):
 			self.helpHookList.append('stel0')
 
 		# Layer FC1
-		self.l1 = nn.Linear(1024, 250)
-		self.bnl1 = nn.BatchNorm1d(250)
-		if relus[6]:
+		self.l1 = nn.Linear(4096, 4096)
+		self.bnl1 = nn.BatchNorm1d(4096)
+		if relus[9]:
 			self.relul1 = nn.ReLU()
 			self.helpHookList.append('relul1')
 		else:
@@ -90,7 +120,17 @@ class binaryVGGVerySmall(nn.Module):
 			self.helpHookList.append('stel1')
 
 		# Layer FC2
-		self.l2 = nn.Linear(250, 10)
+		self.l2 = nn.Linear(4096, 1000)
+		self.bnl2 = nn.BatchNorm1d(1000)
+		if relus[10]:
+			self.relul2 = nn.ReLU()
+			self.helpHookList.append('relul2')
+		else:
+			self.relul2 = STEFunction()
+			self.helpHookList.append('stel2')
+
+		# Layer FC3
+		self.l3 = nn.Linear(1000, 10)
   
 		# Initialize
 		for m in self.modules():
@@ -113,48 +153,60 @@ class binaryVGGVerySmall(nn.Module):
 	def forward(self, x):
 		# Layer 0
 		x = self.conv0(x)
-		x = self.bn0(x)
 		x = self.relu0(x)
 		x = self.maxpool0(x)
 
 		# Layer 1
 		x = self.conv1(x)
-		x = self.bn1(x)
 		x = self.relu1(x)
 		x = self.maxpool1(x)
   
 		# Layer 2.1
 		x = self.conv21(x)
-		x = self.bn21(x)
 		x = self.relu21(x)
+  
+		# Layer 2.2
+		x = self.conv22(x)
+		x = self.relu22(x)
 		x = self.maxpool22(x)
   
 		# Layer 3.1
 		x = self.conv31(x)
-		x = self.bn31(x)
 		x = self.relu31(x)
+
+		# Layer 3.2
+		x = self.conv32(x)
+		x = self.relu32(x)
 		x = self.maxpool32(x)
   
 		# Layer 4.1
 		x = self.conv41(x)
-		x = self.bn41(x)
 		x = self.relu41(x)
+  
+		# Layer 4.2
+		x = self.conv42(x)
+		x = self.relu42(x)
 		x = self.maxpool42(x)
   
 		x = x.reshape(x.size(0), -1)
   
 		# Layer FC0
+		x = self.dropoutl0(x)
 		x = self.l0(x)
-		x = self.bnl0(x)
 		x = self.relul0(x)
   
 		# Layer FC1
+		x = self.dropoutl1(x)
 		x = self.l1(x)
-		x = self.bnl1(x)
 		x = self.relul1(x)
+
+		# Layer FC1
+		x = self.dropoutl2(x)
+		x = self.l2(x)
+		x = self.relul2(x)
   
 		# Layer FC2
-		x = self.l2(x)
+		x = self.l3(x)
 
 		return x
 
@@ -169,6 +221,7 @@ class binaryVGGVerySmall(nn.Module):
 			self.relu41.register_forward_hook(self.forward_hook_relu41)
 			self.relul0.register_forward_hook(self.forward_hook_relul0)
 			self.relul1.register_forward_hook(self.forward_hook_relul1)
+			self.relul2.register_forward_hook(self.forward_hook_relul2)
   
 		# Backward hooks are needed to compute importance
 		if gradients:
@@ -179,6 +232,7 @@ class binaryVGGVerySmall(nn.Module):
 			# self.relu41.register_full_backward_hook(self.backward_hook_relu41)
 			self.relul0.register_full_backward_hook(self.backward_hook_relul0)
 			self.relul1.register_full_backward_hook(self.backward_hook_relul1)
+			self.relul2.register_full_backward_hook(self.backward_hook_relul2)
 
 	# Define all backward hooks
 	def backward_hook_relu0(self, module, grad_input, grad_output):
@@ -207,6 +261,9 @@ class binaryVGGVerySmall(nn.Module):
 	def backward_hook_relul1(self, module, grad_input, grad_output):
 		self.dataFromHooks[self.helpHookList[6]]['backward'].append(np.float16(grad_output[0].cpu().detach().numpy()[0]))
 
+	def backward_hook_relul2(self, module, grad_input, grad_output):
+		self.dataFromHooks[self.helpHookList[7]]['backward'].append(np.float16(grad_output[0].cpu().detach().numpy()[0]))
+  
 	# Define all forward hooks
 	def forward_hook_relu0(self, module, val_input, val_output):
 		aux = val_output.flatten(start_dim=-2, end_dim=-1).cpu().detach().numpy()[0]
@@ -233,6 +290,9 @@ class binaryVGGVerySmall(nn.Module):
   
 	def forward_hook_relul1(self, module, val_input, val_output):
 		self.dataFromHooks[self.helpHookList[6]]['forward'].append(np.float16(val_output[0].cpu().detach().numpy()))
+
+	def forward_hook_relul2(self, module, val_input, val_output):
+		self.dataFromHooks[self.helpHookList[7]]['forward'].append(np.float16(val_output[0].cpu().detach().numpy()))
   
 	# Change each hook list to an equivalent array
 	def listToArray(self):
@@ -376,18 +436,3 @@ class binaryVGGVerySmall(nn.Module):
 				self.dataFromHooks[grad]['backward'] = np.moveaxis(self.dataFromHooks[grad]['backward'], 0, 1)
 				print(self.dataFromHooks[grad]['backward'].shape)
 			print(f'Gradients from {grad} loaded')
-    
-	# SqueezeActivationToUniqueValues (only binary)
-	def individualActivationsToUniqueValue(self):
-		for grad in self.dataFromHooks:
-			aux = []
-			i = 0
-			for activation in self.dataFromHooks[grad]['forward']:
-				aux.append(binaryArrayToSingleValue(activation))
-
-				if (i + 1) % 5000 == 0:
-					print(f"Activations to Unique Value (Input0) [{i + 1:>4d}/{len(self.input0):>4d}]")
-				i += 1
-    
-			self.dataFromHooks[grad]['forward'] = np.array(aux)
-			self.activationSizeInfo[grad] = int(self.dataFromHooks[grad]['forward'].shape[1] / 2)

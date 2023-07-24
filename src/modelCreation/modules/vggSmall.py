@@ -55,11 +55,16 @@ class VGGSmall(nn.Module):
   
 		# Layer FC1
 		self.dropoutl1 = nn.Dropout(0.5)
-		self.l1 = nn.Linear(4096, 1000)
+		self.l1 = nn.Linear(4096, 4096)
 		self.relul1 = nn.ReLU()
+
+		# Layer FC2
+		self.dropoutl2 = nn.Dropout(0.5)
+		self.l2 = nn.Linear(4096, 1000)
+		self.relul2 = nn.ReLU()
   
 		# Layer FC2
-		self.l2 = nn.Linear(1000, 10)
+		self.l3 = nn.Linear(1000, 10)
   
 		# Initialize
 		for m in self.modules():
@@ -118,8 +123,13 @@ class VGGSmall(nn.Module):
 		x = self.dropoutl1(x)
 		x = self.l1(x)
 		x = self.relul1(x)
+
+		# Layer FC1
+		x = self.dropoutl2(x)
+		x = self.l2(x)
+		x = self.relul2(x)
   
 		# Layer FC2
-		x = self.l2(x)
+		x = self.l3(x)
 
 		return x
