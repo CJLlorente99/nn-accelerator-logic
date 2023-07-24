@@ -11,12 +11,12 @@ import torch.nn.functional as F
 
 batch_size = 1
 neuronPerLayer = 100
-modelFilename = f'data\savedModels\eeb_100ep_100npl'
-simulatedFilenameL0 = f'data\inputSimulated\eeb_100ep_100npl\ABCOptimizedPerEntry/trainlayer1'
-simulatedFilenameL1 = f'data\inputSimulated\eeb_100ep_100npl\ABCOptimizedPerEntry/trainlayer2'
-simulatedFilenameL2 = f'data\inputSimulated\eeb_100ep_100npl\ABCOptimizedPerEntry/trainlayer3'
-simulatedFilenameL3 = f'data\inputSimulated\eeb_100ep_100npl\ABCOptimizedPerEntry/trainlayer4'
-inputFilename = f'data/inputs/trainInput'
+modelFilename = f'data\savedModels\eeb_pruned_100ep_100npl'
+# simulatedFilenameL0 = f'data\inputSimulated\eeb_100ep_100npl\ABC/trainlayer1'
+simulatedFilenameL1 = f'data\inputSimulated\eeb_pruned_100ep_100npl\ABC/testlayer2'
+simulatedFilenameL2 = f'data\inputSimulated\eeb_pruned_100ep_100npl\ABC/testlayer3'
+simulatedFilenameL3 = f'data\inputSimulated\eeb_pruned_100ep_100npl\ABC/testlayer4'
+inputFilename = f'data/inputs/testInput'
 lastLayerInputsTestFilename = f'example'
 
 
@@ -62,7 +62,7 @@ Instantiate NN models
 print(f'MODEL INSTANTIATION\n')
 
 model = BinaryNeuralNetwork(neuronPerLayer).to(device)
-model.load_state_dict(torch.load(modelFilename))
+model.load_state_dict(torch.load(modelFilename, map_location=device))
 
 '''
 Load the simulated inputs to the last layer (provided by minimized network)
@@ -80,104 +80,104 @@ correctAllModelFromL3 = 0
 correctAllModel = 0
 count = 0
 model.eval()
-with open(simulatedFilenameL0) as f_simL0:
-    with open(simulatedFilenameL1) as f_simL1:
-        with open(simulatedFilenameL2) as f_simL2:
-            with open(simulatedFilenameL3) as f_simL3:
-                with open(inputFilename) as f_input:
-                    numLines = len(f_simL0.readlines())
-                    f_simL0.seek(0)
-                    for X, y in train_dataloader:
-                        y_simulatedL0 = list(f_simL0.readline())
-                        y_simulatedL1 = list(f_simL1.readline())
-                        y_simulatedL2 = list(f_simL2.readline())
-                        y_simulatedL3 = list(f_simL3.readline())
-                        x_sim = list(f_input.readline())
+# with open(simulatedFilenameL0) as f_simL0:
+with open(simulatedFilenameL1) as f_simL1:
+    with open(simulatedFilenameL2) as f_simL2:
+        with open(simulatedFilenameL3) as f_simL3:
+            with open(inputFilename) as f_input:
+                numLines = len(f_simL1.readlines())
+                f_simL1.seek(0)
+                for X, y in train_dataloader:
+                    # y_simulatedL0 = list(f_simL0.readline())
+                    y_simulatedL1 = list(f_simL1.readline())
+                    y_simulatedL2 = list(f_simL2.readline())
+                    y_simulatedL3 = list(f_simL3.readline())
+                    x_sim = list(f_input.readline())
 
-                        if len(y_simulatedL0):
-                            y_simulatedL0.pop()  # Cause last value is a \n
-                            y_simulatedL1.pop()  # Cause last value is a \n
-                            y_simulatedL2.pop()  # Cause last value is a \n
-                            y_simulatedL3.pop()  # Cause last value is a \n
-                            x_sim.pop()
+                    if len(y_simulatedL1):
+                        # y_simulatedL0.pop()  # Cause last value is a \n
+                        y_simulatedL1.pop()  # Cause last value is a \n
+                        y_simulatedL2.pop()  # Cause last value is a \n
+                        y_simulatedL3.pop()  # Cause last value is a \n
+                        x_sim.pop()
 
-                            line_simulatedL0 = np.array(y_simulatedL0, dtype=np.double)
-                            line_simulatedL0[line_simulatedL0 == 0] = -1
+                        # line_simulatedL0 = np.array(y_simulatedL0, dtype=np.double)
+                        # line_simulatedL0[line_simulatedL0 == 0] = -1
 
-                            line_simulatedL1 = np.array(y_simulatedL1, dtype=np.double)
-                            line_simulatedL1[line_simulatedL1 == 0] = -1
+                        line_simulatedL1 = np.array(y_simulatedL1, dtype=np.double)
+                        line_simulatedL1[line_simulatedL1 == 0] = -1
 
-                            line_simulatedL2 = np.array(y_simulatedL2, dtype=np.double)
-                            line_simulatedL2[line_simulatedL2 == 0] = -1
+                        line_simulatedL2 = np.array(y_simulatedL2, dtype=np.double)
+                        line_simulatedL2[line_simulatedL2 == 0] = -1
 
-                            line_simulatedL3 = np.array(y_simulatedL3, dtype=np.double)
-                            line_simulatedL3[line_simulatedL3 == 0] = -1
+                        line_simulatedL3 = np.array(y_simulatedL3, dtype=np.double)
+                        line_simulatedL3[line_simulatedL3 == 0] = -1
 
-                            line_sim = np.array(x_sim, dtype=np.double)
-                            line_sim[line_sim == 0] = -1
-                            
-                            inputSample = torch.tensor(line_sim[None, :]).type(torch.FloatTensor)
-                            X = torch.flatten(X, start_dim=1)
-                            predL0 = model.forwardOneLayer(X , 0)
-                            predL1 = model.forwardOneLayer(predL0, 1)           
-                            predL2 = model.forwardOneLayer(predL1, 2)           
-                            predL3 = model.forwardOneLayer(predL2, 3)
-                            pred = F.log_softmax(model.forwardOneLayer(predL3.type(torch.FloatTensor), 4) , dim=1)
+                        line_sim = np.array(x_sim, dtype=np.double)
+                        line_sim[line_sim == 0] = -1
+                        
+                        inputSample = torch.tensor(line_sim[None, :]).type(torch.FloatTensor)
+                        X = torch.flatten(X, start_dim=1)
+                        predL0 = model.forwardOneLayer(X , 0)
+                        predL1 = model.forwardOneLayer(predL0, 1)           
+                        predL2 = model.forwardOneLayer(predL1, 2)           
+                        predL3 = model.forwardOneLayer(predL2, 3)
+                        pred = F.log_softmax(model.forwardOneLayer(predL3.type(torch.FloatTensor), 4) , dim=1)
 
-                            if (X.cpu().detach().numpy()[0] == inputSample.cpu().detach().numpy()[0]).all():
-                                correctInput += 1
-                            
-                            # L0 Checks
-                            if (predL0.cpu().detach().numpy()[0] == line_simulatedL0).all():
-                                correctL0 += 1
+                        if (X.cpu().detach().numpy()[0] == inputSample.cpu().detach().numpy()[0]).all():
+                            correctInput += 1
+                        
+                        # L0 Checks
+                        # if (predL0.cpu().detach().numpy()[0] == line_simulatedL0).all():
+                        #     correctL0 += 1
 
-                            x = torch.tensor(line_simulatedL0[None, :]).type(torch.FloatTensor)
-                            x = model.forwardOneLayer(x, 1)
-                            x = model.forwardOneLayer(x, 2)
-                            x = model.forwardOneLayer(x, 3)
-                            x = model.forwardOneLayer(x, 4)
-                            if (x.argmax(1) == training_data.targets[count].item()).type(torch.float).sum().item():
-                                correctAllModelFromL0 += 1
+                        # x = torch.tensor(line_simulatedL0[None, :]).type(torch.FloatTensor)
+                        # x = model.forwardOneLayer(x, 1)
+                        # x = model.forwardOneLayer(x, 2)
+                        # x = model.forwardOneLayer(x, 3)
+                        # x = model.forwardOneLayer(x, 4)
+                        # if (x.argmax(1) == training_data.targets[count].item()).type(torch.float).sum().item():
+                        #     correctAllModelFromL0 += 1
 
-                            # L1 Checks
-                            if (predL1.cpu().detach().numpy()[0] == line_simulatedL1).all():
-                                correctL1 += 1
-                            
-                            x = torch.tensor(line_simulatedL1[None, :]).type(torch.FloatTensor)
-                            x = model.forwardOneLayer(x, 2)
-                            x = model.forwardOneLayer(x, 3)
-                            x = model.forwardOneLayer(x, 4)
-                            if (x.argmax(1) == training_data.targets[count].item()).type(torch.float).sum().item():
-                                correctAllModelFromL1 += 1
+                        # L1 Checks
+                        if (predL1.cpu().detach().numpy()[0] == line_simulatedL1).all():
+                            correctL1 += 1
+                        
+                        x = torch.tensor(line_simulatedL1[None, :]).type(torch.FloatTensor)
+                        x = model.forwardOneLayer(x, 2)
+                        x = model.forwardOneLayer(x, 3)
+                        x = model.forwardOneLayer(x, 4)
+                        if (x.argmax(1) == training_data.targets[count].item()).type(torch.float).sum().item():
+                            correctAllModelFromL1 += 1
 
-                            # L2 Checks
-                            if (predL2.cpu().detach().numpy()[0] == line_simulatedL2).all():
-                                correctL2 += 1
-                            
-                            x = torch.tensor(line_simulatedL2[None, :]).type(torch.FloatTensor)
-                            x = model.forwardOneLayer(x, 3)
-                            x = model.forwardOneLayer(x, 4)
-                            if (x.argmax(1) == training_data.targets[count].item()).type(torch.float).sum().item():
-                                correctAllModelFromL2 += 1
+                        # L2 Checks
+                        if (predL2.cpu().detach().numpy()[0] == line_simulatedL2).all():
+                            correctL2 += 1
+                        
+                        x = torch.tensor(line_simulatedL2[None, :]).type(torch.FloatTensor)
+                        x = model.forwardOneLayer(x, 3)
+                        x = model.forwardOneLayer(x, 4)
+                        if (x.argmax(1) == training_data.targets[count].item()).type(torch.float).sum().item():
+                            correctAllModelFromL2 += 1
 
-                            # L3 Checks
-                            if (predL3.cpu().detach().numpy()[0] == line_simulatedL3).all():
-                                correctL3 += 1
+                        # L3 Checks
+                        if (predL3.cpu().detach().numpy()[0] == line_simulatedL3).all():
+                            correctL3 += 1
 
-                            x = torch.tensor(line_simulatedL3[None, :]).type(torch.FloatTensor)
-                            x = model.forwardOneLayer(x, 4)
-                            if (x.argmax(1) == training_data.targets[count].item()).type(torch.float).sum().item():
-                                correctAllModelFromL3 += 1
+                        x = torch.tensor(line_simulatedL3[None, :]).type(torch.FloatTensor)
+                        x = model.forwardOneLayer(x, 4)
+                        if (x.argmax(1) == training_data.targets[count].item()).type(torch.float).sum().item():
+                            correctAllModelFromL3 += 1
 
-                            # Original Accuracy
-                            if (pred.argmax(1) == training_data.targets[count].item()).type(torch.float).sum().item():
-                                correctAllModel += 1
-                            
-                            count += 1
-                            if (count+1) % 5000 == 0:
-                                print(f"Load inputs [{count+1:>5d}/{numLines:>5d}]")
-                        else:
-                            break    
+                        # Original Accuracy
+                        if (pred.argmax(1) == training_data.targets[count].item()).type(torch.float).sum().item():
+                            correctAllModel += 1
+                        
+                        count += 1
+                        if (count+1) % 5000 == 0:
+                            print(f"Load inputs [{count+1:>5d}/{numLines:>5d}]")
+                    else:
+                        break    
                         
 # dfInputsLastLayerTest = pd.DataFrame(columns=columnTags)
         

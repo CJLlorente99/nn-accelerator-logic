@@ -11,9 +11,8 @@ import plotly.graph_objects as go
 import pandas as pd
 import os
 
-neuronPerLayer = 4096
-modelName = 'bnn_prunedIrregular_200ep_4096npl'
-pruned = True
+neuronPerLayer = 100
+modelName = 'eeb_pruned_100ep_100npl'
 modelFilename = f'data/savedModels/{modelName}'
 batch_size = 1
 perGradientSampling = 1
@@ -43,7 +42,7 @@ Create DataLoader
 '''
 train_dataloader = DataLoader(training_data, batch_size=batch_size)
 
-model = BNNBinaryNeuralNetwork(neuronPerLayer)
+model = BinaryNeuralNetwork(neuronPerLayer)
 model.load_state_dict(torch.load(modelFilename, map_location=torch.device('cpu')))
 
 '''
@@ -152,14 +151,15 @@ for iImp in range(len(importanceList)):
 
 # Save class-based importance for minimization per class
 for iImp in range(len(importanceList)):
-    columnsTags = [f'N{i}' for i in range(importanceList[iImp].shape[1])]
-    df = pd.DataFrame(columns=columnsTags)
+    dict_list = []
     for i in range(sampleSize):
-        df = pd.concat([df,
-                        pd.DataFrame((importancePerClass[iImp][training_data.targets[i].item()] > 0), columns=[0], index=columnsTags).transpose()],
-                        axis=0, ignore_index=True)
+        data = importancePerClass[iImp][training_data.targets[i].item()] > 0
+        dict_data = {f'N{i}': data[i] for i in range(importanceList[iImp].shape[1])}
+        dict_list.append(dict_data)
         if (i+1) % 500 == 0:
             print(f"Layer {iImp} entry {i+1:>5d}/{sampleSize:>5d}")
+
+    df = pd.DataFrame.from_dict(dict_list)
     df = df.astype(int)
     df.to_csv(f'data/importance/{modelName}/PerClasslayer{iImp}.csv', index=False)
     print(f'File data/importance/{modelName}/PerClasslayer{iImp}.csv created')

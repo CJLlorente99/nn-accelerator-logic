@@ -99,16 +99,16 @@ class BNNBinaryNeuralNetwork(nn.Module):
 		return x
 
 	def registerHooks(self):
-		self.ste0.register_forward_hook(self.forward_hook_ste0)
+		# self.ste0.register_forward_hook(self.forward_hook_ste0)
 		self.ste1.register_forward_hook(self.forward_hook_ste1)
 		self.ste2.register_forward_hook(self.forward_hook_ste2)
 		self.ste3.register_forward_hook(self.forward_hook_ste3)
 
-		self.l0.register_forward_hook(self.forward_hook_l0)
+		# self.l0.register_forward_hook(self.forward_hook_l0)
 
 		if not self.legacyImportance:
 			# Register hooks
-			self.ste0.register_full_backward_hook(self.backward_hook_ste0)
+			# self.ste0.register_full_backward_hook(self.backward_hook_ste0)
 			self.ste1.register_full_backward_hook(self.backward_hook_ste1)
 			self.ste2.register_full_backward_hook(self.backward_hook_ste2)
 			self.ste3.register_full_backward_hook(self.backward_hook_ste3)
@@ -157,21 +157,21 @@ class BNNBinaryNeuralNetwork(nn.Module):
 				val_output[0][self.neuronSwitchedOff[1]] = 0
 
 	def listToArray(self, neuronPerLayer):
-		self.input0 = np.array(self.input0).squeeze().reshape(len(self.input0), 28 * 28)
+		# self.input0 = np.array(self.input0).squeeze().reshape(len(self.input0), 28 * 28)
 
-		self.gradientsSTE0 = np.array(self.gradientsSTE0).squeeze().reshape(len(self.gradientsSTE0), neuronPerLayer)
+		# self.gradientsSTE0 = np.array(self.gradientsSTE0).squeeze().reshape(len(self.gradientsSTE0), neuronPerLayer)
 		self.gradientsSTE1 = np.array(self.gradientsSTE1).squeeze().reshape(len(self.gradientsSTE1), neuronPerLayer)
 		self.gradientsSTE2 = np.array(self.gradientsSTE2).squeeze().reshape(len(self.gradientsSTE2), neuronPerLayer)
 		self.gradientsSTE3 = np.array(self.gradientsSTE3).squeeze().reshape(len(self.gradientsSTE3), neuronPerLayer)
 
-		self.valueSTE0 = np.array(self.valueSTE0).squeeze().reshape(len(self.valueSTE0), neuronPerLayer)
+		# self.valueSTE0 = np.array(self.valueSTE0).squeeze().reshape(len(self.valueSTE0), neuronPerLayer)
 		self.valueSTE1 = np.array(self.valueSTE1).squeeze().reshape(len(self.valueSTE1), neuronPerLayer)
 		self.valueSTE2 = np.array(self.valueSTE2).squeeze().reshape(len(self.valueSTE2), neuronPerLayer)
 		self.valueSTE3 = np.array(self.valueSTE3).squeeze().reshape(len(self.valueSTE3), neuronPerLayer)
 
 	def computeImportance(self, neuronPerLayer):
 		# CAREFUL, as values are either +1 or -1, importance is equal to gradient
-		importanceSTE0 = np.abs(self.gradientsSTE0)
+		# importanceSTE0 = np.abs(self.gradientsSTE0)
 		print('Importance STE0 calculated')
 		importanceSTE1 = np.abs(self.gradientsSTE1)
 		print('Importance STE1 calculated')
@@ -180,7 +180,8 @@ class BNNBinaryNeuralNetwork(nn.Module):
 		importanceSTE3 = np.abs(self.gradientsSTE3)
 		print('Importance STE3 calculated')
 		
-		return [importanceSTE0, importanceSTE1, importanceSTE2, importanceSTE3]
+		# return [importanceSTE0, importanceSTE1, importanceSTE2, importanceSTE3]
+		return [importanceSTE1, importanceSTE2, importanceSTE3]
 
 	def saveActivations(self, baseFilename):
 		columnsInLayer0 = [f'N{i}' for i in range(len(self.input0[0]))]

@@ -17,7 +17,7 @@ irregularPrune = False # Regular False, Irregular True
 # If regular prune
 inputsAfterRegularPrune = 30
 if irregularPrune:
-    inputsAfterRegularPrune = neuronPerLayer
+    inputsAfterRegularPrune = -1
 # If irregular prune
 inputsAfterIrregularPrune = 30
 if not irregularPrune:
