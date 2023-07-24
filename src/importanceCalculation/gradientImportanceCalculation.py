@@ -11,8 +11,8 @@ import plotly.graph_objects as go
 import pandas as pd
 import os
 
-neuronPerLayer = 100
-modelName = 'eeb_pruned_100ep_100npl'
+neuronPerLayer = 4096
+modelName = 'bnn_prunedIrregular_200ep_4096npl'
 pruned = True
 modelFilename = f'data/savedModels/{modelName}'
 batch_size = 1
@@ -43,7 +43,7 @@ Create DataLoader
 '''
 train_dataloader = DataLoader(training_data, batch_size=batch_size)
 
-model = BinaryNeuralNetwork(neuronPerLayer)
+model = BNNBinaryNeuralNetwork(neuronPerLayer)
 model.load_state_dict(torch.load(modelFilename, map_location=torch.device('cpu')))
 
 '''

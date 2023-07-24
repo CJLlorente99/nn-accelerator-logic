@@ -2,3 +2,4 @@ data/*
 src/modelCreation/savedModels/*
 *.pyc
 img/*
+src/importanceCalculation/modules/__pycache__/binaryEnergyEfficiencyNoBN.cpython-311.pyc

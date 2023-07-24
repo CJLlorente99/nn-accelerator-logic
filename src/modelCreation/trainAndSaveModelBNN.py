@@ -12,10 +12,10 @@ import pandas as pd
 
 batch_size = 128
 neuronPerLayer = 4096
-epochs = 200
-irregularPrune = True # Regular False, Irregular True
+epochs = 1
+irregularPrune = False # Regular False, Irregular True
 # If regular prune
-inputsAfterRegularPrune = 0
+inputsAfterRegularPrune = 30
 if irregularPrune:
     inputsAfterRegularPrune = neuronPerLayer
 # If irregular prune
@@ -32,7 +32,8 @@ Importing MNIST dataset
 print(f'IMPORT DATASET\n')
 
 training_data = datasets.MNIST(
-    root='/srv/data/image_dataset/MNIST',
+    # root='/srv/data/image_dataset/MNIST',
+    root='data',
     train=True,
     download=False,
     transform=Compose([
@@ -43,7 +44,8 @@ training_data = datasets.MNIST(
 )
 
 test_data = datasets.MNIST(
-    root='/srv/data/image_dataset/MNIST',
+    # root='/srv/data/image_dataset/MNIST',
+    root='data',
     train=False,
     download=False,
     transform=Compose([
@@ -125,9 +127,9 @@ else:
     idxs = []
     for iNeuron in range(len(weightMask)):
         weights = weightMask[iNeuron].detach().cpu().numpy()
-        idxs.append(np.where(weights == 0))
+        idxs.append(np.where(weights == 0)[0])
     columnTags = [f'N{i}' for i in range(len(weightMask))]
-    df = pd.DataFrame(np.array(idxs), columns=columnTags)
+    df = pd.DataFrame(np.array(idxs).T, columns=columnTags)
     df.to_csv(f'savedModels/bnn_prunedRegular_{epochs}ep_{neuronPerLayer}npl_prunnedInfo{1}.csv', index=False)
 
     # Second layer
@@ -135,9 +137,9 @@ else:
     idxs = []
     for iNeuron in range(len(weightMask)):
         weights = weightMask[iNeuron].detach().cpu().numpy()
-        idxs.append(np.where(weights == 0))
+        idxs.append(np.where(weights == 0)[0])
     columnTags = [f'N{i}' for i in range(len(weightMask))]
-    df = pd.DataFrame(np.array(idxs), columns=columnTags)
+    df = pd.DataFrame(np.array(idxs).T, columns=columnTags)
     df.to_csv(f'savedModels/bnn_prunedRegular_{epochs}ep_{neuronPerLayer}npl_prunnedInfo{2}.csv', index=False)
 
     # Third layer
@@ -145,9 +147,9 @@ else:
     idxs = []
     for iNeuron in range(len(weightMask)):
         weights = weightMask[iNeuron].detach().cpu().numpy()
-        idxs.append(np.where(weights == 0))
+        idxs.append(np.where(weights == 0)[0])
     columnTags = [f'N{i}' for i in range(len(weightMask))]
-    df = pd.DataFrame(np.array(idxs), columns=columnTags)
+    df = pd.DataFrame(np.array(idxs).T, columns=columnTags)
     df.to_csv(f'savedModels/bnn_prunedRegular_{epochs}ep_{neuronPerLayer}npl_prunnedInfo{3}.csv', index=False)
 
     metrics = '\n'.join(testReturn(test_dataloader, train_dataloader, model, criterion))

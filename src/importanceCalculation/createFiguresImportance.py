@@ -7,7 +7,7 @@ from torchvision import datasets
 from torchvision.transforms import ToTensor, Compose
 from torch.utils.data import DataLoader
 
-modelName = 'eeb_pruned_100ep_100npl'
+modelName = 'eeb_prunedRegular_100ep_100npl'
 nLayers = 4
 neuronPerLayer = 100
 
