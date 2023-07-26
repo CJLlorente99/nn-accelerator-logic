@@ -10,6 +10,7 @@ import math
 class binaryVGGSmall(nn.Module):
 	def __init__(self, resizeFactor, relus: list, connectionsAfterPrune=0):
 		super(binaryVGGSmall, self).__init__()
+		self.resizeFactor = resizeFactor
 
 		# Layer 0
 		self.conv0 = nn.Conv2d(3, 64, kernel_size=3, padding=1)
@@ -190,7 +191,7 @@ class binaryVGGSmall(nn.Module):
 		with torch.no_grad():
 			# First hidden layer
 			prunedConnections['l0'] = []
-			inputsToPrune = 4096 - inputsAfterPrune
+			inputsToPrune = self.resizeFactor*self.resizeFactor*512 - inputsAfterPrune
 			for j in range(len(self.l0.weight)):
 				weights = self.l0.weight[j, :]
 				auxWeights = torch.abs(weights).cpu().detach().numpy()
@@ -214,7 +215,7 @@ class binaryVGGSmall(nn.Module):
 
 			# Third hidden layer
 			prunedConnections['l2'] = []
-			inputsToPrune = 1000 - inputsAfterPrune
+			inputsToPrune = 4096 - inputsAfterPrune
 			for j in range(len(self.l2.weight)):
 				weights = self.l2.weight[j, :]
 				auxWeights = torch.abs(weights).cpu().detach().numpy()
