@@ -1,31 +1,31 @@
 from ttUtilities.isfRealization import DNFRealization
 import os
 
-modelName = 'eeb_pruned_100ep_100npl'
+modelName = 'eeb_prunedRegular30_100ep_100npl'
 dataFolder = 'data'
 pruned = True
-prunedBaseFilename = f'{dataFolder}/savedModels/eeb_pruned_100ep_100npl_prunedInfol'
+prunedBaseFilename = f'{dataFolder}/savedModels/eeb_prunedRegular30_100ep_100npl_prunedInfo'
 
 '''
 Not optimized
 '''
-# print('CREATING NOT OPTIMIZED PLA FILES')
-# ttFolderName = f'{dataFolder}/layersTT/{modelName}/notOptimized'
+print('CREATING NOT OPTIMIZED PLA FILES')
+ttFolderName = f'{dataFolder}/layersTT/{modelName}/notOptimized'
 
-# # Create DNFRealization object
-# dnf = DNFRealization(ttFolderName)
+# Create DNFRealization object
+dnf = DNFRealization(ttFolderName)
 
-# if not os.path.exists(f'{dataFolder}/plas/{modelName}/ABC'):
-#     os.makedirs(f'{dataFolder}/plas/{modelName}/ABC')
+if not os.path.exists(f'{dataFolder}/plas/{modelName}/ABC'):
+    os.makedirs(f'{dataFolder}/plas/{modelName}/ABC')
 
-# if not os.path.exists(f'{dataFolder}/plas/{modelName}/ESPRESSO'):
-#     os.makedirs(f'{dataFolder}/plas/{modelName}/ESPRESSO')
+if not os.path.exists(f'{dataFolder}/plas/{modelName}/ESPRESSO'):
+    os.makedirs(f'{dataFolder}/plas/{modelName}/ESPRESSO')
 
-# # Create PLA file for ABC (not Optimized)
-# dnf.createPLAFileABC(f'{dataFolder}/plas/{modelName}/ABC', pruned=pruned, prunedBaseFilename=prunedBaseFilename)
+# Create PLA file for ABC (not Optimized)
+dnf.createPLAFileABC(f'{dataFolder}/plas/{modelName}/ABC', pruned=pruned, prunedBaseFilename=prunedBaseFilename)
 
-# # Create PLA file for ESPRESSO (not Optimized)
-# dnf.createPLAFileEspresso(f'{dataFolder}/plas/{modelName}/ESPRESSO', pruned=pruned, prunedBaseFilename=prunedBaseFilename)
+# Create PLA file for ESPRESSO (not Optimized)
+dnf.createPLAFileEspresso(f'{dataFolder}/plas/{modelName}/ESPRESSO', pruned=pruned, prunedBaseFilename=prunedBaseFilename)
 
 '''
 Optimized per entry

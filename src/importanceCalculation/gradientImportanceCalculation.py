@@ -12,7 +12,9 @@ import pandas as pd
 import os
 
 neuronPerLayer = 100
-modelName = 'eeb_pruned_100ep_100npl'
+modelName = 'eeb_prunedRegular20_100ep_100npl'
+pruned = True
+prunedRegular = True  # True if Regular, False if Irregular
 modelFilename = f'data/savedModels/{modelName}'
 batch_size = 1
 perGradientSampling = 1
@@ -42,7 +44,10 @@ Create DataLoader
 '''
 train_dataloader = DataLoader(training_data, batch_size=batch_size)
 
-model = BinaryNeuralNetwork(neuronPerLayer)
+connectionsToPrune = 0
+if prunedRegular:
+    connectionsToPrune = 1
+model = BinaryNeuralNetwork(neuronPerLayer, connectionsToPrune)
 model.load_state_dict(torch.load(modelFilename, map_location=torch.device('cpu')))
 
 '''

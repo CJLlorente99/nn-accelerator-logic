@@ -6,8 +6,9 @@ from modelsCommon.auxTransformations import ToBlackAndWhite, ToSign
 from torchvision import datasets
 from torchvision.transforms import ToTensor, Compose
 from torch.utils.data import DataLoader
+import os
 
-modelName = 'eeb_prunedRegular_100ep_100npl'
+modelName = 'eeb_prunedIrregular20_100ep_100npl'
 nLayers = 4
 neuronPerLayer = 100
 
@@ -68,6 +69,10 @@ for iImp in range(len(importanceList)):
 # Group all importances in same array
 for iImp in range(len(importanceList)):
     importancePerClass[iImp] = np.row_stack(tuple(importancePerClass[iImp].values()))
+
+# Create folder if not exists
+if not os.path.exists(f'img/importance/{modelName}'):
+    os.makedirs(f'img/importance/{modelName}')
 
 # Print results
 for imp in importancePerClass:

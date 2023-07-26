@@ -87,20 +87,20 @@ print(f'SAVING\n')
 if irregularPrune:
     prunedConnections = model.pruningSparsification(neuronPerLayer - inputsAfterIrregularPrune)
     for layer in prunedConnections:
-        columnTags = [f'N{i}' for i in range(prunedConnections[layer].shape[0])]
+        columnTags = [f'N{i:4d}' for i in range(prunedConnections[layer].shape[0])]
         df = pd.DataFrame(prunedConnections[layer].T, columns=columnTags)
-        df.to_csv(f'savedModels/eeb_prunedIrregular_{epochs}ep_{neuronPerLayer}npl_prunnedInfo{layer}.csv', index=False)
+        df.to_csv(f'savedModels/eeb_prunedIrregular{inputsAfterIrregularPrune}_{epochs}ep_{neuronPerLayer}npl_prunedInfo{layer}.csv', index=False)
 
     metrics = '\n'.join(testReturn(test_dataloader, train_dataloader, model, criterion))
     print(metrics)
-    with open(f'savedModels/eeb_prunedIrregular_{epochs}ep_{neuronPerLayer}npl.txt', 'w') as f:
+    with open(f'savedModels/eeb_prunedIrregular{inputsAfterIrregularPrune}_{epochs}ep_{neuronPerLayer}npl.txt', 'w') as f:
         f.write(metrics)
         f.write('\n')
         f.write(f'epochs {epochs}\n')
         f.write(f'batch {batch_size}\n')
         f.close()
 
-    torch.save(model.state_dict(), f'savedModels/eeb_prunedIrregular_{epochs}ep_{neuronPerLayer}npl')
+    torch.save(model.state_dict(), f'savedModels/eeb_prunedIrregular{inputsAfterIrregularPrune}_{epochs}ep_{neuronPerLayer}npl')
 else:
     # First layer
     weightMask = list(model.l1.named_buffers())[0][1]
@@ -108,9 +108,9 @@ else:
     for iNeuron in range(len(weightMask)):
         weights = weightMask[iNeuron].detach().cpu().numpy()
         idxs.append(np.where(weights == 0)[0])
-    columnTags = [f'N{i}' for i in range(len(weightMask))]
+    columnTags = [f'N{i:4d}' for i in range(len(weightMask))]
     df = pd.DataFrame(np.array(idxs).T, columns=columnTags)
-    df.to_csv(f'savedModels/eeb_prunedRegular_{epochs}ep_{neuronPerLayer}npl_prunnedInfo{1}.csv', index=False)
+    df.to_csv(f'savedModels/eeb_prunedRegular{inputsAfterRegularPrune}_{epochs}ep_{neuronPerLayer}npl_prunedInfo{1}.csv', index=False)
 
     # Second layer
     weightMask = list(model.l2.named_buffers())[0][1]
@@ -118,9 +118,9 @@ else:
     for iNeuron in range(len(weightMask)):
         weights = weightMask[iNeuron].detach().cpu().numpy()
         idxs.append(np.where(weights == 0)[0])
-    columnTags = [f'N{i}' for i in range(len(weightMask))]
+    columnTags = [f'N{i:4d}' for i in range(len(weightMask))]
     df = pd.DataFrame(np.array(idxs).T, columns=columnTags)
-    df.to_csv(f'savedModels/eeb_prunedRegular_{epochs}ep_{neuronPerLayer}npl_prunnedInfo{2}.csv', index=False)
+    df.to_csv(f'savedModels/eeb_prunedRegular{inputsAfterRegularPrune}_{epochs}ep_{neuronPerLayer}npl_prunedInfo{2}.csv', index=False)
 
     # Third layer
     weightMask = list(model.l3.named_buffers())[0][1]
@@ -128,17 +128,17 @@ else:
     for iNeuron in range(len(weightMask)):
         weights = weightMask[iNeuron].detach().cpu().numpy()
         idxs.append(np.where(weights == 0)[0])
-    columnTags = [f'N{i}' for i in range(len(weightMask))]
+    columnTags = [f'N{i:4d}' for i in range(len(weightMask))]
     df = pd.DataFrame(np.array(idxs).T, columns=columnTags)
-    df.to_csv(f'savedModels/eeb_prunedRegular_{epochs}ep_{neuronPerLayer}npl_prunnedInfo{3}.csv', index=False)
+    df.to_csv(f'savedModels/eeb_prunedRegular{inputsAfterRegularPrune}_{epochs}ep_{neuronPerLayer}npl_prunedInfo{3}.csv', index=False)
 
     metrics = '\n'.join(testReturn(test_dataloader, train_dataloader, model, criterion))
     print(metrics)
-    with open(f'savedModels/eeb_prunedRegular_{epochs}ep_{neuronPerLayer}npl.txt', 'w') as f:
+    with open(f'savedModels/eeb_prunedRegular{inputsAfterRegularPrune}_{epochs}ep_{neuronPerLayer}npl.txt', 'w') as f:
         f.write(metrics)
         f.write('\n')
         f.write(f'epochs {epochs}\n')
         f.write(f'batch {batch_size}\n')
         f.close()
 
-    torch.save(model.state_dict(), f'savedModels/eeb_prunedRegular_{epochs}ep_{neuronPerLayer}npl')
+    torch.save(model.state_dict(), f'savedModels/eeb_prunedRegular{inputsAfterRegularPrune}_{epochs}ep_{neuronPerLayer}npl')

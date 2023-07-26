@@ -43,7 +43,7 @@ class BNNBinaryNeuralNetwork(nn.Module):
 		self.bn4 = nn.BatchNorm1d(10)
 
 		# Regular pruning
-		if connectionsToPrune != -1:
+		if connectionsToPrune != 0:
 			self.l1 = random_pruning_per_neuron(self.l1, name="weight", connectionsToPrune=connectionsToPrune)
 			self.l2 = random_pruning_per_neuron(self.l2, name="weight", connectionsToPrune=connectionsToPrune)
 			self.l3 = random_pruning_per_neuron(self.l3, name="weight", connectionsToPrune=connectionsToPrune)

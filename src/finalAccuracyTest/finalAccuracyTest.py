@@ -11,14 +11,14 @@ import torch.nn.functional as F
 
 batch_size = 1
 neuronPerLayer = 100
-modelFilename = f'data\savedModels\eeb_pruned_100ep_100npl'
+modelFilename = f'data\savedModels\eeb_prunedIrregular20_100ep_100npl'
 # simulatedFilenameL0 = f'data\inputSimulated\eeb_100ep_100npl\ABC/trainlayer1'
-simulatedFilenameL1 = f'data\inputSimulated\eeb_pruned_100ep_100npl\ABC/testlayer2'
-simulatedFilenameL2 = f'data\inputSimulated\eeb_pruned_100ep_100npl\ABC/testlayer3'
-simulatedFilenameL3 = f'data\inputSimulated\eeb_pruned_100ep_100npl\ABC/testlayer4'
-inputFilename = f'data/inputs/testInput'
-lastLayerInputsTestFilename = f'example'
+simulatedFilenameL1 = f'data\inputSimulated\eeb_prunedIrregular20_100ep_100npl\ESPRESSO/testlayer2'
+simulatedFilenameL2 = f'data\inputSimulated\eeb_prunedIrregular20_100ep_100npl\ESPRESSO/testlayer3'
+simulatedFilenameL3 = f'data\inputSimulated\eeb_prunedIrregular30_100ep_100npl\ABC/testlayer4'
+train = False
 
+inputFilename = f'data/inputs/trainInput' if train else f'data/inputs/testInput'
 
 # Check mps maybe if working in MacOS
 device = 'cuda' if torch.cuda.is_available() else 'cpu'
@@ -27,21 +27,9 @@ device = 'cuda' if torch.cuda.is_available() else 'cpu'
 Importing MNIST dataset
 '''
 print(f'IMPORT DATASET\n')
-
-training_data = datasets.MNIST(
+data = datasets.MNIST(
     root='data',
-    train=True,
-    download=False,
-    transform=Compose([
-            ToTensor(),
-            ToBlackAndWhite(),
-            ToSign()
-        ])
-    )
-
-test_data = datasets.MNIST(
-    root='data',
-    train=False,
+    train=train,
     download=False,
     transform=Compose([
             ToTensor(),
@@ -53,8 +41,10 @@ test_data = datasets.MNIST(
 '''
 Create DataLoader
 '''
-train_dataloader = DataLoader(training_data, batch_size=batch_size)
-test_dataloader = DataLoader(test_data, batch_size=batch_size)
+if train:
+    dataloader = DataLoader(data, batch_size=batch_size)
+else:
+    dataloader = DataLoader(data, batch_size=batch_size)
 
 '''
 Instantiate NN models
@@ -87,7 +77,7 @@ with open(simulatedFilenameL1) as f_simL1:
             with open(inputFilename) as f_input:
                 numLines = len(f_simL1.readlines())
                 f_simL1.seek(0)
-                for X, y in train_dataloader:
+                for X, y in dataloader:
                     # y_simulatedL0 = list(f_simL0.readline())
                     y_simulatedL1 = list(f_simL1.readline())
                     y_simulatedL2 = list(f_simL2.readline())
@@ -147,7 +137,7 @@ with open(simulatedFilenameL1) as f_simL1:
                         x = model.forwardOneLayer(x, 2)
                         x = model.forwardOneLayer(x, 3)
                         x = model.forwardOneLayer(x, 4)
-                        if (x.argmax(1) == training_data.targets[count].item()).type(torch.float).sum().item():
+                        if (x.argmax(1) == data.targets[count].item()).type(torch.float).sum().item():
                             correctAllModelFromL1 += 1
 
                         # L2 Checks
@@ -157,7 +147,7 @@ with open(simulatedFilenameL1) as f_simL1:
                         x = torch.tensor(line_simulatedL2[None, :]).type(torch.FloatTensor)
                         x = model.forwardOneLayer(x, 3)
                         x = model.forwardOneLayer(x, 4)
-                        if (x.argmax(1) == training_data.targets[count].item()).type(torch.float).sum().item():
+                        if (x.argmax(1) == data.targets[count].item()).type(torch.float).sum().item():
                             correctAllModelFromL2 += 1
 
                         # L3 Checks
@@ -166,11 +156,11 @@ with open(simulatedFilenameL1) as f_simL1:
 
                         x = torch.tensor(line_simulatedL3[None, :]).type(torch.FloatTensor)
                         x = model.forwardOneLayer(x, 4)
-                        if (x.argmax(1) == training_data.targets[count].item()).type(torch.float).sum().item():
+                        if (x.argmax(1) == data.targets[count].item()).type(torch.float).sum().item():
                             correctAllModelFromL3 += 1
 
                         # Original Accuracy
-                        if (pred.argmax(1) == training_data.targets[count].item()).type(torch.float).sum().item():
+                        if (pred.argmax(1) == data.targets[count].item()).type(torch.float).sum().item():
                             correctAllModel += 1
                         
                         count += 1
