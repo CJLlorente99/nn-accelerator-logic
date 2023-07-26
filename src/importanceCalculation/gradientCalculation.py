@@ -4,16 +4,12 @@ from torchvision import datasets
 from torchvision.transforms import ToTensor, Compose, Normalize, RandomHorizontalFlip, RandomCrop, Resize
 from torch.utils.data import DataLoader
 from modules.vggSmall import VGGSmall
-from modules.vggVerySmall import VGGVerySmall
-from modules.binaryVggVerySmall import binaryVGGVerySmall
-from modules.binaryVggVerySmallnoBN import binaryVGGVerySmallnoBN
 from modules.binaryVggVerySmall2 import binaryVGGVerySmall2
-from modules.binaryVggVerySmall2noBN import binaryVGGVerySmall2noBN
 import plotly.graph_objects as go
 import numpy as np
 import pandas as pd
 
-modelName = f'binaryVGGVerySmall2_11110000_4'
+modelName = f'binaryVGGVerySmall2_prunedRegular20_11110000_4'
 batch_size = 64
 perGradientSampling = 1
 resizeFactor = 4
@@ -42,16 +38,10 @@ sampleSize = int(perGradientSampling * len(train_dataset.data))  # sample size t
 '''
 Load model
 '''
-if modelName.startswith('binaryVGGVerySmall_'):
-	model = binaryVGGVerySmall(resizeFactor=resizeFactor, relus=relus)
-elif modelName.startswith('binaryVGGVerySmall2_'):
+if modelName.startswith('binaryVGGVerySmall2_'):
 	model = binaryVGGVerySmall2(resizeFactor=resizeFactor, relus=relus)
-elif modelName.startswith('binaryVGGVerySmallnoBN_'):
-	model = binaryVGGVerySmallnoBN(resizeFactor=resizeFactor, relus=relus)
-elif modelName.startswith('binaryVGGVerySmall2noBN_'):
-	model = binaryVGGVerySmall2noBN(resizeFactor=resizeFactor, relus=relus)
 
-model.load_state_dict(torch.load(f'data/savedModels/{modelName}'))
+model.load_state_dict(torch.load(f'data/savedModels/{modelName}', map_location=torch.device(device)))
 
 '''
 Calculate importance per class per neuron
