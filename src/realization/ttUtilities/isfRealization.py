@@ -65,13 +65,16 @@ class DNFRealization:
 		print(f'ABC PLA {filename} completed')
    
    
-	def createPLAFileEspresso(self, baseFilename: str, pruned=False, prunedBaseFilename=None):
+	def createPLAFileEspresso(self, baseFilename: str, pruned=False, prunedBaseFilename=None, conflictMode=-1, bin=False):
 		# Care about the output folder
 		dirs = os.scandir(self.ttFolderName)
 
 		for dir in dirs:
 			if not os.path.isdir(f'{baseFilename}/{dir.name}'):
-				os.makedirs(f'{baseFilename}/{dir.name}')
+					os.makedirs(f'{baseFilename}/{dir.name}')
+			if conflictMode != -1:
+					if not os.path.isdir(f'{baseFilename}/{dir.name}_{conflictMode}'):
+						os.makedirs(f'{baseFilename}/{dir.name}_{conflictMode}')
 
 		# Loop over the dirs and their files
 		dirs = os.scandir(self.ttFolderName)
@@ -81,15 +84,45 @@ class DNFRealization:
 				dfPruned = pd.read_csv(f'{prunedBaseFilename}{i}.csv')
 			files = os.scandir(f'{self.ttFolderName}/{dir.name}')
 			for file in files:
-				df = pd.read_csv(f'{self.ttFolderName}/{dir.name}/{file.name}', index_col=False)
+				df = pd.read_feather(f'{self.ttFolderName}/{dir.name}/{file.name}')
+				if bin:
+					dfInt = df.apply(binaryStrToInt, axis=1)
+					columns = [f'N{i:04d}' for i in range(len(dfInt[0]))]
+					dfInt = pd.DataFrame(np.stack(dfInt.to_numpy(), axis=0), columns=columns)
+					df = pd.concat([dfInt, df[df.columns[-1]]], axis=1)
 				df = df.astype('int')
 				df.drop_duplicates(inplace=True)
 				if pruned:
 					df.drop(df.columns[dfPruned[file.name].values], axis=1, inplace=True)
+					df.drop_duplicates(inplace=True)
+				# Deal with conflict of orthogonality between On and Off set
+				# Get rows with DC (2)
+				rowsWithDC = df[(df == 2).any(axis=1)]
+				# Get conflictive ones
+				for idx, row in rowsWithDC.iterrows():
+					auxDf = df.copy().drop(df.columns[-1], axis=1)
+					auxDf = auxDf.drop(row[row == 2].index, axis=1)
+					dup = (auxDf == row.drop(row.index[row == 2]).drop(row.index[-1])).all(axis=1)
+					# 1) Keep without DC
+					if dup.sum() != 0: # There is a coincidence
+						if conflictMode == 0:
+							aux = dup.copy()
+							aux[(df != row).any(axis=1)] = False # All but the row will be false
+							df.drop(df.index[aux], axis=0, inplace=True)
+						# 2) Keep only DC
+						elif conflictMode == 1:
+							aux = dup.copy()
+							aux[(df == row).all(axis=1)] = False # All but the row will be true
+							df.drop(df.index[aux], axis=0, inplace=True)
+							# ! When 2 or more DC are present
+						# 3) Remove all
+						elif conflictMode == 2:
+							df.drop(df.index[dup], axis=0, inplace=True)
+							# ! Sometimes incurs in empty pla (everything has a DC)
 				self.generateEspressoInput(df, f'{baseFilename}/{dir.name}/{file.name}')
 			i += 1
 
-	def createPLAFileABC(self, baseFilename: str, pruned=False, prunedBaseFilename=None):
+	def createPLAFileABC(self, baseFilename: str, pruned=False, prunedBaseFilename=None, bin=False):
 		# Care about the output folder
 		dirs = os.scandir(self.ttFolderName)
 
@@ -105,10 +138,23 @@ class DNFRealization:
 				dfPruned = pd.read_csv(f'{prunedBaseFilename}{i}.csv')
 			files = os.scandir(f'{self.ttFolderName}/{dir.name}')
 			for file in files:
-				df = pd.read_csv(f'{self.ttFolderName}/{dir.name}/{file.name}', index_col=False)
+				df = pd.read_feather(f'{self.ttFolderName}/{dir.name}/{file.name}')
+				if bin:
+					dfInt = df.apply(binaryStrToInt, axis=1)
+					columns = [f'N{i:04d}' for i in range(len(dfInt[0]))]
+					dfInt = pd.DataFrame(np.stack(dfInt.to_numpy(), axis=0), columns=columns)
+					df = pd.concat([dfInt, df[df.columns[-1]]], axis=1)
 				df = df.astype('int')
 				df.drop_duplicates(inplace=True)
 				if pruned:
 					df.drop(df.columns[dfPruned[file.name].values], axis=1, inplace=True)
+					df.drop_duplicates(inplace=True)
 				self.generateABCInput(df, f'{baseFilename}/{dir.name}/{file.name}')
 			i += 1
+
+# Function to translate binary into integer array
+def binaryStrToInt(row):
+    npl = 4096
+    row = bin(int(row['int'], 0))[2:]
+    row = row.zfill(npl)
+    return np.array(list(map(int, row)))

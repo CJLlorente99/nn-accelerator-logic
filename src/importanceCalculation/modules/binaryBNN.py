@@ -2,10 +2,7 @@ import pandas as pd
 from modelsCommon.steFunction import STEFunction
 from torch import nn
 import torch
-import torch.nn.functional as F
 import numpy as np
-from ttUtilities.auxFunctions import binaryArrayToSingleValue, integerToBinaryArray
-import heapq
 import torch.nn.utils.prune as prune
 from modelsCommon.customPruning import random_pruning_per_neuron
 
@@ -100,7 +97,7 @@ class BNNBinaryNeuralNetwork(nn.Module):
 		return x
 
 	def registerHooks(self):
-		# self.ste0.register_forward_hook(self.forward_hook_ste0)
+		self.ste0.register_forward_hook(self.forward_hook_ste0)
 		self.ste1.register_forward_hook(self.forward_hook_ste1)
 		self.ste2.register_forward_hook(self.forward_hook_ste2)
 		self.ste3.register_forward_hook(self.forward_hook_ste3)
@@ -165,7 +162,7 @@ class BNNBinaryNeuralNetwork(nn.Module):
 		self.gradientsSTE2 = np.array(self.gradientsSTE2).squeeze().reshape(len(self.gradientsSTE2), neuronPerLayer)
 		self.gradientsSTE3 = np.array(self.gradientsSTE3).squeeze().reshape(len(self.gradientsSTE3), neuronPerLayer)
 
-		# self.valueSTE0 = np.array(self.valueSTE0).squeeze().reshape(len(self.valueSTE0), neuronPerLayer)
+		self.valueSTE0 = np.array(self.valueSTE0).squeeze().reshape(len(self.valueSTE0), neuronPerLayer)
 		self.valueSTE1 = np.array(self.valueSTE1).squeeze().reshape(len(self.valueSTE1), neuronPerLayer)
 		self.valueSTE2 = np.array(self.valueSTE2).squeeze().reshape(len(self.valueSTE2), neuronPerLayer)
 		self.valueSTE3 = np.array(self.valueSTE3).squeeze().reshape(len(self.valueSTE3), neuronPerLayer)
@@ -185,16 +182,10 @@ class BNNBinaryNeuralNetwork(nn.Module):
 		return [importanceSTE1, importanceSTE2, importanceSTE3]
 
 	def saveActivations(self, baseFilename):
-		columnsInLayer0 = [f'N{i}' for i in range(len(self.input0[0]))]
 		columnsInLayer1 = [f'N{i}' for i in range(len(self.valueSTE0[0]))]
 		columnsInLayer2 = [f'N{i}' for i in range(len(self.valueSTE1[0]))]
 		columnsInLayer3 = [f'N{i}' for i in range(len(self.valueSTE2[0]))]
 		columnsInLayer4 = [f'N{i}' for i in range(len(self.valueSTE3[0]))]
-
-
-		pd.DataFrame(
-			self.input0, columns=columnsInLayer0).to_feather(
-			f'{baseFilename}Input0')
 
 		pd.DataFrame(
 			self.valueSTE0, columns=columnsInLayer1).to_feather(
@@ -211,28 +202,31 @@ class BNNBinaryNeuralNetwork(nn.Module):
 		pd.DataFrame(
 			self.valueSTE3, columns=columnsInLayer4).to_feather(
 			f'{baseFilename}Input4')
+		
+	def loadActivations(self, baseFilename):
+		self.valueSTE0 = pd.read_feather(f'{baseFilename}Input1').to_numpy()
+		self.valueSTE1 = pd.read_feather(f'{baseFilename}Input2').to_numpy()
+		self.valueSTE2 = pd.read_feather(f'{baseFilename}Input3').to_numpy()
+		self.valueSTE3 = pd.read_feather(f'{baseFilename}Input4').to_numpy()
 
-	def saveGradients(self, baseFilename: str, targets: list):
-		columnsInLayer1 = [f'N{i}' for i in range(len(self.gradientsSTE0[0]))]
+	def saveGradients(self, baseFilename: str):
 		columnsInLayer2 = [f'N{i}' for i in range(len(self.gradientsSTE1[0]))]
 		columnsInLayer3 = [f'N{i}' for i in range(len(self.gradientsSTE2[0]))]
 		columnsInLayer4 = [f'N{i}' for i in range(len(self.gradientsSTE3[0]))]
 
-		aux = pd.DataFrame(self.gradientsSTE0, columns=columnsInLayer1)
-		aux['target'] = targets
-		aux.to_feather(f'{baseFilename}STE0')
-
 		aux = pd.DataFrame(self.gradientsSTE1, columns=columnsInLayer2)
-		aux['target'] = targets
 		aux.to_feather(f'{baseFilename}STE1')
 
 		aux = pd.DataFrame(self.gradientsSTE2, columns=columnsInLayer3)
-		aux['target'] = targets
 		aux.to_feather(f'{baseFilename}STE2')
 
 		aux = pd.DataFrame(self.gradientsSTE3, columns=columnsInLayer4)
-		aux['target'] = targets
 		aux.to_feather(f'{baseFilename}STE3')
+
+	def loadGradients(self, baseFilename):
+		self.gradientsSTE1 = pd.read_feather(f'{baseFilename}STE1').to_numpy()
+		self.gradientsSTE2 = pd.read_feather(f'{baseFilename}STE2').to_numpy()
+		self.gradientsSTE3 = pd.read_feather(f'{baseFilename}STE3').to_numpy()
 
 	def signToBinary(self):
 		self.input0[self.input0 == -1] = 0

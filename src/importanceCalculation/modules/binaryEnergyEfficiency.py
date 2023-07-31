@@ -2,10 +2,8 @@ from modelsCommon.steFunction import STEFunction
 from torch import nn
 import torch.nn.functional as F
 import numpy as np
-from ttUtilities.auxFunctions import binaryArrayToSingleValue, integerToBinaryArray
 import torch
 import pandas as pd
-import heapq
 import torch.nn.utils.prune as prune
 from modelsCommon.customPruning import random_pruning_per_neuron
 
@@ -166,17 +164,10 @@ class BinaryNeuralNetwork(nn.Module):
 		return [importanceSTE0, importanceSTE1, importanceSTE2, importanceSTE3]
 
 	def saveActivations(self, baseFilename):
-		columnsInLayer0 = [f'{i}' for i in range(len(self.input0[0]))]
 		columnsInLayer1 = [f'{i}' for i in range(len(self.valueSTE0[0]))]
 		columnsInLayer2 = [f'{i}' for i in range(len(self.valueSTE1[0]))]
 		columnsInLayer3 = [f'{i}' for i in range(len(self.valueSTE2[0]))]
 		columnsInLayer4 = [f'{i}' for i in range(len(self.valueSTE3[0]))]
-
-		# columnsOutLayer5 = [f'N{i}' for i in range(len(self.valueIden[0]))]
-
-		pd.DataFrame(
-			self.input0, columns=columnsInLayer0).to_feather(
-			f'{baseFilename}Input0')
 
 		pd.DataFrame(
 			self.valueSTE0, columns=columnsInLayer1).to_feather(
@@ -194,26 +185,22 @@ class BinaryNeuralNetwork(nn.Module):
 			self.valueSTE3, columns=columnsInLayer4).to_feather(
 			f'{baseFilename}Input4')
 
-	def saveGradients(self, baseFilename: str, targets: list):
+	def saveGradients(self, baseFilename: str):
 		columnsInLayer1 = [f'N{i}' for i in range(len(self.gradientsSTE0[0]))]
 		columnsInLayer2 = [f'N{i}' for i in range(len(self.gradientsSTE1[0]))]
 		columnsInLayer3 = [f'N{i}' for i in range(len(self.gradientsSTE2[0]))]
 		columnsInLayer4 = [f'N{i}' for i in range(len(self.gradientsSTE3[0]))]
 
 		aux = pd.DataFrame(self.gradientsSTE0, columns=columnsInLayer1)
-		aux['target'] = targets
 		aux.to_feather(f'{baseFilename}STE0')
 
 		aux = pd.DataFrame(self.gradientsSTE1, columns=columnsInLayer2)
-		aux['target'] = targets
 		aux.to_feather(f'{baseFilename}STE1')
 
 		aux = pd.DataFrame(self.gradientsSTE2, columns=columnsInLayer3)
-		aux['target'] = targets
 		aux.to_feather(f'{baseFilename}STE2')
 
 		aux = pd.DataFrame(self.gradientsSTE3, columns=columnsInLayer4)
-		aux['target'] = targets
 		aux.to_feather(f'{baseFilename}STE3')
 
 	def signToBinary(self):

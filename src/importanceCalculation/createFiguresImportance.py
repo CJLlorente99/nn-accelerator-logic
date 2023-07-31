@@ -8,9 +8,9 @@ from torchvision.transforms import ToTensor, Compose
 from torch.utils.data import DataLoader
 import os
 
-modelName = 'eeb_prunedIrregular20_100ep_100npl'
+modelName = 'bnn/bnn_prunedBT8_100ep_4096npl'
 nLayers = 4
-neuronPerLayer = 100
+neuronPerLayer = 4096
 
 '''
 Importing MNIST dataset
@@ -84,6 +84,7 @@ for imp in importancePerClass:
     plt.hist(aux, bins=100, range=(0, 10), color='b')
     plt.xlabel('Neuron importance score')
     plt.ylabel('Number of neurons')
+    plt.title(f'Layer {imp} Importance Score')
     fig.savefig(f'img/importance/{modelName}/accImportanceLayer{imp}.png', transparent=True)
 
     # Print classes that are important
@@ -94,4 +95,5 @@ for imp in importancePerClass:
     plt.hist(aux, bins=100, range=(0, 10), color='b')
     plt.xlabel('Number of important classes')
     plt.ylabel('Number of neurons')
+    plt.title(f'Layer {imp} Number of Important Classes')
     fig.savefig(f'img/importance/{modelName}/importanClassesLayer{imp}.png', transparent=True)

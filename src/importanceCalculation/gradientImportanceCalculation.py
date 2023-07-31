@@ -5,16 +5,21 @@ from torchvision.transforms import ToTensor, Compose
 from torch.utils.data import DataLoader
 from modules.binaryEnergyEfficiency import BinaryNeuralNetwork
 from modules.binaryBNN import BNNBinaryNeuralNetwork
-from ttUtilities.helpLayerNeuronGenerator import HelpGenerator
 import numpy as np
-import plotly.graph_objects as go
 import pandas as pd
 import os
 
-neuronPerLayer = 100
-modelName = 'eeb_prunedRegular20_100ep_100npl'
+# neuronPerLayer = 4096
+# modelName = 'bnn/bnn_prunedBT6_100ep_4096npl'
+neuronPerLayer = 4096
+modelName = 'bnn/bnn_prunedBT8_100ep_4096npl'
+# neuronPerLayer = 4096
+# modelName = 'bnn/bnn_prunedBT10_100ep_4096npl'
+# neuronPerLayer = 4096
+# modelName = 'bnn/bnn_prunedBT12_100ep_4096npl'
+
 pruned = True
-prunedRegular = True  # True if Regular, False if Irregular
+prunedBT = True  # True if BT, False if AT
 modelFilename = f'data/savedModels/{modelName}'
 batch_size = 1
 perGradientSampling = 1
@@ -45,35 +50,41 @@ Create DataLoader
 train_dataloader = DataLoader(training_data, batch_size=batch_size)
 
 connectionsToPrune = 0
-if prunedRegular:
+if prunedBT:
     connectionsToPrune = 1
-model = BinaryNeuralNetwork(neuronPerLayer, connectionsToPrune)
-model.load_state_dict(torch.load(modelFilename, map_location=torch.device('cpu')))
+model = BNNBinaryNeuralNetwork(neuronPerLayer, connectionsToPrune)
+model.load_state_dict(torch.load(modelFilename, map_location=torch.device(device)))
 
 '''
 Calculate importance per class per neuron
 '''
 
 # Input samples and get gradients and values in each neuron
-print(f'GET GRADIENTS AND ACTIVATION VALUES\n')
+# print(f'GET GRADIENTS AND ACTIVATION VALUES\n')
 
-model.registerHooks()
-model.eval()
+# model.registerHooks()
+# model.eval()
 
-for i in range(sampleSize):
-    X, y = train_dataloader.dataset[i]
-    model.zero_grad()
-    pred = model(X)
-    pred[0, y].backward()
+# for i in range(sampleSize):
+#     X, y = train_dataloader.dataset[i]
+#     model.zero_grad()
+#     pred = model(X)
+#     pred[0, y].backward()
 
-    if (i+1) % 500 == 0:
-        print(f"Get Gradients and Activation Values [{i+1:>5d}/{sampleSize:>5d}]")
+#     if (i+1) % 500 == 0:
+#         print(f"Get Gradients and Activation Values [{i+1:>5d}/{sampleSize:>5d}]")
 
-model.listToArray(neuronPerLayer)  # Hopefully improves memory usage
+# model.listToArray(neuronPerLayer)  # Hopefully improves memory usage
+
+# if not os.path.exists(f'./data/activations/{modelName}/'):
+#     os.makedirs(f'./data/activations/{modelName}/')
+# if not os.path.exists(f'./data/gradients/{modelName}/'):
+#     os.makedirs(f'./data/gradients/{modelName}/')
+
 # model.saveActivations(f'./data/activations/{modelName}/')
-# model.saveGradients(f'./data/gradients/{modelName}/')
-# model.loadActivations(f'./data/activations/{modelName}/')
-# model.loadGradients(f'./data/gradients/{modelName}/')
+model.loadActivations(f'./data/activations/{modelName}/')
+# model.saveGradients(f'.(data/gradients/{modelName}/')
+model.loadGradients(f'./data/gradients/{modelName}/')
 importanceList = model.computeImportance(neuronPerLayer)
 
 
@@ -90,9 +101,9 @@ def getIdxDuplicates(arr):
 
 # Get info about the activations
 dupList = []
-dupList.append(getIdxDuplicates(model.input0))
-uniqueInput0 = np.unique(model.input0, axis=0)
-print(f'Original length {model.input0.shape[0]}, only unique length {uniqueInput0.shape[0]}, number of sample {sampleSize}')
+# dupList.append(getIdxDuplicates(model.input0))
+# uniqueInput0 = np.unique(model.input0, axis=0)
+# print(f'Original length {model.input0.shape[0]}, only unique length {uniqueInput0.shape[0]}, number of sample {sampleSize}')
 dupList.append(getIdxDuplicates(model.valueSTE0))
 uniqueSTE0 = np.unique(model.valueSTE0, axis=0)
 print(f'Original length {model.valueSTE0.shape[0]}, only unique length {uniqueSTE0.shape[0]}, number of sample {sampleSize}')
@@ -113,7 +124,7 @@ for iImp in range(len(importanceList)):
     df = pd.DataFrame(importanceList[iImp], columns=columnsTags).astype(int)
     if not os.path.exists(f'data/importance/{modelName}/'):
         os.makedirs(f'data/importance/{modelName}/')
-    df.to_csv(f'data/importance/{modelName}/PerEntrylayer{iImp}.csv', index=False)
+    # df.to_csv(f'data/importance/{modelName}/PerEntrylayer{iImp}.csv', index=False)
     print(f'File data/importance/{modelName}/PerEntrylayer{iImp}.csv created')
     for dup in dupList[iImp]:
         if len(dup) != 0:
@@ -155,186 +166,208 @@ for iImp in range(len(importanceList)):
     print(f'importance number {iImp} has {nEntries} with relevant classes out of {totalEntries}')
 
 # Save class-based importance for minimization per class
-for iImp in range(len(importanceList)):
-    dict_list = []
-    for i in range(sampleSize):
-        data = importancePerClass[iImp][training_data.targets[i].item()] > 0
-        dict_data = {f'N{i}': data[i] for i in range(importanceList[iImp].shape[1])}
-        dict_list.append(dict_data)
-        if (i+1) % 500 == 0:
-            print(f"Layer {iImp} entry {i+1:>5d}/{sampleSize:>5d}")
+# for iImp in range(len(importanceList)):
+#     dict_list = []
+#     for i in range(sampleSize):
+#         data = importancePerClass[iImp][training_data.targets[i].item()] > 0
+#         dict_data = {f'N{i}': data[i] for i in range(importanceList[iImp].shape[1])}
+#         dict_list.append(dict_data)
+#         if (i+1) % 500 == 0:
+#             print(f"Layer {iImp} entry {i+1:>5d}/{sampleSize:>5d}")
 
-    df = pd.DataFrame.from_dict(dict_list)
-    df = df.astype(int)
-    df.to_csv(f'data/importance/{modelName}/PerClasslayer{iImp}.csv', index=False)
-    print(f'File data/importance/{modelName}/PerClasslayer{iImp}.csv created')
+#     df = pd.DataFrame.from_dict(dict_list)
+#     df = df.astype(int)
+#     df.to_csv(f'data/importance/{modelName}/PerClasslayer{iImp}.csv', index=False)
+#     print(f'File data/importance/{modelName}/PerClasslayer{iImp}.csv created')
 
 # Group all importances in same array
 for iImp in range(len(importanceList)):
     importancePerClass[iImp] = np.row_stack(tuple(importancePerClass[iImp].values()))
 
+# Function to group binary row to int
+def binaryRowToInt(row):
+    row = row.to_string(header=False, index=False).replace('\n','')
+    return str(int(row, 2))
+
 # Create TT per layer (not optimized)
-if not os.path.exists(f'data/layersTT/{modelName}/notOptimized/'):
-    os.makedirs(f'data/layersTT/{modelName}/notOptimized/')
+if not os.path.exists(f'./data/layersTT/{modelName}/notOptimized/'):
+    os.makedirs(f'./data/layersTT/{modelName}/notOptimized/')
 for i in range(len(importanceList)):
-    if not os.path.exists(f'data/layersTT/{modelName}/notOptimized/layer{i}/'):
-        os.makedirs(f'data/layersTT/{modelName}/notOptimized/layer{i}/')
-# Layer 0
-if not pruned:
-    for neuron in range(model.valueSTE0.shape[1]):
-        columnsTags = [f'IN{i}' for i in range(model.input0.shape[1])]
-        df = pd.DataFrame(model.input0, columns=columnsTags)
-        df[f'OUT{neuron:02d}'] = model.valueSTE0[:, neuron]
-        df[df == -1] = 0
-        df.to_csv(f'data/layersTT/{modelName}/notOptimized/layer0/N{neuron:02d}', index=False)
-        print(f'data/layersTT/{modelName}/notOptimized/layer0/N{neuron:02d} created')
+    if not os.path.exists(f'./data/layersTT/{modelName}/notOptimized/layer{i}/'):
+        os.makedirs(f'./data/layersTT/{modelName}/notOptimized/layer{i}/')
 
 # Layer 1
+columnsTags = [f'IN{i}' for i in range(model.valueSTE0.shape[1])]
+df = pd.DataFrame(model.valueSTE0, columns=columnsTags)
+df[df == -1] = 0
+df = df.astype(int)
+df['int'] = df.apply(binaryRowToInt, axis=1)
+df = df[['int']]
 for neuron in range(model.valueSTE1.shape[1]):
-    columnsTags = [f'IN{i}' for i in range(model.valueSTE0.shape[1])]
-    df = pd.DataFrame(model.valueSTE0, columns=columnsTags)
-    df[f'OUT{neuron:02d}'] = model.valueSTE1[:, neuron]
-    df[df == -1] = 0
-    df.to_csv(f'data/layersTT/{modelName}/notOptimized/layer1/N{neuron:02d}', index=False)
-    print(f'data/layersTT/{modelName}/notOptimized/layer1/N{neuron:02d} created')
+    df[f'OUT{neuron:04d}'] = model.valueSTE1[:, neuron]
+    df.replace({f'OUT{neuron:04d}': -1}, 0, inplace=True)
+    df.to_feather(f'./data/layersTT/{modelName}/notOptimized/layer1/N{neuron:04d}')
+    df.drop(f'OUT{neuron:04d}', inplace=True, axis=1)
+    print(f'./data/layersTT/{modelName}/notOptimized/layer1/N{neuron:04d} created')
 
 # Layer 2
+columnsTags = [f'IN{i}' for i in range(model.valueSTE1.shape[1])]
+df = pd.DataFrame(model.valueSTE1, columns=columnsTags)
+df[df == -1] = 0
+df = df.astype(int)
+df['int'] = df.apply(binaryRowToInt, axis=1)
+df = df[['int']]
 for neuron in range(model.valueSTE2.shape[1]):
-    columnsTags = [f'IN{i}' for i in range(model.valueSTE1.shape[1])]
-    df = pd.DataFrame(model.valueSTE1, columns=columnsTags)
-    df[f'OUT{neuron:02d}'] = model.valueSTE2[:, neuron]
-    df[df == -1] = 0
-    df.to_csv(f'data/layersTT/{modelName}/notOptimized/layer2/N{neuron:02d}', index=False)
-    print(f'data/layersTT/{modelName}/notOptimized/layer2/N{neuron:02d} created')
+    df[f'OUT{neuron:04d}'] = model.valueSTE2[:, neuron]
+    df.replace({f'OUT{neuron:04d}': -1}, 0, inplace=True)
+    df.to_feather(f'./data/layersTT/{modelName}/notOptimized/layer2/N{neuron:04d}')
+    df.drop(f'OUT{neuron:04d}', inplace=True, axis=1)
+    print(f'./data/layersTT/{modelName}/notOptimized/layer2/N{neuron:04d} created')
 
 # Layer 3
+columnsTags = [f'IN{i}' for i in range(model.valueSTE2.shape[1])]
+df = pd.DataFrame(model.valueSTE2, columns=columnsTags)
+df[df == -1] = 0
+df = df.astype(int)
+df['int'] = df.apply(binaryRowToInt, axis=1)
+df = df[['int']]
 for neuron in range(model.valueSTE3.shape[1]):
-    columnsTags = [f'IN{i}' for i in range(model.valueSTE2.shape[1])]
-    df = pd.DataFrame(model.valueSTE2, columns=columnsTags)
-    df[f'OUT{neuron:02d}'] = model.valueSTE3[:, neuron]
-    df[df == -1] = 0
-    df.to_csv(f'data/layersTT/{modelName}/notOptimized/layer3/N{neuron:02d}', index=False)
-    print(f'data/layersTT/{modelName}/notOptimized/layer3/N{neuron:02d} created')
+    df[f'OUT{neuron:04d}'] = model.valueSTE3[:, neuron]
+    df.replace({f'OUT{neuron:04d}': -1}, 0, inplace=True)
+    df.to_feather(f'./data/layersTT/{modelName}/notOptimized/layer3/N{neuron:04d}')
+    df.drop(f'OUT{neuron:04d}', inplace=True, axis=1)
+    print(f'./data/layersTT/{modelName}/notOptimized/layer3/N{neuron:04d} created')
 
 # Create TT per layer (optimized per entry)
-if not os.path.exists(f'data/layersTT/{modelName}/optimizedPerEntry/'):
-    os.makedirs(f'data/layersTT/{modelName}/optimizedPerEntry/')
+if not os.path.exists(f'./data/layersTT/{modelName}/optimizedPerEntry/'):
+    os.makedirs(f'./data/layersTT/{modelName}/optimizedPerEntry/')
 for i in range(len(importanceList)):
-    if not os.path.exists(f'data/layersTT/{modelName}/optimizedPerEntry/layer{i}/'):
-        os.makedirs(f'data/layersTT/{modelName}/optimizedPerEntry/layer{i}/')
-# Layer 0
-if not pruned:
-    importancePerEntry = pd.read_csv(f'data/importance/{modelName}/PerEntrylayer0.csv')
-    for neuron in range(model.valueSTE0.shape[1]):
-        dfImportance = importancePerEntry[f'N{neuron}']
-        columnsTags = [f'IN{i}' for i in range(model.input0.shape[1])]
-        df = pd.DataFrame(model.input0, columns=columnsTags)
-        df[f'OUT{neuron:02d}'] = model.valueSTE0[:, neuron]
-        df[df == -1] = 0
-        df = df[dfImportance > 0]
-        df.to_csv(f'data/layersTT/{modelName}/optimizedPerEntry/layer0/N{neuron:02d}', index=False)
-        print(f'data/layersTT/{modelName}/optimizedPerEntry/layer0/N{neuron:02d} created')
+    if not os.path.exists(f'./data/layersTT/{modelName}/optimizedPerEntry/layer{i}/'):
+        os.makedirs(f'./data/layersTT/{modelName}/optimizedPerEntry/layer{i}/')
 
 # Layer 1
-importancePerEntryPre = pd.read_csv(f'data/importance/{modelName}/PerEntrylayer0.csv', dtype=int)
-importancePerEntry = pd.read_csv(f'data/importance/{modelName}/PerEntrylayer1.csv')
+columnsTags = [f'IN{i}' for i in range(model.valueSTE0.shape[1])]
+df = pd.DataFrame(model.valueSTE0, columns=columnsTags)
+importancePerEntryPre = pd.read_csv(f'./data/importance/{modelName}/PerEntrylayer0.csv', dtype=int)
+importancePerEntry = pd.read_csv(f'./data/importance/{modelName}/PerEntrylayer1.csv')
+df = pd.DataFrame(np.where(importancePerEntryPre == 0, 2, df), columns=columnsTags)
+df[df == -1] = 0
+df = df.astype(int)
+df['int'] = df.apply(binaryRowToInt, axis=1)
+df = df[['int']]
 for neuron in range(model.valueSTE1.shape[1]):
-    dfImportance = importancePerEntry[f'N{neuron}']
-    columnsTags = [f'IN{i}' for i in range(model.valueSTE0.shape[1])]
-    df = pd.DataFrame(model.valueSTE0, columns=columnsTags)
-    df = pd.DataFrame(np.where(importancePerEntryPre == 0, 2, df), columns=columnsTags)
-    df[f'OUT{neuron:02d}'] = model.valueSTE1[:, neuron]
-    df[df == -1] = 0
+    dfImportance = importancePerEntry[f'N{neuron}']    
+    df[f'OUT{neuron:04d}'] = model.valueSTE1[:, neuron]
+    df.replace({f'OUT{neuron:04d}': -1}, 0, inplace=True)
     df = df[dfImportance > 0]
-    df.to_csv(f'data/layersTT/{modelName}/optimizedPerEntry/layer1/N{neuron:02d}', index=False)
-    print(f'data/layersTT/{modelName}/optimizedPerEntry/layer1/N{neuron:02d} created')
+    df.reset_index(drop=True, inplace=True)
+    df.to_feather(f'./data/layersTT/{modelName}/optimizedPerEntry/layer1/N{neuron:04d}')
+    df.drop(f'OUT{neuron:04d}', inplace=True, axis=1)
+    print(f'./data/layersTT/{modelName}/optimizedPerEntry/layer1/N{neuron:04d} created')
 
 # Layer 2
-importancePerEntryPre = pd.read_csv(f'data/importance/{modelName}/PerEntrylayer1.csv')
-importancePerEntry = pd.read_csv(f'data/importance/{modelName}/PerEntrylayer2.csv')
+columnsTags = [f'IN{i}' for i in range(model.valueSTE1.shape[1])]
+df = pd.DataFrame(model.valueSTE1, columns=columnsTags)
+importancePerEntryPre = pd.read_csv(f'./data/importance/{modelName}/PerEntrylayer1.csv', dtype=int)
+importancePerEntry = pd.read_csv(f'./data/importance/{modelName}/PerEntrylayer2.csv')
+df = pd.DataFrame(np.where(importancePerEntryPre == 0, 2, df), columns=columnsTags)
+df[df == -1] = 0
+df = df.astype(int)
+df['int'] = df.apply(binaryRowToInt, axis=1)
+df = df[['int']]
 for neuron in range(model.valueSTE2.shape[1]):
-    dfImportance = importancePerEntry[f'N{neuron}']
-    columnsTags = [f'IN{i}' for i in range(model.valueSTE1.shape[1])]
-    df = pd.DataFrame(model.valueSTE1, columns=columnsTags)
-    df = pd.DataFrame(np.where(importancePerEntryPre == 0, 2, df), columns=columnsTags)
-    df[f'OUT{neuron:02d}'] = model.valueSTE2[:, neuron]
-    df[df == -1] = 0
+    dfImportance = importancePerEntry[f'N{neuron}']    
+    df[f'OUT{neuron:04d}'] = model.valueSTE2[:, neuron]
+    df.replace({f'OUT{neuron:04d}': -1}, 0, inplace=True)
     df = df[dfImportance > 0]
-    df.to_csv(f'data/layersTT/{modelName}/optimizedPerEntry/layer2/N{neuron:02d}', index=False)
-    print(f'data/layersTT/{modelName}/optimizedPerEntry/layer2/N{neuron:02d} created')
+    df.reset_index(drop=True, inplace=True)
+    df.to_feather(f'./data/layersTT/{modelName}/optimizedPerEntry/layer2/N{neuron:04d}')
+    df.drop(f'OUT{neuron:04d}', inplace=True, axis=1)
+    print(f'./data/layersTT/{modelName}/optimizedPerEntry/layer2/N{neuron:04d} created')
 
 # Layer 3
-importancePerEntryPre = pd.read_csv(f'data/importance/{modelName}/PerEntrylayer2.csv')
-importancePerEntry = pd.read_csv(f'data/importance/{modelName}/PerEntrylayer3.csv')
+columnsTags = [f'IN{i}' for i in range(model.valueSTE2.shape[1])]
+df = pd.DataFrame(model.valueSTE2, columns=columnsTags)
+importancePerEntryPre = pd.read_csv(f'./data/importance/{modelName}/PerEntrylayer2.csv', dtype=int)
+importancePerEntry = pd.read_csv(f'./data/importance/{modelName}/PerEntrylayer3.csv')
+df = pd.DataFrame(np.where(importancePerEntryPre == 0, 2, df), columns=columnsTags)
+df[df == -1] = 0
+df = df.astype(int)
+df['int'] = df.apply(binaryRowToInt, axis=1)
+df = df[['int']]
 for neuron in range(model.valueSTE3.shape[1]):
-    dfImportance = importancePerEntry[f'N{neuron}']
-    columnsTags = [f'IN{i}' for i in range(model.valueSTE2.shape[1])]
-    df = pd.DataFrame(model.valueSTE2, columns=columnsTags)
-    df = pd.DataFrame(np.where(importancePerEntryPre == 0, 2, df), columns=columnsTags)
-    df[f'OUT{neuron:02d}'] = model.valueSTE3[:, neuron]
-    df[df == -1] = 0
+    dfImportance = importancePerEntry[f'N{neuron}']    
+    df[f'OUT{neuron:04d}'] = model.valueSTE3[:, neuron]
+    df.replace({f'OUT{neuron:04d}': -1}, 0, inplace=True)
     df = df[dfImportance > 0]
-    df.to_csv(f'data/layersTT/{modelName}/optimizedPerEntry/layer3/N{neuron:02d}', index=False)
-    print(f'data/layersTT/{modelName}/optimizedPerEntry/layer3/N{neuron:02d} created')
+    df.reset_index(drop=True, inplace=True)
+    df.to_feather(f'./data/layersTT/{modelName}/optimizedPerEntry/layer3/N{neuron:04d}')
+    df.drop(f'OUT{neuron:04d}', inplace=True, axis=1)
+    print(f'./data/layersTT/{modelName}/optimizedPerEntry/layer3/N{neuron:04d} created')
 
 # Create TT per layer (optimized per class)
-if not os.path.exists(f'data/layersTT/{modelName}/optimizedPerClass/'):
-    os.makedirs(f'data/layersTT/{modelName}/optimizedPerClass/')
+if not os.path.exists(f'./data/layersTT/{modelName}/optimizedPerClass/'):
+    os.makedirs(f'./data/layersTT/{modelName}/optimizedPerClass/')
 for i in range(len(importanceList)):
-    if not os.path.exists(f'data/layersTT/{modelName}/optimizedPerClass/layer{i}/'):
-        os.makedirs(f'data/layersTT/{modelName}/optimizedPerClass/layer{i}/')
-
-# Layer 0
-if not pruned:
-    importancePerClass = pd.read_csv(f'data/importance/{modelName}/PerClasslayer0.csv')
-    for neuron in range(model.valueSTE0.shape[1]):
-        dfImportance = importancePerClass[f'N{neuron}']
-        columnsTags = [f'IN{i}' for i in range(model.input0.shape[1])]
-        df = pd.DataFrame(model.input0, columns=columnsTags)
-        df[f'OUT{neuron:02d}'] = model.valueSTE0[:, neuron]
-        df[df == -1] = 0
-        df = df[dfImportance > 0]
-        df.to_csv(f'data/layersTT/{modelName}/optimizedPerClass/layer0/N{neuron:02d}', index=False)
-        print(f'data/layersTT/{modelName}/optimizedPerClass/layer0/N{neuron:02d} created')
+    if not os.path.exists(f'./data/layersTT/{modelName}/optimizedPerClass/layer{i}/'):
+        os.makedirs(f'./data/layersTT/{modelName}/optimizedPerClass/layer{i}/')
 
 # Layer 1
-importancePerClassPre = pd.read_csv(f'data/importance/{modelName}/PerClasslayer0.csv')
-importancePerClass = pd.read_csv(f'data/importance/{modelName}/PerClasslayer1.csv')
+columnsTags = [f'IN{i}' for i in range(model.valueSTE0.shape[1])]
+df = pd.DataFrame(model.valueSTE0, columns=columnsTags)
+importancePerEntryPre = pd.read_csv(f'./data/importance/{modelName}/PerClasslayer0.csv', dtype=int)
+importancePerEntry = pd.read_csv(f'./data/importance/{modelName}/PerClasslayer1.csv')
+df = pd.DataFrame(np.where(importancePerEntryPre == 0, 2, df), columns=columnsTags)
+df[df == -1] = 0
+df = df.astype(int)
+df['int'] = df.apply(binaryRowToInt, axis=1)
+df = df[['int']]
 for neuron in range(model.valueSTE1.shape[1]):
-    dfImportance = importancePerClass[f'N{neuron}']
-    columnsTags = [f'IN{i}' for i in range(model.valueSTE0.shape[1])]
-    df = pd.DataFrame(model.valueSTE0, columns=columnsTags)
-    df = pd.DataFrame(np.where(importancePerClassPre == 0, 2, df), columns=columnsTags)
-    df[f'OUT{neuron:02d}'] = model.valueSTE1[:, neuron]
-    df[df == -1] = 0
+    dfImportance = importancePerEntry[f'N{neuron}']    
+    df[f'OUT{neuron:04d}'] = model.valueSTE1[:, neuron]
+    df.replace({f'OUT{neuron:04d}': -1}, 0, inplace=True)
     df = df[dfImportance > 0]
-    df.to_csv(f'data/layersTT/{modelName}/optimizedPerClass/layer1/N{neuron:02d}', index=False)
-    print(f'data/layersTT/{modelName}/optimizedPerClass/layer1/N{neuron:02d} created')
+    df.reset_index(drop=True, inplace=True)
+    df.to_feather(f'./data/layersTT/{modelName}/optimizedPerEntry/layer1/N{neuron:04d}')
+    df.drop(f'OUT{neuron:04d}', inplace=True, axis=1)
+    print(f'./data/layersTT/{modelName}/optimizedPerEntry/layer1/N{neuron:04d} created')
 
 # Layer 2
-importancePerClassPre = pd.read_csv(f'data/importance/{modelName}/PerClasslayer1.csv')
-importancePerClass = pd.read_csv(f'data/importance/{modelName}/PerClasslayer2.csv')
+columnsTags = [f'IN{i}' for i in range(model.valueSTE1.shape[1])]
+df = pd.DataFrame(model.valueSTE1, columns=columnsTags)
+importancePerEntryPre = pd.read_csv(f'./data/importance/{modelName}/PerClasslayer1.csv', dtype=int)
+importancePerEntry = pd.read_csv(f'./data/importance/{modelName}/PerClasslayer2.csv')
+df = pd.DataFrame(np.where(importancePerEntryPre == 0, 2, df), columns=columnsTags)
+df[df == -1] = 0
+df = df.astype(int)
+df['int'] = df.apply(binaryRowToInt, axis=1)
+df = df[['int']]
 for neuron in range(model.valueSTE2.shape[1]):
-    dfImportance = importancePerClass[f'N{neuron}']
-    columnsTags = [f'IN{i}' for i in range(model.valueSTE1.shape[1])]
-    df = pd.DataFrame(model.valueSTE1, columns=columnsTags)
-    df = pd.DataFrame(np.where(importancePerClassPre == 0, 2, df), columns=columnsTags)
-    df[f'OUT{neuron:02d}'] = model.valueSTE2[:, neuron]
-    df[df == -1] = 0
+    dfImportance = importancePerEntry[f'N{neuron}']    
+    df[f'OUT{neuron:04d}'] = model.valueSTE2[:, neuron]
+    df.replace({f'OUT{neuron:04d}': -1}, 0, inplace=True)
     df = df[dfImportance > 0]
-    df.to_csv(f'data/layersTT/{modelName}/optimizedPerClass/layer2/N{neuron:02d}', index=False)
-    print(f'data/layersTT/{modelName}/optimizedPerClass/layer2/N{neuron:02d} created')
+    df.reset_index(drop=True, inplace=True)
+    df.to_feather(f'./data/layersTT/{modelName}/optimizedPerEntry/layer2/N{neuron:04d}')
+    df.drop(f'OUT{neuron:04d}', inplace=True, axis=1)
+    print(f'./data/layersTT/{modelName}/optimizedPerEntry/layer2/N{neuron:04d} created')
 
 # Layer 3
-importancePerClassPre = pd.read_csv(f'data/importance/{modelName}/PerClasslayer2.csv')
-importancePerClass = pd.read_csv(f'data/importance/{modelName}/PerClasslayer3.csv')
+columnsTags = [f'IN{i}' for i in range(model.valueSTE2.shape[1])]
+df = pd.DataFrame(model.valueSTE2, columns=columnsTags)
+importancePerEntryPre = pd.read_csv(f'./data/importance/{modelName}/PerClasslayer2.csv', dtype=int)
+importancePerEntry = pd.read_csv(f'./data/importance/{modelName}/PerClasslayer3.csv')
+df = pd.DataFrame(np.where(importancePerEntryPre == 0, 2, df), columns=columnsTags)
+df[df == -1] = 0
+df = df.astype(int)
+df['int'] = df.apply(binaryRowToInt, axis=1)
+df = df[['int']]
 for neuron in range(model.valueSTE3.shape[1]):
-    dfImportance = importancePerClass[f'N{neuron}']
-    columnsTags = [f'IN{i}' for i in range(model.valueSTE2.shape[1])]
-    df = pd.DataFrame(model.valueSTE2, columns=columnsTags)
-    df = pd.DataFrame(np.where(importancePerClassPre == 0, 2, df), columns=columnsTags)
-    df[f'OUT{neuron:02d}'] = model.valueSTE3[:, neuron]
-    df[df == -1] = 0
+    dfImportance = importancePerEntry[f'N{neuron}']    
+    df[f'OUT{neuron:04d}'] = model.valueSTE3[:, neuron]
+    df.replace({f'OUT{neuron:04d}': -1}, 0, inplace=True)
     df = df[dfImportance > 0]
-    df.to_csv(f'data/layersTT/{modelName}/optimizedPerClass/layer3/N{neuron:02d}', index=False)
-    print(f'data/layersTT/{modelName}/optimizedPerClass/layer3/N{neuron:02d} created')
+    df.reset_index(drop=True, inplace=True)
+    df.to_feather(f'./data/layersTT/{modelName}/optimizedPerEntry/layer3/N{neuron:04d}')
+    df.drop(f'OUT{neuron:04d}', inplace=True, axis=1)
+    print(f'./data/layersTT/{modelName}/optimizedPerEntry/layer3/N{neuron:04d} created')

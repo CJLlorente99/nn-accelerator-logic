@@ -5,10 +5,13 @@ import numpy as np
 from ttUtilities.auxFunctions import binaryArrayToSingleValue, integerToBinaryArray
 import torch
 import pandas as pd
+import heapq
+import torch.nn.utils.prune as prune
+from modelsCommon.customPruning import random_pruning_per_neuron
 
 
 class BinaryNeuralNetwork(nn.Module):
-	def __init__(self, neuronPerLayer=100):
+	def __init__(self, neuronPerLayer=100, connectionsToPrune=0):
 		super(BinaryNeuralNetwork, self).__init__()
 		self.flatten = nn.Flatten()
 
@@ -31,26 +34,24 @@ class BinaryNeuralNetwork(nn.Module):
 		self.l4 = nn.Linear(neuronPerLayer, 10)
 		self.bn4 = nn.BatchNorm1d(10)
 
-		self.iden = nn.Identity()
+		# Regular pruning
+		if connectionsToPrune != 0:
+			self.l1 = random_pruning_per_neuron(self.l1, name="weight", connectionsToPrune=connectionsToPrune)
+			self.l2 = random_pruning_per_neuron(self.l2, name="weight", connectionsToPrune=connectionsToPrune)
+			self.l3 = random_pruning_per_neuron(self.l3, name="weight", connectionsToPrune=connectionsToPrune)
 
 		# Lists for hook data
 		self.gradientsSTE0 = []
 		self.gradientsSTE1 = []
 		self.gradientsSTE2 = []
 		self.gradientsSTE3 = []
-		self.gradientsIden = []
 
 		self.valueSTE0 = []
 		self.valueSTE1 = []
 		self.valueSTE2 = []
 		self.valueSTE3 = []
-		self.valueIden = []
 
 		self.input0 = []  # The rest are the same as the self.value...
-
-		self.activationSize = 0
-		self.activationSizeInput = 0
-		self.activationSizeOutput = 0
 
 		# Flag to enable importance calculation through forward (instead of estimation through gradient)
 		self.legacyImportance = False
@@ -78,27 +79,6 @@ class BinaryNeuralNetwork(nn.Module):
 		x = self.l4(x)
 		x = self.bn4(x)
 
-		x = self.iden(x)
-
-		return F.log_softmax(x, dim=1)
-
-	def forwardLastLayer(self, x):
-		x = self.l1(x)
-		x = self.bn1(x)
-		x = self.ste1(x)
-
-		x = self.l2(x)
-		x = self.bn2(x)
-		x = self.ste2(x)
-
-		x = self.l3(x)
-		x = self.bn3(x)
-		x = self.ste3(x)
-
-		x = self.l4(x)
-		x = self.bn4(x)
-
-		x = self.iden(x)
 
 		return F.log_softmax(x, dim=1)
 
@@ -131,7 +111,6 @@ class BinaryNeuralNetwork(nn.Module):
 		self.ste1.register_forward_hook(self.forward_hook_ste1)
 		self.ste2.register_forward_hook(self.forward_hook_ste2)
 		self.ste3.register_forward_hook(self.forward_hook_ste3)
-		self.iden.register_forward_hook(self.forward_hook_iden)
 
 		if not self.legacyImportance:
 			# Register hooks
@@ -183,11 +162,6 @@ class BinaryNeuralNetwork(nn.Module):
 			if self.neuronSwitchedOff[0] == 3:
 				val_output[0][self.neuronSwitchedOff[1]] = 0
 
-	def forward_hook_iden(self, module, val_input, val_output):
-		a = val_output.argmax(1)
-		# TODO. Could be wrong
-		self.valueIden.append(torch.zeros(val_output.shape).scatter(1, a.unsqueeze(1), 1.0).cpu().detach().numpy()[0])
-
 	def listToArray(self, neuronPerLayer):
 		self.input0 = np.array(self.input0).squeeze().reshape(len(self.input0), 28 * 28)
 
@@ -200,8 +174,6 @@ class BinaryNeuralNetwork(nn.Module):
 		self.valueSTE1 = np.array(self.valueSTE1).squeeze().reshape(len(self.valueSTE1), neuronPerLayer)
 		self.valueSTE2 = np.array(self.valueSTE2).squeeze().reshape(len(self.valueSTE2), neuronPerLayer)
 		self.valueSTE3 = np.array(self.valueSTE3).squeeze().reshape(len(self.valueSTE3), neuronPerLayer)
-
-		# self.valueIden = np.array(self.valueIden).squeeze().reshape(len(self.valueIden), 10)
 
 	def computeImportance(self, neuronPerLayer):
 		# CAREFUL, as values are either +1 or -1, importance is equal to gradient
@@ -245,10 +217,6 @@ class BinaryNeuralNetwork(nn.Module):
 			self.valueSTE3, columns=columnsInLayer4).to_feather(
 			f'{baseFilename}Input4')
 
-		# pd.DataFrame(
-		# 	np.array(self.valueIden), columns=columnsOutLayer5).to_feather(
-		# 	f'{baseFilename}Out5')
-
 	def saveGradients(self, baseFilename: str, targets: list):
 		columnsInLayer1 = [f'N{i}' for i in range(len(self.gradientsSTE0[0]))]
 		columnsInLayer2 = [f'N{i}' for i in range(len(self.gradientsSTE1[0]))]
@@ -278,68 +246,41 @@ class BinaryNeuralNetwork(nn.Module):
 		self.valueSTE2[self.valueSTE2 == -1] = 0
 		self.valueSTE3[self.valueSTE3 == -1] = 0
 
-	def individualActivationsToUniqueValue(self):
-		aux = []
-		i = 0
-		for activation in self.input0:
-			aux.append(binaryArrayToSingleValue(activation))
+	def pruningSparsification(self, inputsToPrune):
+		prunedConnections = {}
 
-			if (i + 1) % 250 == 0:
-				print(f"Activations to Unique Value (Input0) [{i + 1:>4d}/{len(self.input0):>4d}]")
-			i += 1
-		self.input0 = np.array(aux)
-		self.activationSizeInput = int(self.input0.shape[1] / 2)
+		with torch.no_grad():
+			# First hidden layer
+			prunedConnections['l1'] = []
+			for j in range(len(self.l1.weight)):
+				weights = self.l1.weight[j, :]
+				auxWeights = torch.abs(weights).cpu().detach().numpy()
+				idxToPrune = np.argpartition(auxWeights, inputsToPrune)[:inputsToPrune]
+				nums = weights[idxToPrune]
+				weights[idxToPrune] = 0
+				prunedConnections['l1'].append(idxToPrune)
+			prunedConnections['l1'] = np.array(prunedConnections['l1'])
 
-		aux = []
-		i = 0
-		for activation in self.valueSTE0:
-			aux.append(binaryArrayToSingleValue(activation))
+			# Second hidden layer
+			prunedConnections['l2'] = []
+			for j in range(len(self.l2.weight)):
+				weights = self.l2.weight[j, :]
+				auxWeights = torch.abs(weights).cpu().detach().numpy()
+				idxToPrune = np.argpartition(auxWeights, inputsToPrune)[:inputsToPrune]
+				nums = weights[idxToPrune]
+				weights[idxToPrune] = 0
+				prunedConnections['l2'].append(idxToPrune)
+			prunedConnections['l2'] = np.array(prunedConnections['l2'])
 
-			if (i + 1) % 250 == 0:
-				print(f"Activations to Unique Value (STE0) [{i + 1:>4d}/{len(self.valueSTE0):>4d}]")
-			i += 1
-		self.valueSTE0 = np.array(aux)
+			# Third hidden layer
+			prunedConnections['l3'] = []
+			for j in range(len(self.l3.weight)):
+				weights = self.l3.weight[j, :]
+				auxWeights = torch.abs(weights).cpu().detach().numpy()
+				idxToPrune = np.argpartition(auxWeights, inputsToPrune)[:inputsToPrune]
+				nums = weights[idxToPrune]
+				weights[idxToPrune] = 0
+				prunedConnections['l3'].append(idxToPrune)
+			prunedConnections['l3'] = np.array(prunedConnections['l3'])
 
-		aux = []
-		i = 0
-		for activation in self.valueSTE1:
-			aux.append(binaryArrayToSingleValue(activation))
-
-			if (i + 1) % 250 == 0:
-				print(f"Activations to Unique Value (STE1) [{i + 1:>4d}/{len(self.valueSTE1):>4d}]")
-			i += 1
-		self.valueSTE1 = np.array(aux)
-
-		aux = []
-		i = 0
-		for activation in self.valueSTE2:
-			aux.append(binaryArrayToSingleValue(activation))
-
-			if (i + 1) % 250 == 0:
-				print(f"Activations to Unique Value (STE2) [{i + 1:>4d}/{len(self.valueSTE2):>4d}]")
-			i += 1
-		self.valueSTE2 = np.array(aux)
-
-		aux = []
-		i = 0
-		for activation in self.valueSTE3:
-			aux.append(binaryArrayToSingleValue(activation))
-
-			if (i + 1) % 250 == 0:
-				print(f"Activations to Unique Value (STE3) [{i + 1:>4d}/{len(self.valueSTE3):>4d}]")
-			i += 1
-		self.valueSTE3 = np.array(aux)
-
-		# Activation size of the output layer will always be considered to be 10
-		# aux = []
-		# i = 0
-		# for activation in self.valueIden:
-		# 	aux.append(binaryArrayToSingleValue(activation))
-		#
-		# 	if (i + 1) % 250 == 0:
-		# 		print(f"Activations to Unique Value (Iden) [{i + 1:>4d}/{len(self.valueIden):>4d}]")
-		# 	i += 1
-		# self.valueIden = np.array(aux)
-		# self.activationSizeOutput = int(self.valueIden.shape[1] / 2)
-
-		self.activationSize = int(self.valueSTE3.shape[1] / 2)  # It has the info of the lengths too
+		return prunedConnections
