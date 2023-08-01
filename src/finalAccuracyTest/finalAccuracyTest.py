@@ -11,36 +11,27 @@ from modelsCommon.auxTransformations import *
 import torch.nn.functional as F
 
 batch_size = 1
-neuronPerLayer = 4096
-modelFilename = f'bnn/bnn_prunedBT8_100ep_4096npl'
-subfolderPLA = 'ABC'
+neuronPerLayer = 100
+modelFilenames = ['eeb/eeb_prunedBT8_100ep_100npl',
+                  'eeb/eeb_prunedBT10_100ep_100npl',
+                  'eeb/eeb_prunedBT12_100ep_100npl',
+                  'eeb/eeb_prunedBT14_100ep_100npl']
+subfolderPLA = ['ABC',
+                'ABCOptimizedPerClass',
+                'ABCOptimizedPerEntry',
+                'ESPRESSO',
+                'ESPRESSOOptimizedPerClass',
+                'ESPRESSOOptimizedPerEntry_0',
+                'ESPRESSOOptimizedPerEntry_1',
+                'ESPRESSOOptimizedPerEntry_2']
 btPruned = True
 
 # Check mps maybe if working in MacOS
 device = 'cuda' if torch.cuda.is_available() else 'cpu'
 
 '''
-Instantiate NN models
-'''
-print(f'MODEL INSTANTIATION\n')
-
-model = BNNBinaryNeuralNetwork(neuronPerLayer).to(device) if not btPruned else BNNBinaryNeuralNetwork(neuronPerLayer, 1).to(device)
-model.load_state_dict(torch.load(f'data/savedModels/{modelFilename}', map_location=device))
-model.eval()
-
-'''
 Load the simulated inputs to the last layer (provided by minimized network)
 '''
-correctInput = {'train': 0, 'test': 0}
-correctL1 = {'train': 0, 'test': 0}
-correctAllModelFromL1 = {'train': 0, 'test': 0}
-correctL2 = {'train': 0, 'test': 0}
-correctAllModelFromL2 = {'train': 0, 'test': 0}
-correctL3 = {'train': 0, 'test': 0}
-correctAllModelFromL3 = {'train': 0, 'test': 0}
-correctAllModel = {'train': 0, 'test': 0}
-count = {'train': 0, 'test': 0}
-numLines = {'train': 0, 'test': 0}
 
 # Check on training data
 
@@ -50,15 +41,15 @@ def check(simulatedFilenameL1, simulationFilenameL2, simulationFilenameL3, input
     f_simL1 = pd.DataFrame(f_simL1, columns=columns)
     print(f'Loaded {simulatedFilenameL1}. Size {f_simL1.shape}')
 
-    # f_simL2 = np.genfromtxt(simulatedFilenameL2, delimiter=1)
-    # columns = [f'N{i:04d}' for i in range(f_simL2.shape[1])]
-    # f_simL2 = pd.DataFrame(f_simL2, columns=columns)
-    # print(f'Loaded {simulatedFilenameL2}. Size {f_simL2.shape}')
+    f_simL2 = np.genfromtxt(simulatedFilenameL2, delimiter=1)
+    columns = [f'N{i:04d}' for i in range(f_simL2.shape[1])]
+    f_simL2 = pd.DataFrame(f_simL2, columns=columns)
+    print(f'Loaded {simulatedFilenameL2}. Size {f_simL2.shape}')
 
-    # f_simL3 = np.genfromtxt(simulatedFilenameL3, delimiter=1)
-    # columns = [f'N{i:04d}' for i in range(f_simL3.shape[1])]
-    # f_simL3 = pd.DataFrame(f_simL3, columns=columns)
-    # print(f'Loaded {simulatedFilenameL3}. Size {f_simL3.shape}')
+    f_simL3 = np.genfromtxt(simulatedFilenameL3, delimiter=1)
+    columns = [f'N{i:04d}' for i in range(f_simL3.shape[1])]
+    f_simL3 = pd.DataFrame(f_simL3, columns=columns)
+    print(f'Loaded {simulatedFilenameL3}. Size {f_simL3.shape}')
 
     f_input = np.genfromtxt(inputFilename, delimiter=1)
     columns = [f'N{i:04d}' for i in range(f_input.shape[1])]
@@ -69,18 +60,18 @@ def check(simulatedFilenameL1, simulationFilenameL2, simulationFilenameL3, input
 
     for X, y in dataloader:
         y_simulatedL1 = f_simL1.iloc[count[key]]
-        # y_simulatedL2 = f_simL2.iloc[count[key]]
-        # y_simulatedL3 = f_simL3.iloc[count[key]]
+        y_simulatedL2 = f_simL2.iloc[count[key]]
+        y_simulatedL3 = f_simL3.iloc[count[key]]
         x_sim = f_input.iloc[count[key]]
 
         line_simulatedL1 = np.array(y_simulatedL1, dtype=np.double)
         line_simulatedL1[line_simulatedL1 == 0] = -1
 
-        # line_simulatedL2 = np.array(y_simulatedL2, dtype=np.double)
-        # line_simulatedL2[line_simulatedL2 == 0] = -1
+        line_simulatedL2 = np.array(y_simulatedL2, dtype=np.double)
+        line_simulatedL2[line_simulatedL2 == 0] = -1
 
-        # line_simulatedL3 = np.array(y_simulatedL3, dtype=np.double)
-        # line_simulatedL3[line_simulatedL3 == 0] = -1
+        line_simulatedL3 = np.array(y_simulatedL3, dtype=np.double)
+        line_simulatedL3[line_simulatedL3 == 0] = -1
 
         line_sim = np.array(x_sim, dtype=np.double)
         line_sim[line_sim == 0] = -1
@@ -108,23 +99,23 @@ def check(simulatedFilenameL1, simulationFilenameL2, simulationFilenameL3, input
             correctAllModelFromL1[key] += 1
 
         # L2 Checks
-        # if (predL2.cpu().detach().numpy()[0] == line_simulatedL2).all():
-        #     correctL2[key] += 1
+        if (predL2.cpu().detach().numpy()[0] == line_simulatedL2).all():
+            correctL2[key] += 1
         
-        # x = torch.tensor(line_simulatedL2[None, :]).type(torch.FloatTensor)
-        # x = model.forwardOneLayer(x, 3)
-        # x = model.forwardOneLayer(x, 4)
-        # if (x.argmax(1) == data.targets[count[key]].item()).type(torch.float).sum().item():
-        #     correctAllModelFromL2[key] += 1
+        x = torch.tensor(line_simulatedL2[None, :]).type(torch.FloatTensor)
+        x = model.forwardOneLayer(x, 3)
+        x = model.forwardOneLayer(x, 4)
+        if (x.argmax(1) == data.targets[count[key]].item()).type(torch.float).sum().item():
+            correctAllModelFromL2[key] += 1
 
         # L3 Checks
-        # if (predL3.cpu().detach().numpy()[0] == line_simulatedL3).all():
-        #     correctL3[key] += 1
+        if (predL3.cpu().detach().numpy()[0] == line_simulatedL3).all():
+            correctL3[key] += 1
 
-        # x = torch.tensor(line_simulatedL3[None, :]).type(torch.FloatTensor)
-        # x = model.forwardOneLayer(x, 4)
-        # if (x.argmax(1) == data.targets[count[key]].item()).type(torch.float).sum().item():
-        #     correctAllModelFromL3[key] += 1
+        x = torch.tensor(line_simulatedL3[None, :]).type(torch.FloatTensor)
+        x = model.forwardOneLayer(x, 4)
+        if (x.argmax(1) == data.targets[count[key]].item()).type(torch.float).sum().item():
+            correctAllModelFromL3[key] += 1
 
         # Original Accuracy
         if (pred.argmax(1) == data.targets[count[key]].item()).type(torch.float).sum().item():
@@ -135,89 +126,166 @@ def check(simulatedFilenameL1, simulationFilenameL2, simulationFilenameL3, input
             print(f"Check inputs {key} [{count[key]+1:>5d}/{numLines[key]:>5d}]")   
 
 if __name__ == "__main__":
-    # Train
-    # Import dataset
-    print(f'IMPORT DATASET\n')
-    data = datasets.MNIST(
-        root='data',
-        train=True,
-        download=False,
-        transform=Compose([
-                ToTensor(),
-                ToBlackAndWhite(),
-                ToSign()
-            ])
-        )
 
-    dataloader = DataLoader(data, batch_size=batch_size)
+    for modelFilename in modelFilenames:
+        '''
+        Instantiate NN models
+        '''
+        print(f'MODEL {modelFilename} INSTANTIATION\n')
 
-    simulatedFilenameL1 = f'data\inputSimulated\{modelFilename}\{subfolderPLA}/trainlayer2'
-    simulatedFilenameL2 = f'data\inputSimulated\{modelFilename}\{subfolderPLA}/trainlayer3'
-    simulatedFilenameL3 = f'data\inputSimulated\{modelFilename}\{subfolderPLA}/trainlayer4'
-    inputFilename = f'data/inputs/trainInput'
-    key = 'train'
+        model = BNNBinaryNeuralNetwork(neuronPerLayer).to(device) if not btPruned else BNNBinaryNeuralNetwork(neuronPerLayer, 1).to(device)
+        model.load_state_dict(torch.load(f'data/savedModels/{modelFilename}', map_location=device))
+        model.eval()
 
-    check(simulatedFilenameL1, simulatedFilenameL2, simulatedFilenameL3, inputFilename, data, dataloader, key)
+        with open(f'data\inputSimulated\{modelFilename}/results.txt', 'w') as f:
+            for subFolder in subfolderPLA:
 
-    # Print Results
-    print('\n================================================================================================')
-    print('TRAIN RESULTS\n')
-    print(f'Correct Input {correctInput[key]}/{numLines[key]} {correctInput[key]/numLines[key]*100}%')
-    print(f'Correct L1 {correctL1[key]}/{numLines[key]} {correctL1[key]/numLines[key]*100}%')
-    print(f"Train Error from L1: \n Accuracy: {(100 * correctAllModelFromL1[key] / numLines[key]):>0.2f}%\n")
-    print(f'Correct L2 {correctL2[key]}/{numLines[key]} {correctL2[key]/numLines[key]*100}%')
-    print(f"Train Error from L2: \n Accuracy: {(100 * correctAllModelFromL2[key] / numLines[key]):>0.2f}%\n")
-    print(f'Correct L3 {correctL3[key]}/{numLines[key]} {correctL3[key]/numLines[key]*100}%')
-    print(f"Train Error from L3: \n Accuracy: {(100 * correctAllModelFromL3[key] / numLines[key]):>0.2f}%\n")
-    print(f"Train Error Original: \n Accuracy: {(100 * correctAllModel[key] / numLines[key]):>0.2f}%\n")
-    print('================================================================================================\n')
+                print(f'Testing subfolder {subFolder}\n')
+                f.write(f'====================================================\n')
+                f.write(f'{subFolder}\n')
+                f.write(f'====================================================\n')
+                
+                try:
+                    # Train
+                    # Import dataset
+                    print(f'IMPORT DATASET\n')
+                    data = datasets.MNIST(
+                        root='data',
+                        train=True,
+                        download=False,
+                        transform=Compose([
+                                ToTensor(),
+                                ToBlackAndWhite(),
+                                ToSign()
+                            ])
+                        )
 
-    # Test
-    # Import dataset
-    print(f'IMPORT DATASET\n')
-    data = datasets.MNIST(
-        root='data',
-        train=False,
-        download=False,
-        transform=Compose([
-                ToTensor(),
-                ToBlackAndWhite(),
-                ToSign()
-            ])
-        )
+                    dataloader = DataLoader(data, batch_size=batch_size)
 
-    dataloader = DataLoader(data, batch_size=batch_size)
+                    simulatedFilenameL1 = f'data\inputSimulated\{modelFilename}\{subFolder}/trainlayer2'
+                    simulatedFilenameL2 = f'data\inputSimulated\{modelFilename}\{subFolder}/trainlayer3'
+                    simulatedFilenameL3 = f'data\inputSimulated\{modelFilename}\{subFolder}/trainlayer4'
+                    inputFilename = f'data/inputs/trainInput'
+                    key = 'train'
 
-    simulatedFilenameL1 = f'data\inputSimulated\{modelFilename}\{subfolderPLA}/testlayer2'
-    simulatedFilenameL2 = f'data\inputSimulated\{modelFilename}\{subfolderPLA}/testlayer3'
-    simulatedFilenameL3 = f'data\inputSimulated\{modelFilename}\{subfolderPLA}/testlayer4'
-    inputFilename = f'data/inputs/testInput'
-    key = 'test'
+                    correctInput = {'train': 0, 'test': 0}
+                    correctL1 = {'train': 0, 'test': 0}
+                    correctAllModelFromL1 = {'train': 0, 'test': 0}
+                    correctL2 = {'train': 0, 'test': 0}
+                    correctAllModelFromL2 = {'train': 0, 'test': 0}
+                    correctL3 = {'train': 0, 'test': 0}
+                    correctAllModelFromL3 = {'train': 0, 'test': 0}
+                    correctAllModel = {'train': 0, 'test': 0}
+                    count = {'train': 0, 'test': 0}
+                    numLines = {'train': 0, 'test': 0}
 
-    check(simulatedFilenameL1, simulatedFilenameL2, simulatedFilenameL3, inputFilename, data, dataloader, key)
+                    check(simulatedFilenameL1, simulatedFilenameL2, simulatedFilenameL3, inputFilename, data, dataloader, key)
 
-    # Print Results
-    print('\n================================================================================================')
-    print('TEST RESULTS\n')
-    print(f'Correct Input {correctInput[key]}/{numLines[key]} {correctInput[key]/numLines[key]*100}%')
-    print(f'Correct L1 {correctL1[key]}/{numLines[key]} {correctL1[key]/numLines[key]*100}%')
-    print(f"Train Error from L1: \n Accuracy: {(100 * correctAllModelFromL1[key] / numLines[key]):>0.2f}%\n")
-    print(f'Correct L2 {correctL2[key]}/{numLines[key]} {correctL2[key]/numLines[key]*100}%')
-    print(f"Train Error from L2: \n Accuracy: {(100 * correctAllModelFromL2[key] / numLines[key]):>0.2f}%\n")
-    print(f'Correct L3 {correctL3[key]}/{numLines[key]} {correctL3[key]/numLines[key]*100}%')
-    print(f"Train Error from L3: \n Accuracy: {(100 * correctAllModelFromL3[key] / numLines[key]):>0.2f}%\n")
-    print(f"Train Error Original: \n Accuracy: {(100 * correctAllModel[key] / numLines[key]):>0.2f}%\n")
-    print('================================================================================================\n')
+                    # Print Results
+                    print('\n================================================================================================')
+                    print('TRAIN RESULTS\n')
+                    print(f'Correct Input {correctInput[key]}/{numLines[key]} {correctInput[key]/numLines[key]*100}%')
+                    print(f'Correct L1 {correctL1[key]}/{numLines[key]} {correctL1[key]/numLines[key]*100}%')
+                    print(f"Train Error from L1: \n Accuracy: {(100 * correctAllModelFromL1[key] / numLines[key]):>0.2f}%\n")
+                    print(f'Correct L2 {correctL2[key]}/{numLines[key]} {correctL2[key]/numLines[key]*100}%')
+                    print(f"Train Error from L2: \n Accuracy: {(100 * correctAllModelFromL2[key] / numLines[key]):>0.2f}%\n")
+                    print(f'Correct L3 {correctL3[key]}/{numLines[key]} {correctL3[key]/numLines[key]*100}%')
+                    print(f"Train Error from L3: \n Accuracy: {(100 * correctAllModelFromL3[key] / numLines[key]):>0.2f}%\n")
+                    print(f"Train Error Original: \n Accuracy: {(100 * correctAllModel[key] / numLines[key]):>0.2f}%\n")
+                    print('================================================================================================\n')
 
-    # Both
-    print('\n================================================================================================')
-    print('TOTAL RESULTS\n')
-    print(f'Correct Input {sum(correctInput.values())}/{sum(numLines.values())} {sum(correctInput.values())/sum(numLines.values())*100}%')
-    print(f'Correct L1 {sum(correctL1.values())}/{sum(numLines.values())} {sum(correctL1.values())/sum(numLines.values())*100}%')
-    print(f"Train Error from L1: \n Accuracy: {(100 * sum(correctAllModelFromL1.values()) / sum(numLines.values())):>0.2f}%\n")
-    print(f'Correct L2 {sum(correctL2.values())}/{sum(numLines.values())} {sum(correctL2.values())/sum(numLines.values())*100}%')
-    print(f"Train Error from L2: \n Accuracy: {(100 * sum(correctAllModelFromL2.values()) / sum(numLines.values())):>0.2f}%\n")
-    print(f'Correct L3 {sum(correctL3.values())}/{sum(numLines.values())} {sum(correctL3.values())/sum(numLines.values())*100}%')
-    print(f"Train Error from L3: \n Accuracy: {(100 * sum(correctAllModelFromL3.values()) / sum(numLines.values())):>0.2f}%\n")
-    print(f"Train Error Original: \n Accuracy: {(100 * sum(correctAllModel.values()) / sum(numLines.values())):>0.2f}%\n")
-    print('================================================================================================\n')
+                    text = []
+                    text.append('\n================================================================================================')
+                    text.append('TRAIN RESULTS\n')
+                    text.append(f'Correct Input {correctInput[key]}/{numLines[key]} {correctInput[key]/numLines[key]*100}%')
+                    text.append(f'Correct L1 {correctL1[key]}/{numLines[key]} {correctL1[key]/numLines[key]*100}%')
+                    text.append(f"Train Error from L1: \n Accuracy: {(100 * correctAllModelFromL1[key] / numLines[key]):>0.2f}%\n")
+                    text.append(f'Correct L2 {correctL2[key]}/{numLines[key]} {correctL2[key]/numLines[key]*100}%')
+                    text.append(f"Train Error from L2: \n Accuracy: {(100 * correctAllModelFromL2[key] / numLines[key]):>0.2f}%\n")
+                    text.append(f'Correct L3 {correctL3[key]}/{numLines[key]} {correctL3[key]/numLines[key]*100}%')
+                    text.append(f"Train Error from L3: \n Accuracy: {(100 * correctAllModelFromL3[key] / numLines[key]):>0.2f}%\n")
+                    text.append(f"Train Error Original: \n Accuracy: {(100 * correctAllModel[key] / numLines[key]):>0.2f}%\n")
+                    text.append('================================================================================================\n')
+                    f.write('\n'.join(text))
+
+                    # Test
+                    # Import dataset
+                    print(f'IMPORT DATASET\n')
+                    data = datasets.MNIST(
+                        root='data',
+                        train=False,
+                        download=False,
+                        transform=Compose([
+                                ToTensor(),
+                                ToBlackAndWhite(),
+                                ToSign()
+                            ])
+                        )
+
+                    dataloader = DataLoader(data, batch_size=batch_size)
+
+                    simulatedFilenameL1 = f'data\inputSimulated\{modelFilename}\{subFolder}/testlayer2'
+                    simulatedFilenameL2 = f'data\inputSimulated\{modelFilename}\{subFolder}/testlayer3'
+                    simulatedFilenameL3 = f'data\inputSimulated\{modelFilename}\{subFolder}/testlayer4'
+                    inputFilename = f'data/inputs/testInput'
+                    key = 'test'
+
+                    check(simulatedFilenameL1, simulatedFilenameL2, simulatedFilenameL3, inputFilename, data, dataloader, key)
+
+                    # Print Results
+                    print('\n================================================================================================')
+                    print('TEST RESULTS\n')
+                    print(f'Correct Input {correctInput[key]}/{numLines[key]} {correctInput[key]/numLines[key]*100}%')
+                    print(f'Correct L1 {correctL1[key]}/{numLines[key]} {correctL1[key]/numLines[key]*100}%')
+                    print(f"Train Error from L1: \n Accuracy: {(100 * correctAllModelFromL1[key] / numLines[key]):>0.2f}%\n")
+                    print(f'Correct L2 {correctL2[key]}/{numLines[key]} {correctL2[key]/numLines[key]*100}%')
+                    print(f"Train Error from L2: \n Accuracy: {(100 * correctAllModelFromL2[key] / numLines[key]):>0.2f}%\n")
+                    print(f'Correct L3 {correctL3[key]}/{numLines[key]} {correctL3[key]/numLines[key]*100}%')
+                    print(f"Train Error from L3: \n Accuracy: {(100 * correctAllModelFromL3[key] / numLines[key]):>0.2f}%\n")
+                    print(f"Train Error Original: \n Accuracy: {(100 * correctAllModel[key] / numLines[key]):>0.2f}%\n")
+                    print('================================================================================================\n')
+
+                    text = []
+                    text.append('\n================================================================================================')
+                    text.append('TEST RESULTS\n')
+                    text.append(f'Correct Input {correctInput[key]}/{numLines[key]} {correctInput[key]/numLines[key]*100}%')
+                    text.append(f'Correct L1 {correctL1[key]}/{numLines[key]} {correctL1[key]/numLines[key]*100}%')
+                    text.append(f"Train Error from L1: \n Accuracy: {(100 * correctAllModelFromL1[key] / numLines[key]):>0.2f}%\n")
+                    text.append(f'Correct L2 {correctL2[key]}/{numLines[key]} {correctL2[key]/numLines[key]*100}%')
+                    text.append(f"Train Error from L2: \n Accuracy: {(100 * correctAllModelFromL2[key] / numLines[key]):>0.2f}%\n")
+                    text.append(f'Correct L3 {correctL3[key]}/{numLines[key]} {correctL3[key]/numLines[key]*100}%')
+                    text.append(f"Train Error from L3: \n Accuracy: {(100 * correctAllModelFromL3[key] / numLines[key]):>0.2f}%\n")
+                    text.append(f"Train Error Original: \n Accuracy: {(100 * correctAllModel[key] / numLines[key]):>0.2f}%\n")
+                    text.append('================================================================================================\n')
+                    f.write('\n'.join(text))
+
+                    # Both
+                    print('\n================================================================================================')
+                    print('TOTAL RESULTS\n')
+                    print(f'Correct Input {sum(correctInput.values())}/{sum(numLines.values())} {sum(correctInput.values())/sum(numLines.values())*100}%')
+                    print(f'Correct L1 {sum(correctL1.values())}/{sum(numLines.values())} {sum(correctL1.values())/sum(numLines.values())*100}%')
+                    print(f"Train Error from L1: \n Accuracy: {(100 * sum(correctAllModelFromL1.values()) / sum(numLines.values())):>0.2f}%\n")
+                    print(f'Correct L2 {sum(correctL2.values())}/{sum(numLines.values())} {sum(correctL2.values())/sum(numLines.values())*100}%')
+                    print(f"Train Error from L2: \n Accuracy: {(100 * sum(correctAllModelFromL2.values()) / sum(numLines.values())):>0.2f}%\n")
+                    print(f'Correct L3 {sum(correctL3.values())}/{sum(numLines.values())} {sum(correctL3.values())/sum(numLines.values())*100}%')
+                    print(f"Train Error from L3: \n Accuracy: {(100 * sum(correctAllModelFromL3.values()) / sum(numLines.values())):>0.2f}%\n")
+                    print(f"Train Error Original: \n Accuracy: {(100 * sum(correctAllModel.values()) / sum(numLines.values())):>0.2f}%\n")
+                    print('================================================================================================\n')
+                    
+                    text = []
+                    text.append('\n================================================================================================')
+                    text.append('TOTAL RESULTS\n')
+                    text.append(f'Correct Input {sum(correctInput.values())}/{sum(numLines.values())} {sum(correctInput.values())/sum(numLines.values())*100}%')
+                    text.append(f'Correct L1 {sum(correctL1.values())}/{sum(numLines.values())} {sum(correctL1.values())/sum(numLines.values())*100}%')
+                    text.append(f"Train Error from L1: \n Accuracy: {(100 * sum(correctAllModelFromL1.values()) / sum(numLines.values())):>0.2f}%\n")
+                    text.append(f'Correct L2 {sum(correctL2.values())}/{sum(numLines.values())} {sum(correctL2.values())/sum(numLines.values())*100}%')
+                    text.append(f"Train Error from L2: \n Accuracy: {(100 * sum(correctAllModelFromL2.values()) / sum(numLines.values())):>0.2f}%\n")
+                    text.append(f'Correct L3 {sum(correctL3.values())}/{sum(numLines.values())} {sum(correctL3.values())/sum(numLines.values())*100}%')
+                    text.append(f"Train Error from L3: \n Accuracy: {(100 * sum(correctAllModelFromL3.values()) / sum(numLines.values())):>0.2f}%\n")
+                    text.append(f"Train Error Original: \n Accuracy: {(100 * sum(correctAllModel.values()) / sum(numLines.values())):>0.2f}%\n")
+                    text.append('================================================================================================\n')
+                    f.write('\n'.join(text))
+                except:
+                    print('FAILURE\n')
+                    f.write('FAILURE\n')
+        f.close()
