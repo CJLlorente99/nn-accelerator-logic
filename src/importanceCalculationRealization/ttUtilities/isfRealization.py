@@ -59,12 +59,8 @@ def generateABCInput(df: pd.DataFrame, filename: str):
 	print(f'ABC PLA {filename} completed')
 
 
-def createPLAFileEspresso(neuronName: str, df: pd.DataFrame, dfPruned: pd.DataFrame, outputFilename: str, conflictMode=-1):
+def createPLAFileEspresso(df: pd.DataFrame, outputFilename: str, conflictMode=-1):
 			
-	df = df.astype('int')
-	df.drop_duplicates(inplace=True)
-	df.drop(df.columns[dfPruned[neuronName].values], axis=1, inplace=True)
-	df.drop_duplicates(inplace=True)
 	# Deal with conflict of orthogonality between On and Off set
 	if conflictMode != -1:
 		# Get rows with DC (2)
@@ -92,9 +88,12 @@ def createPLAFileEspresso(neuronName: str, df: pd.DataFrame, dfPruned: pd.DataFr
 					# ! Sometimes incurs in empty pla (everything has a DC)
 	generateEspressoInput(df, outputFilename)
 
-def createPLAFileABC(neuronName: str, df: pd.DataFrame, dfPruned: pd.DataFrame, outputFilename: str):
+def createPLAFileABC(df: pd.DataFrame, outputFilename: str):
 	
-	df = df.astype('int')
-	df.drop(df.columns[dfPruned[neuronName].values], axis=1, inplace=True)
-	df.drop_duplicates(inplace=True)
 	generateABCInput(df, outputFilename)
+
+def pruneAndDrop(df: pd.DataFrame, dfPruned: pd.DataFrame, neuronName: str):
+	df = df.astype('int')
+	aux = df.drop(df.columns[dfPruned[neuronName].values], axis=1)
+	aux.drop_duplicates(inplace=True)
+	return aux

@@ -2,7 +2,6 @@ import torch
 from torchvision import datasets
 from torchvision.transforms import ToTensor, Compose
 from torch.utils.data import DataLoader
-from modules.binaryEnergyEfficiency import BinaryNeuralNetwork
 from modules.binaryBNN import BNNBinaryNeuralNetwork
 import torch.nn as nn
 import pandas as pd
@@ -35,7 +34,7 @@ Load the simulated inputs to the last layer (provided by minimized network)
 
 # Check on training data
 
-def check(simulatedFilenameL1, simulationFilenameL2, simulationFilenameL3, inputFilename, data, dataloader, key):
+def check(simulatedFilenameL1, simulatedFilenameL2, simulatedFilenameL3, inputFilename, data, dataloader, key):
     f_simL1 = np.genfromtxt(simulatedFilenameL1, delimiter=1)
     columns = [f'N{i:04d}' for i in range(f_simL1.shape[1])]
     f_simL1 = pd.DataFrame(f_simL1, columns=columns)

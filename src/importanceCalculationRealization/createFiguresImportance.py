@@ -8,8 +8,8 @@ from torchvision.transforms import ToTensor, Compose
 from torch.utils.data import DataLoader
 import os
 
-modelName = 'bnn/bnn_prunedBT8_100ep_4096npl'
-nLayers = 4
+modelName = 'bnn/bnn_prunedBT12_100ep_4096npl'
+nLayers = 3
 neuronPerLayer = 4096
 
 '''

@@ -2,7 +2,6 @@ import torch
 from torchvision import datasets
 from torchvision.transforms import ToTensor, Compose
 from torch.utils.data import DataLoader
-from modules.binaryEnergyEfficiency import BinaryNeuralNetwork
 from modules.binaryBNN import BNNBinaryNeuralNetwork
 import torch.nn as nn
 import pandas as pd
