@@ -4,13 +4,12 @@ from torch import nn
 import torch
 import torch.nn.functional as F
 import numpy as np
-from ttUtilities.auxFunctions import binaryArrayToSingleValue, integerToBinaryArray
 import math
 from modelsCommon.customPruning import random_pruning_per_neuron
 
-class binaryVGGVerySmall2(nn.Module):
+class binaryVGGVerySmall(nn.Module):
 	def __init__(self, resizeFactor, relus: list, connectionsAfterPrune=0):
-		super(binaryVGGVerySmall2, self).__init__()
+		super(binaryVGGVerySmall, self).__init__()
 		self.resizeFactor = resizeFactor
 
 		# Layer 0
@@ -86,7 +85,7 @@ class binaryVGGVerySmall2(nn.Module):
 		self.l3 = nn.Linear(1000, 10)
 
 		# Regular pruning
-		if connectionsAfterPrune != -1:
+		if connectionsAfterPrune != 0:
 			self.l0 = random_pruning_per_neuron(self.l0, name="weight", connectionsToPrune=resizeFactor*resizeFactor*512-connectionsAfterPrune)
 			self.l1 = random_pruning_per_neuron(self.l1, name="weight", connectionsToPrune=4096-connectionsAfterPrune)
 			self.l2 = random_pruning_per_neuron(self.l2, name="weight", connectionsToPrune=4096-connectionsAfterPrune)

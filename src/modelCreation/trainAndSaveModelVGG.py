@@ -4,8 +4,8 @@ from modelsCommon.auxTransformations import *
 from torchvision import datasets
 from torchvision.transforms import ToTensor, Compose, Normalize, RandomHorizontalFlip, RandomCrop, Resize
 from torch.utils.data import DataLoader
-from modules.binaryVggVerySmall2 import binaryVGGVerySmall2
 from modules.binaryVggSmall import binaryVGGSmall
+from modules.binaryVggVerySmall import binaryVGGVerySmall
 from modules.vggSmall import VGGSmall
 import torch.optim as optim
 import torch.nn as nn
@@ -14,27 +14,32 @@ import pandas as pd
 import numpy as np
 
 batch_size = 128
-epochs = 200
+epochs = 100
 
-def main(modelName, relus, resizeFactor, irregularPrune, inputsRegularToPrune, inputsAfterIrregularPrune):
+def main(modelName, resizeFactor, atPruning, inputsAfterBTPruning, inputsAfterATPruning):
     # Regular False, Irregular True
     # If regular prune
-    if irregularPrune:
-        inputsRegularToPrune = -1
+    if atPruning:
+        inputsAfterBTPruning = 0
     # If irregular prune
-    if not irregularPrune:
-        inputsAfterIrregularPrune = -1
-
-    relusStr = ''.join(map(str, relus))
+    if not atPruning:
+        inputsAfterATPruning = 0
 
     # Check mps maybe if working in MacOS
     device = 'cuda' if torch.cuda.is_available() else 'cpu'
     print(device)
     
-    if modelName == 'binaryVGGVerySmall2':
-        model = binaryVGGVerySmall2(resizeFactor, relus, inputsRegularToPrune).to(device)
+    if modelName == 'binaryVGGVerySmall':
+        relus = [1, 1, 1, 1, 0, 0, 0, 0]
+        model = binaryVGGVerySmall(resizeFactor, relus, inputsAfterBTPruning).to(device)
     elif modelName == 'binaryVGGSmall':
-        model = binaryVGGSmall(resizeFactor, relus, inputsRegularToPrune).to(device)
+        relus = [1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0]
+        model = binaryVGGSmall(resizeFactor, relus, inputsAfterBTPruning).to(device)
+
+    if not atPruning:
+        print(f'Total non-pruned BT in l0 per neuron: {torch.sum(list(model.l0.named_buffers())[0][1])/4096}')
+        print(f'Total non-pruned BT in l1 per neuron: {torch.sum(list(model.l1.named_buffers())[0][1])/4096}')
+        print(f'Total non-pruned BT in l2 per neuron: {torch.sum(list(model.l2.named_buffers())[0][1])/1000}')
     
     print(model.named_modules)
     
@@ -84,23 +89,27 @@ def main(modelName, relus, resizeFactor, irregularPrune, inputsRegularToPrune, i
 
     print(f'SAVING\n')
 
-    if irregularPrune:
-        prunedConnections = model.pruningSparsification(inputsAfterIrregularPrune)
+    if atPruning:
+        prunedConnections = model.pruningSparsification(inputsAfterATPruning)
         for layer in prunedConnections:
             columnTags = [f'N{i}' for i in range(prunedConnections[layer].shape[0])]
             df = pd.DataFrame(prunedConnections[layer].T, columns=columnTags)
-            df.to_csv(f'savedModels/{modelName}_prunedIrregular_{relusStr}_{resizeFactor}_prunnedInfo{layer}.csv', index=False)
+            df.to_csv(f'savedModels/{modelName}_prunedAT{inputsAfterATPruning}_{resizeFactor}_prunnedInfo{layer}.csv', index=False)
+
+        print(f'Total non-pruned AT in l0 per neuron: {torch.sum(model.l0.weight != 0)/4096}')
+        print(f'Total non-pruned AT in l1 per neuron: {torch.sum(model.l1.weight != 0)/4096}')
+        print(f'Total non-pruned AT in l2 per neuron: {torch.sum(model.l2.weight != 0)/1000}')
     
         metrics = '\n'.join(testReturn(test_dataloader, train_dataloader, model, criterion))
         print(metrics)
-        with open(f'savedModels/{modelName}_prunedIrregular_{relusStr}_{resizeFactor}.txt', 'w') as f:
+        with open(f'savedModels/{modelName}_prunedAT{inputsAfterATPruning}_{resizeFactor}.txt', 'w') as f:
             f.write(metrics)
             f.write('\n')
             f.write(f'epochs {epochs}\n')
             f.write(f'batch {batch_size}\n')
             f.close()
         
-        torch.save(model.state_dict(), f'savedModels/{modelName}_prunedIrregular_{relusStr}_{resizeFactor}')
+        torch.save(model.state_dict(), f'savedModels/{modelName}_prunedAT{inputsAfterATPruning}_{resizeFactor}')
 
     else:
         # First layer
@@ -111,7 +120,7 @@ def main(modelName, relus, resizeFactor, irregularPrune, inputsRegularToPrune, i
             idxs.append(np.where(weights == 0)[0])
         columnTags = [f'N{i}' for i in range(len(weightMask))]
         df = pd.DataFrame(np.array(idxs).T, columns=columnTags)
-        df.to_csv(f'savedModels/{modelName}_prunedRegular_{relusStr}_{resizeFactor}_prunnedInfo{0}.csv', index=False)
+        df.to_csv(f'savedModels/{modelName}_prunedBT{inputsAfterBTPruning}_{resizeFactor}_prunnedInfo{0}.csv', index=False)
 
         # Second layer
         weightMask = list(model.l1.named_buffers())[0][1]
@@ -121,7 +130,7 @@ def main(modelName, relus, resizeFactor, irregularPrune, inputsRegularToPrune, i
             idxs.append(np.where(weights == 0)[0])
         columnTags = [f'N{i}' for i in range(len(weightMask))]
         df = pd.DataFrame(np.array(idxs).T, columns=columnTags)
-        df.to_csv(f'savedModels/{modelName}_prunedRegular_{relusStr}_{resizeFactor}_prunnedInfo{1}.csv', index=False)
+        df.to_csv(f'savedModels/{modelName}_prunedBT{inputsAfterBTPruning}_{resizeFactor}_prunnedInfo{1}.csv', index=False)
 
         # Third layer
         weightMask = list(model.l2.named_buffers())[0][1]
@@ -131,27 +140,28 @@ def main(modelName, relus, resizeFactor, irregularPrune, inputsRegularToPrune, i
             idxs.append(np.where(weights == 0)[0])
         columnTags = [f'N{i}' for i in range(len(weightMask))]
         df = pd.DataFrame(np.array(idxs).T, columns=columnTags)
-        df.to_csv(f'savedModels/{modelName}_prunedRegular_{relusStr}_{resizeFactor}_prunnedInfo{2}.csv', index=False)
+        df.to_csv(f'savedModels/{modelName}_prunedBT{inputsAfterBTPruning}_{resizeFactor}_prunnedInfo{2}.csv', index=False)
 
         metrics = '\n'.join(testReturn(test_dataloader, train_dataloader, model, criterion))
         print(metrics)
-        with open(f'savedModels/{modelName}_prunedRegular_{relusStr}_{resizeFactor}.txt', 'w') as f:
+        with open(f'savedModels/{modelName}_prunedBT{inputsAfterBTPruning}_{resizeFactor}.txt', 'w') as f:
             f.write(metrics)
             f.write('\n')
             f.write(f'epochs {epochs}\n')
             f.write(f'batch {batch_size}\n')
             f.close()
         
-        torch.save(model.state_dict(), f'savedModels/{modelName}_prunedRegular_{relusStr}_{resizeFactor}')
+        torch.save(model.state_dict(), f'savedModels/{modelName}_prunedBT{inputsAfterBTPruning}_{resizeFactor}')
     
     
 if __name__ == '__main__':
-    main('binaryVGGVerySmall2', [1, 1, 1, 1, 0, 0, 0, 0], 4, True, 30, 30)
-    main('binaryVGGVerySmall2', [1, 1, 1, 1, 0, 0, 0, 0], 4, False, 30, 30)     
-    main('binaryVGGSmall', [1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0], 4, True, 30, 30)
-    main('binaryVGGSmall', [1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0], 4, False, 30, 30)
-    main('binaryVGGVerySmall2', [1, 1, 1, 1, 0, 0, 0, 0], 7, True, 30, 30)
-    main('binaryVGGVerySmall2', [1, 1, 1, 1, 0, 0, 0, 0], 7, False, 30, 30)    
-    main('binaryVGGSmall', [1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0], 7, True, 30, 30)
-    main('binaryVGGSmall', [1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0], 7, False, 30, 30)
+    main('binaryVGGVerySmall', 4, False, 6, 6)
+    main('binaryVGGVerySmall', 4, False, 8, 8)
+    main('binaryVGGVerySmall', 4, False, 10, 10)
+    main('binaryVGGVerySmall', 4, False, 12, 12)
+    main('binaryVGGSmall', 4, False, 6, 6)
+    main('binaryVGGSmall', 4, False, 8, 8)
+    main('binaryVGGSmall', 4, False, 10, 10)
+    main('binaryVGGSmall', 4, False, 12, 12)
+
     
