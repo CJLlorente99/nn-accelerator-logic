@@ -3,6 +3,7 @@ import pandas as pd
 import plotly.graph_objects as go
 import numpy as np
 
+
 @dataclass
 class AccLayer:
 	name: str
@@ -12,14 +13,17 @@ class AccLayer:
 	neurons: list
 	tt: pd.DataFrame
 
-	def fillTT(self, nextLayerDf: pd.DataFrame):
+	def fillTT(self, activations):
 		"""
 		Method that calls each neuron in the layer recurrently and creates the TT per each
 		"""
 		i = 0
 		n = len(self.neurons)
 		for neuron in self.neurons:
-			neuron.createTT(nextLayerDf[str(i)])
+			if activations:
+				neuron.createTT(activations[neuron.name])
+			else:
+				neuron.createTT(None)
 
 			if (i + 1) % 1 == 0:
 				print(f"{self.name} Neuron TT [{i + 1:>4d}/{n:>4d}]")
@@ -59,31 +63,6 @@ class AccLayer:
 			d['name'] = neuron.name
 			d['importance'] = neuron.importance
 			aux = pd.concat([aux, pd.DataFrame(d, index=[0])], ignore_index=True)
-   
-		if ordered:
-			aux.sort_values(['importance'], inplace=True)
-
-		fig = go.Figure()
-
-		for col in aux:
-			if col not in ['name', 'importance']:
-				fig.add_trace(go.Bar(name=col, x=aux['name'], y=aux[col]))
-
-		fig.update_layout(title=name, barmode='stack', hovermode="x unified")
-		fig.show()
-
-	def plotImportanceCardinalityPerClass(self, name, ordered=False):
-		"""
-		Method that plots the importance per neuron per layer
-		:param name:
-		"""
-		# Get neuron name and importance per class
-		aux = pd.DataFrame()
-		for neuron in self.neurons:
-			d = neuron.cardinalityPerClass.copy()
-			d['name'] = neuron.name
-			d['importance'] = neuron.importance
-			aux = pd.concat([aux, pd.DataFrame(d, index=[0])], ignore_index=True)
 
 		for col in aux:
 			if col not in ['name', 'importance']:
@@ -97,7 +76,7 @@ class AccLayer:
 				fig.update_layout(title=name + ' ' + col, barmode='stack', hovermode="x unified")
 				fig.show()
 
-	def plotNumImportantClasses(self, name, ordered=False, save=False):
+	def plotNumImportantClasses(self, name, ordered=False):
 		"""
 		Method that plots the importance per neuron per layer
 		:param name:
@@ -115,16 +94,11 @@ class AccLayer:
 
 		fig = go.Figure()
 
-		fig.add_trace(go.Scatter(name=f'Number of Important Classes', x=aux['name'], y=aux['numImportant']))
+		fig.add_trace(go.Scatter(name='Number of Important Classes', x=aux['name'], y=aux['numImportant']))
 
 		# fig.update_xaxes(type='category', tickmode='linear')
-		fig.update_layout(title=f'{name} Number of Important Classes' + ' ' + self.name, barmode='stack', hovermode="x unified")
-  
-		if save:
-			title = f'{name} NumberClasses' + self.name + '.png'
-			fig.write_image('C:/Users/carlo/OneDrive/Documentos/Universidad/MUIT/Segundo/TFM/thesisCode/nn-accelerator-logic/' + title.replace(' ', '_'))
-		else:
-			fig.show()
+		fig.update_layout(title='Number of Important Classes' + ' ' + self.name, barmode='stack', hovermode="x unified")
+		fig.show()
 
 	def saveTT(self, filename):
 		"""
@@ -163,5 +137,4 @@ class AccLayer:
 			if (i + 1) % 250 == 0:
 				print(f"{self.name} Fill Importance From Df [{i + 1:>4d}/{len(self.neurons):>4d}]")
 			i += 1
-       
 		

@@ -26,7 +26,6 @@ class BinaryOutputNeuron:
 	def __post_init__(self):
 		self.fanIn = len(self.weight)
 		self.importancePerClass = {}
-		self.cardinalityPerClass = {}
 		self.importance = 0
 		self.name = 'L' + str(self.nLayer) + 'N' + str(self.nNeuron)
 		self.sopForm = ''
@@ -51,14 +50,16 @@ class BinaryOutputNeuron:
 
 		for n in dictImportance:
 			self.importancePerClass['class' + str(n)] = len(dictImportance[n]) / nPerClass[n] * 100
-			self.cardinalityPerClass['class' + str(n)] = len(dictImportance[n])
 			self.importance += len(dictImportance[n]) / nPerClass[n] * 100
 
-	def createTT(self, outputDf: pd.DataFrame):
+	def createTT(self, activation):
 		"""
 		Method that adds new columns to the layer truth table corresponding to the importance and output of the neuron
 		"""
-		self.accLayer.tt['output' + self.name] = outputDf
+		if not activation:
+			self.accLayer.tt['output' + self.name] = self.accLayer.tt.apply(self._neuronAction, axis=1)
+		else:
+			self.accLayer.tt['output' + self.name] = activation
 		self.accLayer.tt['importance' + self.name] = self.accLayer.tt.apply(self._importanceToTT, axis=1)
 
 		for col in self.accLayer.tt:
@@ -119,7 +120,6 @@ class BinaryOutputNeuron:
 
 	def _neuronAction(self, row):
 		"""
-		TODO. Check as it is not correct
 		Private method that performs the mimics the calculation of the neuron represented
 		:param row:
 		:return:
@@ -128,8 +128,7 @@ class BinaryOutputNeuron:
 		lengthsTags = [col for col in row.index if col.startswith('lengthActivation')]
 		row = np.array(integerToBinaryArray(row[tags].values, row[lengthsTags].values))
 		# Pad zeros at the beginning for length consistency
-		# TODO. Check if this is correctly done
-		# row = np.pad(row.squeeze(), (len(self.weight) - len(row), 0))
+		row = np.pad(row.squeeze(), (len(self.weight) - len(row), 0))
 		# Multiply per weights
 		z = torch.from_numpy(row).type(torch.FloatTensor) @ self.weight + self.bias
 		# Batch normalization

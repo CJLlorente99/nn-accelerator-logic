@@ -44,7 +44,7 @@ class HelpGenerator:
 					accLayer += 1
 
 			if accLayer % 1 == 0:
-				print(f"Layer creation [{accLayer:>2d}/{n:>2d}]")
+				print(f"Layer creation [{accLayer + 1:>2d}/{n:>2d}]")
 
 		return accLayers
 

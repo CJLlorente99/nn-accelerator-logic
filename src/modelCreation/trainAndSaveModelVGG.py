@@ -155,10 +155,6 @@ def main(modelName, resizeFactor, atPruning, inputsAfterBTPruning, inputsAfterAT
     
     
 if __name__ == '__main__':
-    main('binaryVGGVerySmall', 4, False, 6, 6)
-    main('binaryVGGVerySmall', 4, False, 8, 8)
-    main('binaryVGGVerySmall', 4, False, 10, 10)
-    main('binaryVGGVerySmall', 4, False, 12, 12)
     main('binaryVGGSmall', 4, False, 6, 6)
     main('binaryVGGSmall', 4, False, 8, 8)
     main('binaryVGGSmall', 4, False, 10, 10)

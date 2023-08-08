@@ -196,6 +196,77 @@ class binaryVGGSmall(nn.Module):
 
 		return x
 	
+	def forwardOneLayer(self, x, n):
+		if n == 0:
+			# Layer 0
+			x = self.conv0(x)
+			x = self.bn0(x)
+			x = self.relu0(x)
+			x = self.maxpool0(x)
+
+			# Layer 1
+			x = self.conv1(x)
+			x = self.bn1(x)
+			x = self.relu1(x)
+			x = self.maxpool1(x)
+	
+			# Layer 2.1
+			x = self.conv21(x)
+			x = self.bn21(x)
+			x = self.relu21(x)
+	
+			# Layer 2.2
+			x = self.conv22(x)
+			x = self.bn22(x)
+			x = self.relu22(x)
+			x = self.maxpool22(x)
+	
+			# Layer 3.1
+			x = self.conv31(x)
+			x = self.bn31(x)
+			x = self.relu31(x)
+
+			# Layer 3.2
+			x = self.conv32(x)
+			x = self.bn32(x)
+			x = self.relu32(x)
+			x = self.maxpool32(x)
+	
+			# Layer 4.1
+			x = self.conv41(x)
+			x = self.bn41(x)
+			x = self.relu41(x)
+	
+			# Layer 4.2
+			x = self.conv42(x)
+			x = self.bn42(x)
+			x = self.relu42(x)
+			x = self.maxpool42(x)
+	
+			x = x.reshape(x.size(0), -1)
+		elif n == 1:
+			# Layer FC0
+			x = self.dropoutl0(x)
+			x = self.l0(x)
+			x = self.bnl0(x)
+			x = self.relul0(x)
+		elif n == 2:
+			# Layer FC1
+			x = self.dropoutl1(x)
+			x = self.l1(x)
+			x = self.bnl1(x)
+			x = self.relul1(x)
+		elif n == 3:
+			# Layer FC1
+			x = self.dropoutl2(x)
+			x = self.l2(x)
+			x = self.bnl2(x)
+			x = self.relul2(x)
+		elif n == 4:
+			# Layer FC2
+			x = self.l3(x)
+		return x
+	
 	def pruningSparsification(self, inputsAfterPrune):
 		prunedConnections = {}
 
