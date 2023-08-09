@@ -168,7 +168,7 @@ class binaryVGGVerySmall(nn.Module):
 	def registerHooks(self, activations: bool = True, gradients: bool = True):
 		# Forward hooks are needed to compute importance
 		if activations:
-			self.relu41.register_forward_hook(self.forward_hook_relu41)
+			self.maxpool42.register_forward_hook(self.forward_hook_maxpool42)
 			self.relul0.register_forward_hook(self.forward_hook_relul0)
 			self.relul1.register_forward_hook(self.forward_hook_relul1)
 			self.relul2.register_forward_hook(self.forward_hook_relul2)
@@ -189,11 +189,10 @@ class binaryVGGVerySmall(nn.Module):
 	def backward_hook_relul2(self, module, grad_input, grad_output):
 		self.gradientsSTEL2.append(np.float16(grad_output[0].cpu().detach().numpy()[0]))
   
-	# Define all forward hooks  
-	def forward_hook_relu41(self, module, val_input, val_output):
-		aux = val_output.flatten(start_dim=-2, end_dim=-1).cpu().detach().numpy()[0]
-		self.valueSTE42.append(np.float16(aux))
-  
+	# Define all forward hooks
+	def forward_hook_maxpool42(self, module, val_input, val_output):
+		self.valueSTE42.append(np.float16(val_output[0].cpu().detach().numpy().flatten()))
+		
 	def forward_hook_relul0(self, module, val_input, val_output):
 		self.valueSTEL0.append(np.float16(val_output[0].cpu().detach().numpy()))
   
@@ -205,14 +204,14 @@ class binaryVGGVerySmall(nn.Module):
   
 	# Change each hook list to an equivalent array
 	def listToArray(self):
-		self.valueSTE42 = np.array(self.valueSTE42)
-		self.valueSTEL0 = np.array(self.valueSTEL0)
-		self.valueSTEL1 = np.array(self.valueSTEL1)
-		self.valueSTEL2 = np.array(self.valueSTEL2)
+		self.valueSTE42 = np.array(self.valueSTE42).squeeze()
+		self.valueSTEL0 = np.array(self.valueSTEL0).squeeze()
+		self.valueSTEL1 = np.array(self.valueSTEL1).squeeze()
+		self.valueSTEL2 = np.array(self.valueSTEL2).squeeze()
 
-		self.gradientsSTEL0 = np.array(self.gradientsSTEL0)
-		self.gradientsSTEL1 = np.array(self.gradientsSTEL1)
-		self.gradientsSTEL2 = np.array(self.gradientsSTEL2)
+		self.gradientsSTEL0 = np.array(self.gradientsSTEL0).squeeze()
+		self.gradientsSTEL1 = np.array(self.gradientsSTEL1).squeeze()
+		self.gradientsSTEL2 = np.array(self.gradientsSTEL2).squeeze()
    
 	# Compute importance
 	def computeImportance(self):
@@ -247,7 +246,7 @@ class binaryVGGVerySmall(nn.Module):
 		
 	# Load activations
 	def loadActivations(self, baseFilename):
-		self.valueSTE42 = pd.read_feather(f'{baseFilename}Input41').to_numpy()
+		self.valueSTE42 = pd.read_feather(f'{baseFilename}Input42').to_numpy()
 		self.valueSTEL0 = pd.read_feather(f'{baseFilename}InputL0').to_numpy()
 		self.valueSTEL1 = pd.read_feather(f'{baseFilename}InputL1').to_numpy()
 		self.valueSTEL2 = pd.read_feather(f'{baseFilename}InputL2').to_numpy()

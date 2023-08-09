@@ -213,7 +213,7 @@ class binaryVGGSmall(nn.Module):
 	def registerHooks(self, activations: bool = True, gradients: bool = True):
 		# Forward hooks are needed to compute importance
 		if activations:
-			self.relu42.register_forward_hook(self.forward_hook_relu41)
+			self.maxpool42.register_forward_hook(self.forward_hook_maxpool42)
 			self.relul0.register_forward_hook(self.forward_hook_relul0)
 			self.relul1.register_forward_hook(self.forward_hook_relul1)
 			self.relul2.register_forward_hook(self.forward_hook_relul2)
@@ -235,9 +235,8 @@ class binaryVGGSmall(nn.Module):
 		self.gradientsSTEL2.append(np.float16(grad_output[0].cpu().detach().numpy()[0]))
   
 	# Define all forward hooks  
-	def forward_hook_relu41(self, module, val_input, val_output):
-		aux = val_output.flatten(start_dim=-2, end_dim=-1).cpu().detach().numpy()[0]
-		self.valueSTE42.append(np.float16(aux))
+	def forward_hook_maxpool42(self, module, val_input, val_output):
+		self.valueSTE42.append(np.float16(val_output[0].cpu().detach().numpy().flatten()))
   
 	def forward_hook_relul0(self, module, val_input, val_output):
 		self.valueSTEL0.append(np.float16(val_output[0].cpu().detach().numpy()))

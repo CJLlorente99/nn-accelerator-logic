@@ -1,12 +1,10 @@
 import torch
-from modelsCommon.auxTransformations import ToBlackAndWhite, ToSign
 from torchvision import datasets
 from torchvision.transforms import ToTensor, Compose, Normalize, RandomHorizontalFlip, RandomCrop, Resize
 from torch.utils.data import DataLoader
 from modules.binaryVggVerySmall import binaryVGGVerySmall
 from modules.binaryVggSmall import binaryVGGSmall
 from ttUtilities.isfRealization import *
-import plotly.graph_objects as go
 import numpy as np
 import pandas as pd
 import os
@@ -18,7 +16,6 @@ modelFilename = f'data/savedModels/{modelName}'
 batch_size = 64
 perGradientSampling = 1
 resizeFactor = 4
-relus = [1, 1, 1, 1, 0, 0, 0, 0]
 # Check mps maybe if working in MacOS
 device = 'cuda' if torch.cuda.is_available() else 'cpu'
 
@@ -47,9 +44,11 @@ if prunedBT:
 	connectionsToPrune = 1
 
 if modelName.startswith('binaryVggVerySmall'):
-	model = binaryVGGVerySmall(resizeFactor=resizeFactor, relus=relus, connectionsAfterPrune=connectionsToPrune)
+    relus = [1, 1, 1, 1, 0, 0, 0, 0]
+    model = binaryVGGVerySmall(resizeFactor=resizeFactor, relus=relus, connectionsAfterPrune=connectionsToPrune)
 elif modelName.startswith('binaryVggSmall'):
-	model = binaryVGGSmall(resizeFactor=resizeFactor, relus=relus, connectionsAfterPrune=connectionsToPrune)
+    relus = [1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0]
+    model = binaryVGGSmall(resizeFactor=resizeFactor, relus=relus, connectionsAfterPrune=connectionsToPrune)
 
 model.load_state_dict(torch.load(f'{modelFilename}', map_location=torch.device(device)))
 
@@ -72,12 +71,17 @@ for i in range(start, sampleSize):
 
 	if (i+1) % 500 == 0:
 		print(f"Get Gradients and Activation Values [{i+1:>5d}/{sampleSize:>5d}]")
+                
+if not os.path.exists(f'data/activations/{modelName}'):
+    os.makedirs(f'data/activations/{modelName}')
+if not os.path.exists(f'data/gradients/{modelName}'):
+    os.makedirs(f'data/gradients/{modelName}')
 
 model.listToArray()
-model.saveActivations(f'data/activations/{modelName}')
-# model.loadActivations(f'data/activations/{modelName}')
-model.saveGradients(f'data/gradients/{modelName}')
-# model.loadGradients(f'data/gradients/{modelName}')
+model.saveActivations(f'data/activations/{modelName}/')
+# model.loadActivations(f'data/activations/{modelName}/')
+model.saveGradients(f'data/gradients/{modelName}/')
+# model.loadGradients(f'data/gradients/{modelName}/')
 importanceList = model.computeImportance()
 
 
@@ -141,7 +145,7 @@ for iImp in range(len(importanceList)):
 print(f'ASSIGN IMPORTANCE PER CLASS\n')
 for iImp in range(len(importanceList)):
     for i in range(sampleSize):
-        importancePerClass[iImp][training_data.targets[i].item()].append(importanceList[iImp][i, :])
+        importancePerClass[iImp][training_data.targets[i]].append(importanceList[iImp][i, :])
 
 # From list to numpy array
 print(f'FROM LIST TO NUMPY ARRAY\n')
@@ -165,7 +169,7 @@ for iImp in range(len(importanceList)):
 for iImp in range(len(importanceList)):
     dict_list = []
     for i in range(sampleSize):
-        data = importancePerClass[iImp][training_data.targets[i].item()] > 0
+        data = importancePerClass[iImp][training_data.targets[i]] > 0
         dict_data = {f'N{i}': data[i] for i in range(importanceList[iImp].shape[1])}
         dict_list.append(dict_data)
         if (i+1) % 500 == 0:
@@ -181,12 +185,12 @@ for iImp in range(len(importanceList)):
     importancePerClass[iImp] = np.row_stack(tuple(importancePerClass[iImp].values()))
 
 # Pruned info files
-dfPrunedLayer1 = pd.read_csv(f'data/savedModels/{modelName}_prunedInfo0.csv')
-print(f'data/savedModels/{modelName}_prunedInfol0.csv read')
-dfPrunedLayer2 = pd.read_csv(f'data/savedModels/{modelName}_prunedInfo1.csv')
-print(f'data/savedModels/{modelName}_prunedInfol1.csv read')
-dfPrunedLayer3 = pd.read_csv(f'data/savedModels/{modelName}_prunedInfo2.csv')
-print(f'data/savedModels/{modelName}_prunedInfol2.csv read')
+dfPrunedLayer1 = pd.read_csv(f'savedModels/{modelName}_prunedInfo0.csv')
+print(f'savedModels/{modelName}_prunedInfol0.csv read')
+dfPrunedLayer2 = pd.read_csv(f'savedModels/{modelName}_prunedInfo1.csv')
+print(f'savedModels/{modelName}_prunedInfol1.csv read')
+dfPrunedLayer3 = pd.read_csv(f'savedModels/{modelName}_prunedInfo2.csv')
+print(f'savedModels/{modelName}_prunedInfol2.csv read')
 
 # Create TT per layer (not optimized)
 for i in range(len(importanceList) + 1):
@@ -196,12 +200,12 @@ for i in range(len(importanceList) + 1):
         os.makedirs(f'./data/plas/{modelName}/ESPRESSO/layer{i}/')
 
 # Layer 1
-columnsTags = [f'IN{i}' for i in range(model.valueSTE0.shape[1])]
-df = pd.DataFrame(model.valueSTE0, columns=columnsTags)
+columnsTags = [f'IN{i}' for i in range(model.valueSTE42.shape[1])]
+df = pd.DataFrame(model.valueSTE42, columns=columnsTags)
 df[df == -1] = 0
 df = df.astype(int)
-for neuron in range(model.valueSTE1.shape[1]):
-    df[f'OUT{neuron:04d}'] = model.valueSTE1[:, neuron]
+for neuron in range(model.valueSTEL0.shape[1]):
+    df[f'OUT{neuron:04d}'] = model.valueSTEL0[:, neuron]
     df.replace({f'OUT{neuron:04d}': -1}, 0, inplace=True)
 
     aux = pruneAndDrop(df, dfPrunedLayer1, f'N{neuron:04d}')
@@ -211,12 +215,12 @@ for neuron in range(model.valueSTE1.shape[1]):
     df.drop(f'OUT{neuron:04d}', inplace=True, axis=1)
 
 # Layer 2
-columnsTags = [f'IN{i}' for i in range(model.valueSTE1.shape[1])]
-df = pd.DataFrame(model.valueSTE1, columns=columnsTags)
+columnsTags = [f'IN{i}' for i in range(model.valueSTEL0.shape[1])]
+df = pd.DataFrame(model.valueSTEL0, columns=columnsTags)
 df[df == -1] = 0
 df = df.astype(int)
-for neuron in range(model.valueSTE2.shape[1]):
-    df[f'OUT{neuron:04d}'] = model.valueSTE2[:, neuron]
+for neuron in range(model.valueSTEL1.shape[1]):
+    df[f'OUT{neuron:04d}'] = model.valueSTEL1[:, neuron]
     df.replace({f'OUT{neuron:04d}': -1}, 0, inplace=True)
     aux = df.copy()
 
@@ -227,12 +231,12 @@ for neuron in range(model.valueSTE2.shape[1]):
     df.drop(f'OUT{neuron:04d}', inplace=True, axis=1)
 
 # Layer 3
-columnsTags = [f'IN{i}' for i in range(model.valueSTE2.shape[1])]
-df = pd.DataFrame(model.valueSTE2, columns=columnsTags)
+columnsTags = [f'IN{i}' for i in range(model.valueSTEL1.shape[1])]
+df = pd.DataFrame(model.valueSTEL1, columns=columnsTags)
 df[df == -1] = 0
 df = df.astype(int)
-for neuron in range(model.valueSTE3.shape[1]):
-    df[f'OUT{neuron:04d}'] = model.valueSTE3[:, neuron]
+for neuron in range(model.valueSTEL2.shape[1]):
+    df[f'OUT{neuron:04d}'] = model.valueSTEL2[:, neuron]
     df.replace({f'OUT{neuron:04d}': -1}, 0, inplace=True)
     aux = df.copy()
 
@@ -252,14 +256,14 @@ for i in range(len(importanceList) + 1):
         os.makedirs(f'./data/plas/{modelName}/ESPRESSOOptimizedPerEntry_2/layer{i}/')
 
 # Layer 1
-columnsTags = [f'IN{i}' for i in range(model.valueSTE0.shape[1])]
-df = pd.DataFrame(model.valueSTE0, columns=columnsTags)
+columnsTags = [f'IN{i}' for i in range(model.valueSTE42.shape[1])]
+df = pd.DataFrame(model.valueSTE42, columns=columnsTags)
 importancePerEntry = pd.read_csv(f'./data/importance/{modelName}/PerEntrylayer0.csv')
 df[df == -1] = 0
 df = df.astype(int)
-for neuron in range(model.valueSTE1.shape[1]):
+for neuron in range(model.valueSTEL0.shape[1]):
     dfImportance = importancePerEntry[f'N{neuron}']    
-    df[f'OUT{neuron:04d}'] = model.valueSTE1[:, neuron]
+    df[f'OUT{neuron:04d}'] = model.valueSTEL0[:, neuron]
     df.replace({f'OUT{neuron:04d}': -1}, 0, inplace=True)
     aux = df.copy()
 
@@ -274,16 +278,16 @@ for neuron in range(model.valueSTE1.shape[1]):
     df.drop(f'OUT{neuron:04d}', inplace=True, axis=1)
 
 # Layer 2
-columnsTags = [f'IN{i}' for i in range(model.valueSTE1.shape[1])]
-df = pd.DataFrame(model.valueSTE1, columns=columnsTags)
+columnsTags = [f'IN{i}' for i in range(model.valueSTEL0.shape[1])]
+df = pd.DataFrame(model.valueSTEL0, columns=columnsTags)
 importancePerEntryPre = pd.read_csv(f'./data/importance/{modelName}/PerEntrylayer0.csv', dtype=int)
 importancePerEntry = pd.read_csv(f'./data/importance/{modelName}/PerEntrylayer1.csv')
 df = pd.DataFrame(np.where(importancePerEntryPre == 0, 2, df), columns=columnsTags)
 df[df == -1] = 0
 df = df.astype(int)
-for neuron in range(model.valueSTE2.shape[1]):
+for neuron in range(model.valueSTEL1.shape[1]):
     dfImportance = importancePerEntry[f'N{neuron}']    
-    df[f'OUT{neuron:04d}'] = model.valueSTE2[:, neuron]
+    df[f'OUT{neuron:04d}'] = model.valueSTEL1[:, neuron]
     df.replace({f'OUT{neuron:04d}': -1}, 0, inplace=True)
     aux = df.copy()
 
@@ -298,16 +302,16 @@ for neuron in range(model.valueSTE2.shape[1]):
     df.drop(f'OUT{neuron:04d}', inplace=True, axis=1)
 
 # Layer 3
-columnsTags = [f'IN{i}' for i in range(model.valueSTE2.shape[1])]
-df = pd.DataFrame(model.valueSTE2, columns=columnsTags)
+columnsTags = [f'IN{i}' for i in range(model.valueSTEL1.shape[1])]
+df = pd.DataFrame(model.valueSTEL1, columns=columnsTags)
 importancePerEntryPre = pd.read_csv(f'./data/importance/{modelName}/PerEntrylayer1.csv', dtype=int)
 importancePerEntry = pd.read_csv(f'./data/importance/{modelName}/PerEntrylayer2.csv')
 df = pd.DataFrame(np.where(importancePerEntryPre == 0, 2, df), columns=columnsTags)
 df[df == -1] = 0
 df = df.astype(int)
-for neuron in range(model.valueSTE3.shape[1]):
+for neuron in range(model.valueSTEL2.shape[1]):
     dfImportance = importancePerEntry[f'N{neuron}']    
-    df[f'OUT{neuron:04d}'] = model.valueSTE3[:, neuron]
+    df[f'OUT{neuron:04d}'] = model.valueSTEL2[:, neuron]
     df.replace({f'OUT{neuron:04d}': -1}, 0, inplace=True)
     aux = df.copy()
 
@@ -334,14 +338,14 @@ for i in range(len(importanceList) + 1):
         os.makedirs(f'./data/plas/{modelName}/ESPRESSOOptimizedPerClass_2/layer{i}/')
 
 # Layer 1
-columnsTags = [f'IN{i}' for i in range(model.valueSTE0.shape[1])]
-df = pd.DataFrame(model.valueSTE0, columns=columnsTags)
+columnsTags = [f'IN{i}' for i in range(model.valueSTE42.shape[1])]
+df = pd.DataFrame(model.valueSTE42, columns=columnsTags)
 importancePerEntry = pd.read_csv(f'./data/importance/{modelName}/PerClasslayer0.csv')
 df[df == -1] = 0
 df = df.astype(int)
-for neuron in range(model.valueSTE1.shape[1]):
+for neuron in range(model.valueSTEL0.shape[1]):
     dfImportance = importancePerEntry[f'N{neuron}']    
-    df[f'OUT{neuron:04d}'] = model.valueSTE1[:, neuron]
+    df[f'OUT{neuron:04d}'] = model.valueSTEL0[:, neuron]
     df.replace({f'OUT{neuron:04d}': -1}, 0, inplace=True)
     aux = df.copy()
 
@@ -356,16 +360,16 @@ for neuron in range(model.valueSTE1.shape[1]):
     df.drop(f'OUT{neuron:04d}', inplace=True, axis=1)
 
 # Layer 2
-columnsTags = [f'IN{i}' for i in range(model.valueSTE1.shape[1])]
-df = pd.DataFrame(model.valueSTE1, columns=columnsTags)
+columnsTags = [f'IN{i}' for i in range(model.valueSTEL0.shape[1])]
+df = pd.DataFrame(model.valueSTEL0, columns=columnsTags)
 importancePerEntryPre = pd.read_csv(f'./data/importance/{modelName}/PerClasslayer0.csv', dtype=int)
 importancePerEntry = pd.read_csv(f'./data/importance/{modelName}/PerClasslayer1.csv')
 df = pd.DataFrame(np.where(importancePerEntryPre == 0, 2, df), columns=columnsTags)
 df[df == -1] = 0
 df = df.astype(int)
-for neuron in range(model.valueSTE2.shape[1]):
+for neuron in range(model.valueSTEL1.shape[1]):
     dfImportance = importancePerEntry[f'N{neuron}']    
-    df[f'OUT{neuron:04d}'] = model.valueSTE2[:, neuron]
+    df[f'OUT{neuron:04d}'] = model.valueSTEL1[:, neuron]
     df.replace({f'OUT{neuron:04d}': -1}, 0, inplace=True)
     aux = df.copy()
 
@@ -380,16 +384,16 @@ for neuron in range(model.valueSTE2.shape[1]):
     df.drop(f'OUT{neuron:04d}', inplace=True, axis=1)
 
 # Layer 3
-columnsTags = [f'IN{i}' for i in range(model.valueSTE2.shape[1])]
-df = pd.DataFrame(model.valueSTE2, columns=columnsTags)
+columnsTags = [f'IN{i}' for i in range(model.valueSTEL1.shape[1])]
+df = pd.DataFrame(model.valueSTEL1, columns=columnsTags)
 importancePerEntryPre = pd.read_csv(f'./data/importance/{modelName}/PerClasslayer1.csv', dtype=int)
 importancePerEntry = pd.read_csv(f'./data/importance/{modelName}/PerClasslayer2.csv')
 df = pd.DataFrame(np.where(importancePerEntryPre == 0, 2, df), columns=columnsTags)
 df[df == -1] = 0
 df = df.astype(int)
-for neuron in range(model.valueSTE3.shape[1]):
+for neuron in range(model.valueSTEL2.shape[1]):
     dfImportance = importancePerEntry[f'N{neuron}']    
-    df[f'OUT{neuron:04d}'] = model.valueSTE3[:, neuron]
+    df[f'OUT{neuron:04d}'] = model.valueSTEL2[:, neuron]
     df.replace({f'OUT{neuron:04d}': -1}, 0, inplace=True)
     aux = df.copy()
 
