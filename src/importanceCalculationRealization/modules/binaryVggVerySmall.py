@@ -230,7 +230,7 @@ class binaryVGGVerySmall(nn.Module):
 
 		pd.DataFrame(
 			self.valueSTE42, columns=columnsInLayer41).to_feather(
-			f'{baseFilename}Input41')
+			f'{baseFilename}Input42')
 
 		pd.DataFrame(
 			self.valueSTEL0, columns=columnsInLayerL0).to_feather(

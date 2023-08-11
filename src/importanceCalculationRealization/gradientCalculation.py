@@ -9,7 +9,11 @@ import numpy as np
 import pandas as pd
 import os
 
-modelName = f'binaryVggVerySmall/binaryVGGVerySmall_prunedBT6_4'
+modelName = f'binaryVggVerySmall/binaryVGGVerySmall_prunedBT8_4'
+# modelName = f'binaryVggVerySmall/binaryVGGVerySmall_prunedBT10_4'
+# modelName = f'binaryVggVerySmall/binaryVGGVerySmall_prunedBT12_4'
+# modelName = f'binaryVggSmall/binaryVGGSmall_prunedBT6_4'
+# modelName = f'binaryVggSmall/binaryVGGSmall_prunedBT8_4'
 
 prunedBT = True
 modelFilename = f'data/savedModels/{modelName}'
@@ -57,140 +61,140 @@ Calculate importance per class per neuron
 '''
 
 # Input samples and get gradients and values in each neuron
-print(f'GET GRADIENTS AND ACTIVATION VALUES\n')
+# print(f'GET GRADIENTS AND ACTIVATION VALUES\n')
 
-model.registerHooks()
-model.eval()
+# model.registerHooks()
+# model.eval()
 
-start = 0
-for i in range(start, sampleSize):
-	X, y = train_dataloader.dataset[i]
-	model.zero_grad()
-	pred = model(X[None, :, :, :])
-	pred[0, y].backward()
+# start = 0
+# for i in range(start, sampleSize):
+# 	X, y = train_dataloader.dataset[i]
+# 	model.zero_grad()
+# 	pred = model(X[None, :, :, :])
+# 	pred[0, y].backward()
 
-	if (i+1) % 500 == 0:
-		print(f"Get Gradients and Activation Values [{i+1:>5d}/{sampleSize:>5d}]")
+# 	if (i+1) % 500 == 0:
+# 		print(f"Get Gradients and Activation Values [{i+1:>5d}/{sampleSize:>5d}]")
                 
-if not os.path.exists(f'data/activations/{modelName}'):
-    os.makedirs(f'data/activations/{modelName}')
-if not os.path.exists(f'data/gradients/{modelName}'):
-    os.makedirs(f'data/gradients/{modelName}')
+# if not os.path.exists(f'data/activations/{modelName}'):
+#     os.makedirs(f'data/activations/{modelName}')
+# if not os.path.exists(f'data/gradients/{modelName}'):
+#     os.makedirs(f'data/gradients/{modelName}')
 
-model.listToArray()
-model.saveActivations(f'data/activations/{modelName}/')
-# model.loadActivations(f'data/activations/{modelName}/')
-model.saveGradients(f'data/gradients/{modelName}/')
-# model.loadGradients(f'data/gradients/{modelName}/')
+# model.listToArray()
+# model.saveActivations(f'data/activations/{modelName}/')
+model.loadActivations(f'data/activations/{modelName}/')
+# model.saveGradients(f'data/gradients/{modelName}/')
+model.loadGradients(f'data/gradients/{modelName}/')
 importanceList = model.computeImportance()
 
 
-def getIdxDuplicates(arr):
-    vals, inverse, count = np.unique(arr, axis=0, return_inverse=True,
-                                     return_counts=True)
+# def getIdxDuplicates(arr):
+#     vals, inverse, count = np.unique(arr, axis=0, return_inverse=True,
+#                                      return_counts=True)
 
-    idx_vals_repeated = np.where(count > 1)[0]
+#     idx_vals_repeated = np.where(count > 1)[0]
 
-    rows, cols = np.where(inverse == idx_vals_repeated[:, np.newaxis])
-    _, inverse_rows = np.unique(rows, return_index=True)
-    res = np.split(cols, inverse_rows[1:])
-    return res
+#     rows, cols = np.where(inverse == idx_vals_repeated[:, np.newaxis])
+#     _, inverse_rows = np.unique(rows, return_index=True)
+#     res = np.split(cols, inverse_rows[1:])
+#     return res
 
-# Get info about the activations
-dupList = []
-dupList.append(getIdxDuplicates(model.valueSTE42))
-uniqueSTE42 = np.unique(model.valueSTE42, axis=0)
-print(f'Original length {model.valueSTE42.shape[0]}, only unique length {uniqueSTE42.shape[0]}, number of sample {sampleSize}')
+# # Get info about the activations
+# dupList = []
+# dupList.append(getIdxDuplicates(model.valueSTE42))
+# uniqueSTE42 = np.unique(model.valueSTE42, axis=0)
+# print(f'Original length {model.valueSTE42.shape[0]}, only unique length {uniqueSTE42.shape[0]}, number of sample {sampleSize}')
 
-dupList.append(getIdxDuplicates(model.valueSTEL0))
-uniqueSTEL0 = np.unique(model.valueSTEL0, axis=0)
-print(f'Original length {model.valueSTEL0.shape[0]}, only unique length {uniqueSTEL0.shape[0]}, number of sample {sampleSize}')
+# dupList.append(getIdxDuplicates(model.valueSTEL0))
+# uniqueSTEL0 = np.unique(model.valueSTEL0, axis=0)
+# print(f'Original length {model.valueSTEL0.shape[0]}, only unique length {uniqueSTEL0.shape[0]}, number of sample {sampleSize}')
 
-dupList.append(getIdxDuplicates(model.valueSTEL1))
-uniqueSTEL1 = np.unique(model.valueSTEL1, axis=0)
-print(f'Original length {model.valueSTEL1.shape[0]}, only unique length {uniqueSTEL1.shape[0]}, number of sample {sampleSize}')
+# dupList.append(getIdxDuplicates(model.valueSTEL1))
+# uniqueSTEL1 = np.unique(model.valueSTEL1, axis=0)
+# print(f'Original length {model.valueSTEL1.shape[0]}, only unique length {uniqueSTEL1.shape[0]}, number of sample {sampleSize}')
 
-dupList.append(getIdxDuplicates(model.valueSTEL2))
-uniqueSTEL2 = np.unique(model.valueSTEL2, axis=0)
-print(f'Original length {model.valueSTEL2.shape[0]}, only unique length {uniqueSTEL2.shape[0]}, number of sample {sampleSize}')
+# dupList.append(getIdxDuplicates(model.valueSTEL2))
+# uniqueSTEL2 = np.unique(model.valueSTEL2, axis=0)
+# print(f'Original length {model.valueSTEL2.shape[0]}, only unique length {uniqueSTEL2.shape[0]}, number of sample {sampleSize}')
 
-# Apply threshold
-print(f'APPLY THRESHOLD\n')
-threshold = 10e-5
-for iImp in range(len(importanceList)):
-    importanceList[iImp] = importanceList[iImp] > threshold
-    # Save importance for minimization per entry
-    columnsTags = [f'N{i}' for i in range(importanceList[iImp].shape[1])]
-    df = pd.DataFrame(importanceList[iImp], columns=columnsTags).astype(int)
-    if not os.path.exists(f'data/importance/{modelName}/'):
-        os.makedirs(f'data/importance/{modelName}/')
-    df.to_csv(f'data/importance/{modelName}/PerEntrylayer{iImp}.csv', index=False)
-    print(f'File data/importance/{modelName}/PerEntrylayer{iImp}.csv created')
-    for dup in dupList[iImp]:
-        if len(dup) != 0:
-            importanceList[iImp][dup[0], :] = np.sum(importanceList[iImp][dup, :], axis=0)
-    print(f'importance number {iImp} has shape {importanceList[iImp].shape}')
-    print(f'importance number {iImp} has {importanceList[iImp].sum().sum()} entries above threshold {threshold} out of {importanceList[iImp].size}')
+# # Apply threshold
+# print(f'APPLY THRESHOLD\n')
+# threshold = 10e-5
+# for iImp in range(len(importanceList)):
+#     importanceList[iImp] = importanceList[iImp] > threshold
+#     # Save importance for minimization per entry
+#     columnsTags = [f'N{i}' for i in range(importanceList[iImp].shape[1])]
+#     df = pd.DataFrame(importanceList[iImp], columns=columnsTags).astype(int)
+#     if not os.path.exists(f'data/importance/{modelName}/'):
+#         os.makedirs(f'data/importance/{modelName}/')
+#     df.to_csv(f'data/importance/{modelName}/PerEntrylayer{iImp}.csv', index=False)
+#     print(f'File data/importance/{modelName}/PerEntrylayer{iImp}.csv created')
+#     for dup in dupList[iImp]:
+#         if len(dup) != 0:
+#             importanceList[iImp][dup[0], :] = np.sum(importanceList[iImp][dup, :], axis=0)
+#     print(f'importance number {iImp} has shape {importanceList[iImp].shape}')
+#     print(f'importance number {iImp} has {importanceList[iImp].sum().sum()} entries above threshold {threshold} out of {importanceList[iImp].size}')
     
-# Intialize containers of importance per class
-print(f'INITIALIZE IMPORTANCE PER CLASS\n')
-importancePerClass = {}
-for iImp in range(len(importanceList)):
-    importancePerClass[iImp] = {}
-    for i in range(10):
-        importancePerClass[iImp][i] = []
+# # Intialize containers of importance per class
+# print(f'INITIALIZE IMPORTANCE PER CLASS\n')
+# importancePerClass = {}
+# for iImp in range(len(importanceList)):
+#     importancePerClass[iImp] = {}
+#     for i in range(10):
+#         importancePerClass[iImp][i] = []
         
     
-# Assign importance per class
-print(f'ASSIGN IMPORTANCE PER CLASS\n')
-for iImp in range(len(importanceList)):
-    for i in range(sampleSize):
-        importancePerClass[iImp][training_data.targets[i]].append(importanceList[iImp][i, :])
+# # Assign importance per class
+# print(f'ASSIGN IMPORTANCE PER CLASS\n')
+# for iImp in range(len(importanceList)):
+#     for i in range(sampleSize):
+#         importancePerClass[iImp][training_data.targets[i]].append(importanceList[iImp][i, :])
 
-# From list to numpy array
-print(f'FROM LIST TO NUMPY ARRAY\n')
-for iImp in range(len(importanceList)):
-    for i in range(10):
-        importancePerClass[iImp][i] = np.array(importancePerClass[iImp][i])
+# # From list to numpy array
+# print(f'FROM LIST TO NUMPY ARRAY\n')
+# for iImp in range(len(importanceList)):
+#     for i in range(10):
+#         importancePerClass[iImp][i] = np.array(importancePerClass[iImp][i])
         
-# Save importance per class
-print(f'CLASS-IMPORTANCE SCORE CALCULATION\n')
-for iImp in range(len(importanceList)):
-    nEntries = 0
-    totalEntries = 0
-    for i in range(10):
-        totalEntries += importancePerClass[iImp][i].size
-        aux = importancePerClass[iImp][i].sum(0) / len(importancePerClass[iImp][i])
-        nEntries += len(importancePerClass[iImp][i]) * (aux > 0).sum()
-        importancePerClass[iImp][i] = aux
-    print(f'importance number {iImp} has {nEntries} with relevant classes out of {totalEntries}')
+# # Save importance per class
+# print(f'CLASS-IMPORTANCE SCORE CALCULATION\n')
+# for iImp in range(len(importanceList)):
+#     nEntries = 0
+#     totalEntries = 0
+#     for i in range(10):
+#         totalEntries += importancePerClass[iImp][i].size
+#         aux = importancePerClass[iImp][i].sum(0) / len(importancePerClass[iImp][i])
+#         nEntries += len(importancePerClass[iImp][i]) * (aux > 0).sum()
+#         importancePerClass[iImp][i] = aux
+#     print(f'importance number {iImp} has {nEntries} with relevant classes out of {totalEntries}')
 
-# Save class-based importance for minimization per class
-for iImp in range(len(importanceList)):
-    dict_list = []
-    for i in range(sampleSize):
-        data = importancePerClass[iImp][training_data.targets[i]] > 0
-        dict_data = {f'N{i}': data[i] for i in range(importanceList[iImp].shape[1])}
-        dict_list.append(dict_data)
-        if (i+1) % 500 == 0:
-            print(f"Layer {iImp} entry {i+1:>5d}/{sampleSize:>5d}")
+# # Save class-based importance for minimization per class
+# for iImp in range(len(importanceList)):
+#     dict_list = []
+#     for i in range(sampleSize):
+#         data = importancePerClass[iImp][training_data.targets[i]] > 0
+#         dict_data = {f'N{i}': data[i] for i in range(importanceList[iImp].shape[1])}
+#         dict_list.append(dict_data)
+#         if (i+1) % 500 == 0:
+#             print(f"Layer {iImp} entry {i+1:>5d}/{sampleSize:>5d}")
 
-    df = pd.DataFrame.from_dict(dict_list)
-    df = df.astype(int)
-    df.to_csv(f'data/importance/{modelName}/PerClasslayer{iImp}.csv', index=False)
-    print(f'File data/importance/{modelName}/PerClasslayer{iImp}.csv created')
+#     df = pd.DataFrame.from_dict(dict_list)
+#     df = df.astype(int)
+#     df.to_csv(f'data/importance/{modelName}/PerClasslayer{iImp}.csv', index=False)
+#     print(f'File data/importance/{modelName}/PerClasslayer{iImp}.csv created')
 
-# Group all importances in same array
-for iImp in range(len(importanceList)):
-    importancePerClass[iImp] = np.row_stack(tuple(importancePerClass[iImp].values()))
+# # Group all importances in same array
+# for iImp in range(len(importanceList)):
+#     importancePerClass[iImp] = np.row_stack(tuple(importancePerClass[iImp].values()))
 
 # Pruned info files
-dfPrunedLayer1 = pd.read_csv(f'savedModels/{modelName}_prunedInfo0.csv')
-print(f'savedModels/{modelName}_prunedInfol0.csv read')
-dfPrunedLayer2 = pd.read_csv(f'savedModels/{modelName}_prunedInfo1.csv')
-print(f'savedModels/{modelName}_prunedInfol1.csv read')
-dfPrunedLayer3 = pd.read_csv(f'savedModels/{modelName}_prunedInfo2.csv')
-print(f'savedModels/{modelName}_prunedInfol2.csv read')
+dfPrunedLayer1 = pd.read_csv(f'data/savedModels/{modelName}_prunedInfo0.csv')
+print(f'data/savedModels/{modelName}_prunedInfo0.csv read')
+dfPrunedLayer2 = pd.read_csv(f'data/savedModels/{modelName}_prunedInfo1.csv')
+print(f'data/savedModels/{modelName}_prunedInfo1.csv read')
+dfPrunedLayer3 = pd.read_csv(f'data/savedModels/{modelName}_prunedInfo2.csv')
+print(f'data/savedModels/{modelName}_prunedInfo2.csv read')
 
 # Create TT per layer (not optimized)
 for i in range(len(importanceList) + 1):

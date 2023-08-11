@@ -4,11 +4,12 @@ import plotly.graph_objects as go
 import matplotlib.pyplot as plt
 from modelsCommon.auxTransformations import ToBlackAndWhite, ToSign
 from torchvision import datasets
-from torchvision.transforms import ToTensor, Compose
+from torchvision.transforms import ToTensor, Compose, Normalize, RandomHorizontalFlip, RandomCrop, Resize
 from torch.utils.data import DataLoader
 import os
 
-modelName = 'bnn/bnn_prunedBT12_100ep_4096npl'
+modelName = f'binaryVggSmall/binaryVGGSmall_prunedBT8_4'
+resizeFactor = 4
 nLayers = 3
 
 '''
@@ -16,16 +17,11 @@ Importing MNIST dataset
 '''
 print(f'IMPORT DATASET\n')
 
-training_data = datasets.MNIST(
-    root='./data',
-    train=True,
-    download=False,
-    transform=Compose([
-            ToTensor(),
-            ToBlackAndWhite(),
-            ToSign()
-        ])
-)
+training_data = datasets.CIFAR10(root='data', train=True, transform=Compose([
+	ToTensor(),
+	Normalize((0.485, 0.456, 0.406), (0.229, 0.224, 0.225)),
+ 	Resize(resizeFactor*32, antialias=False)]),
+								 download=False)
 
 # Load importance
 importanceList = {}
@@ -45,7 +41,7 @@ for iImp in range(len(importanceList)):
 print(f'ASSIGN IMPORTANCE PER CLASS\n')
 for iImp in range(len(importanceList)):
     for i in range(len(importanceList[iImp])):
-        importancePerClass[iImp][training_data.targets[i].item()].append(importanceList[iImp][i, :])
+        importancePerClass[iImp][training_data.targets[i]].append(importanceList[iImp][i, :])
 
 # From list to numpy array
 print(f'FROM LIST TO NUMPY ARRAY\n')
