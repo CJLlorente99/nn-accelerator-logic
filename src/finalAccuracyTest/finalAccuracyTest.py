@@ -10,16 +10,16 @@ from modelsCommon.auxTransformations import *
 import torch.nn.functional as F
 
 batch_size = 1
-neuronPerLayer = 100
-modelFilenames = ['eeb/eeb_prunedBT8_100ep_100npl',
-                  'eeb/eeb_prunedBT10_100ep_100npl',
-                  'eeb/eeb_prunedBT12_100ep_100npl',
-                  'eeb/eeb_prunedBT14_100ep_100npl']
+neuronPerLayer = 4096
+modelFilenames = ['bnn/bnn_prunedBT6_100ep_4096npl',
+                  'bnn/bnn_prunedBT8_100ep_4096npl',
+                  'bnn/bnn_prunedBT10_100ep_4096npl',
+                  'bnn/bnn_prunedBT12_100ep_4096npl']
 subfolderPLA = ['ABC',
-                'ABCOptimizedPerClass',
-                'ABCOptimizedPerEntry',
                 'ESPRESSO',
-                'ESPRESSOOptimizedPerClass',
+                'ESPRESSOOptimizedPerClass_0',
+                'ESPRESSOOptimizedPerClass_1',
+                'ESPRESSOOptimizedPerClass_2',
                 'ESPRESSOOptimizedPerEntry_0',
                 'ESPRESSOOptimizedPerEntry_1',
                 'ESPRESSOOptimizedPerEntry_2']
