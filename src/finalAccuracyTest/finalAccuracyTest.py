@@ -16,13 +16,13 @@ modelFilenames = ['bnn/bnn_prunedBT6_100ep_4096npl',
                   'bnn/bnn_prunedBT10_100ep_4096npl',
                   'bnn/bnn_prunedBT12_100ep_4096npl']
 subfolderPLA = ['ABC',
-                'ESPRESSO',
-                'ESPRESSOOptimizedPerClass_0',
-                'ESPRESSOOptimizedPerClass_1',
-                'ESPRESSOOptimizedPerClass_2',
-                'ESPRESSOOptimizedPerEntry_0',
-                'ESPRESSOOptimizedPerEntry_1',
-                'ESPRESSOOptimizedPerEntry_2']
+                'ESPRESSO']
+                # 'ESPRESSOOptimizedPerClass_0',
+                # 'ESPRESSOOptimizedPerClass_1',
+                # 'ESPRESSOOptimizedPerClass_2',
+                # 'ESPRESSOOptimizedPerEntry_0',
+                # 'ESPRESSOOptimizedPerEntry_1',
+                # 'ESPRESSOOptimizedPerEntry_2']
 btPruned = True
 
 # Check mps maybe if working in MacOS
