@@ -15,9 +15,7 @@ batch_size = 1
 modelName = f'binaryVggSmall/binaryVGGSmall_prunedBT6_4'
 modelFilename = f'data\savedModels\{modelName}'
 prunedBT = True
-perGradientSampling = 1
 resizeFactor = 4
-relus = [1, 1, 1, 1, 0, 0, 0, 0]
 
 # Check mps maybe if working in MacOS
 device = 'cuda' if torch.cuda.is_available() else 'cpu'
@@ -91,7 +89,7 @@ for X, y in train_dataloader:
     if count % 5000 == 0:
         print(f'Training forward [{count:>5d}/{len(training_data.targets):>5d}]')
 
-columns = [f'N{i:04d}' for i in range(4096)]
+columns = [f'N{i:04d}' for i in range(8192)]
 df = pd.DataFrame(np.array(aux), columns=columns)
 df.to_csv(f'{outputFilenameTrain}.csv')
 print(f'{outputFilenameTrain} created successfully')
@@ -107,7 +105,7 @@ for X, y in test_dataloader:
     if count % 5000 == 0:
         print(f'Test forward [{count:>5d}/{len(test_data.targets):>5d}]')
 
-columns = [f'N{i:04d}' for i in range(4096 )]
+columns = [f'N{i:04d}' for i in range(8192)]
 df = pd.DataFrame(np.array(aux), columns=columns)
 df.to_csv(f'{outputFilenameTest}.csv')
 print(f'{outputFilenameTest} created successfully')

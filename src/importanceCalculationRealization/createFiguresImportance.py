@@ -8,7 +8,7 @@ from torchvision.transforms import ToTensor, Compose, Normalize, RandomHorizonta
 from torch.utils.data import DataLoader
 import os
 
-modelName = f'binaryVggSmall/binaryVGGSmall_prunedBT8_4'
+modelName = f'binaryVggSmall/binaryVGGSmall_prunedBT10_4'
 resizeFactor = 4
 nLayers = 3
 
