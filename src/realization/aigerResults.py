@@ -74,72 +74,89 @@ for layer in data:
 
 for layer in data:
     # Plot 1
-    fig, axes = plt.subplots(nrows=1, ncols=2)
+    fig, axes = plt.subplots(nrows=1, ncols=1)
     fig.suptitle('AIG synthesis results')
-    ax = dfAnd[layer][['ABC', 'ESPRESSO']].plot.area(stacked=False, title='ANDs', ax=axes[0])
+    ax = dfAnd[layer][['ABC', 'ESPRESSO']].plot.area(stacked=False, title='ANDs')
     ax.set_ylabel('Number of ANDs in AIG')
     ax.set_xlim([0, len(dfAnd[layer]) - 1])
     # ax.set_xlabel('Neuron label')
-    ax.get_legend().remove()
+    ax.legend(loc='lower center', bbox_to_anchor=(0.5,-0.25), ncol=1)
+    plt.tight_layout()
+    plt.savefig(f'img/aigerStats/{modelName}/{layer}_ABC_ESPRESSO_and.png', bbox_inches='tight')
 
-    ax = dfLevel[layer][['ABC', 'ESPRESSO']].plot.area(stacked=False, title='Levels', ax=axes[1])
+    fig, axes = plt.subplots(nrows=1, ncols=1)
+    ax = dfLevel[layer][['ABC', 'ESPRESSO']].plot.area(stacked=False, title='Levels')
     ax.set_ylabel('Number of Levels in AIG')
     ax.set_xlim([0, len(dfAnd[layer]) - 1])
     # ax.set_xlabel('Neuron label')
-    ax.get_legend().remove()
-
-    lines_labels = [ax.get_legend_handles_labels() for ax in fig.axes]
-    lines, labels = [sum(lol, []) for lol in zip(*lines_labels)]
-    fig.legend(lines, list(set(labels)), loc='lower center', bbox_to_anchor=(0.5,-0.05) , ncol=2)
+    ax.legend(loc='lower center', bbox_to_anchor=(0.5,-0.25), ncol=1)
     plt.tight_layout()
-    plt.savefig(f'img/aigerStats/{modelName}/{layer}_ABC_ESPRESSO.png', bbox_inches='tight')
+    plt.savefig(f'img/aigerStats/{modelName}/{layer}_ABC_ESPRESSO_level.png', bbox_inches='tight')
 
     # Plot 2
-    fig, axes = plt.subplots(nrows=1, ncols=2)
+    fig, axes = plt.subplots(nrows=1, ncols=1)
     fig.suptitle('AIG synthesis results')
-    ax = dfAnd[layer][['ESPRESSO', 'ESPRESSOOptimizedPerEntry_2']].plot.area(stacked=False, title='ANDs', ax=axes[0])
+    ax = dfAnd[layer][['ESPRESSO', 'ESPRESSOOptimizedPerEntry_2']].plot.area(stacked=False, title='ANDs')
     ax.set_ylabel('Number of ANDs in AIG')
     ax.set_xlim([0, len(dfAnd[layer]) - 1])
     # ax.set_xlabel('Neuron label')
-    ax.get_legend().remove()
+    ax.legend(loc='lower center', bbox_to_anchor=(0.5,-0.25), ncol=1)
+    plt.tight_layout()
+    plt.savefig(f'img/aigerStats/{modelName}/{layer}_ESPRESSO_ESPRESSOOptimizedPerEntry_2_and.png', bbox_inches='tight')
 
-    ax = dfLevel[layer][['ESPRESSO', 'ESPRESSOOptimizedPerEntry_2']].plot.area(stacked=False, title='Levels', ax=axes[1])
+    fig, axes = plt.subplots(nrows=1, ncols=1)
+    ax = dfLevel[layer][['ESPRESSO', 'ESPRESSOOptimizedPerEntry_2']].plot.area(stacked=False, title='Levels')
     ax.set_ylabel('Number of Levels in AIG')
     ax.set_xlim([0, len(dfAnd[layer]) - 1])
     # ax.set_xlabel('Neuron label')
-    ax.get_legend().remove()
-
-    lines_labels = [ax.get_legend_handles_labels() for ax in fig.axes]
-    lines, labels = [sum(lol, []) for lol in zip(*lines_labels)]
-    fig.legend(lines, list(set(labels)), loc='lower center', bbox_to_anchor=(0.5,-0.05) , ncol=2)
+    ax.legend(loc='lower center', bbox_to_anchor=(0.5,-0.25), ncol=1)
     plt.tight_layout()
-    plt.savefig(f'img/aigerStats/{modelName}/{layer}_ESPRESSO_ESPRESSOOptimizedPerEntry_2.png', bbox_inches='tight')
+    plt.savefig(f'img/aigerStats/{modelName}/{layer}_ESPRESSO_ESPRESSOOptimizedPerEntry_2_level.png', bbox_inches='tight')
 
     # Plot 3
-    fig, axes = plt.subplots(nrows=1, ncols=2)
+    fig, axes = plt.subplots(nrows=1, ncols=1)
     fig.suptitle('AIG synthesis results')
-    ax = dfAnd[layer][['ESPRESSOOptimizedPerEntry_2', 'ESPRESSOOptimizedPerEntry_0']].plot.area(stacked=False, title='ANDs', ax=axes[0])
+    ax = dfAnd[layer][['ESPRESSOOptimizedPerEntry_2', 'ESPRESSOOptimizedPerEntry_0']].plot.area(stacked=False, title='ANDs')
     ax.set_ylabel('Number of ANDs in AIG')
     ax.set_xlim([0, len(dfAnd[layer]) - 1])
     # ax.set_xlabel('Neuron label')
-    ax.get_legend().remove()
+    ax.legend(loc='lower center', bbox_to_anchor=(0.5,-0.25), ncol=1)
+    plt.tight_layout()
+    plt.savefig(f'img/aigerStats/{modelName}/{layer}_ESPRESSOOptimizedPerEntry_0_ESPRESSOOptimizedPerEntry_2_and.png', bbox_inches='tight')
 
-    ax = dfLevel[layer][['ESPRESSOOptimizedPerEntry_2', 'ESPRESSOOptimizedPerEntry_0']].plot.area(stacked=False, title='Levels', ax=axes[1])
+    fig, axes = plt.subplots(nrows=1, ncols=1)
+    ax = dfLevel[layer][['ESPRESSOOptimizedPerEntry_2', 'ESPRESSOOptimizedPerEntry_0']].plot.area(stacked=False, title='Levels')
     ax.set_ylabel('Number of Levels in AIG')
     ax.set_xlim([0, len(dfAnd[layer]) - 1])
     # ax.set_xlabel('Neuron label')
-    ax.get_legend().remove()
-
-    lines_labels = [ax.get_legend_handles_labels() for ax in fig.axes]
-    lines, labels = [sum(lol, []) for lol in zip(*lines_labels)]
-    fig.legend(lines, list(set(labels)), loc='lower center', bbox_to_anchor=(0.5,-0.05) , ncol=2)
+    ax.legend(loc='lower center', bbox_to_anchor=(0.5,-0.25), ncol=1)
     plt.tight_layout()
-    plt.savefig(f'img/aigerStats/{modelName}/{layer}_ESPRESSOOptimizedPerEntry_0_ESPRESSOOptimizedPerEntry_2.png', bbox_inches='tight')
+    plt.savefig(f'img/aigerStats/{modelName}/{layer}_ESPRESSOOptimizedPerEntry_0_ESPRESSOOptimizedPerEntry_2_level.png', bbox_inches='tight')
 
 totalAnd.columns = data.keys()
 totalAnd = totalAnd.transpose()
 totalLevel.columns = data.keys()
 totalLevel = totalLevel.transpose()
+# Plot comparative
+fig, axes = plt.subplots(nrows=1, ncols=1)
+fig.suptitle('AIG synthesis results')
+ax = totalAnd[['ABC', 'ESPRESSO', 'ESPRESSOOptimizedPerEntry_2', 'ESPRESSOOptimizedPerEntry_0']].plot.bar(title='ANDs')
+ax.set_ylabel('Number of ANDs in AIG')
+# ax.set_xlabel('Neuron label')
+ax.set_xticklabels(ax.get_xticklabels(), rotation=0)
+ax.legend(loc='lower center', bbox_to_anchor=(0.5,-0.25), ncol=2)
+plt.tight_layout()
+plt.savefig(f'img/aigerStats/{modelName}/totalComparisonAnd.png', bbox_inches='tight')
+
+fig, axes = plt.subplots(nrows=1, ncols=1)
+ax = totalLevel[['ABC', 'ESPRESSO', 'ESPRESSOOptimizedPerEntry_2', 'ESPRESSOOptimizedPerEntry_0']].plot.bar(title='Levels')
+ax.set_ylabel('Number of Levels in AIG')
+# ax.set_xlabel('Neuron label')
+ax.set_xticklabels(ax.get_xticklabels(), rotation=0)
+ax.legend(loc='lower center', bbox_to_anchor=(0.5,-0.25), ncol=2)
+plt.tight_layout()
+plt.savefig(f'img/aigerStats/{modelName}/totalComparisonLevel.png', bbox_inches='tight')
+
 with open(f'img/aigerStats/{modelName}/data.txt', 'w') as f:
     totalAnd = totalAnd.subtract(totalAnd['ABC'], axis=0)
     totalAnd = totalAnd.transpose()
@@ -162,4 +179,4 @@ with open(f'img/aigerStats/{modelName}/data.txt', 'w') as f:
     f.write(totalLevel.to_string())
 f.close()
 
-        
+     
