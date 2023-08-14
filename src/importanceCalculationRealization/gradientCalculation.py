@@ -12,8 +12,8 @@ import os
 # modelName = f'binaryVggVerySmall/binaryVGGVerySmall_prunedBT6_4'
 # modelName = f'binaryVggVerySmall/binaryVGGVerySmall_prunedBT8_4'
 # modelName = f'binaryVggVerySmall/binaryVGGVerySmall_prunedBT10_4'
-modelName = f'binaryVggVerySmall/binaryVGGVerySmall_prunedBT12_4'
-# modelName = f'binaryVggSmall/binaryVGGSmall_prunedBT6_4'
+# modelName = f'binaryVggVerySmall/binaryVGGVerySmall_prunedBT12_4'
+modelName = f'binaryVggSmall/binaryVGGSmall_prunedBT6_4'
 # modelName = f'binaryVggSmall/binaryVGGSmall_prunedBT8_4'
 # modelName = f'binaryVggSmall/binaryVGGSmall_prunedBT10_4'
 # modelName = f'binaryVggSmall/binaryVGGSmall_prunedBT12_4'
@@ -35,11 +35,6 @@ training_data = datasets.CIFAR10(root='data', train=True, transform=Compose([
 	Normalize((0.485, 0.456, 0.406), (0.229, 0.224, 0.225)),
  	Resize(resizeFactor*32, antialias=False)]),
 								 download=False)
-
-'''
-Create DataLoader
-'''
-train_dataloader = DataLoader(training_data, batch_size=batch_size)
 
 sampleSize = int(perGradientSampling * len(training_data.data))  # sample size to be used for importance calculation
 
