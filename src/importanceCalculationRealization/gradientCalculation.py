@@ -10,8 +10,8 @@ import pandas as pd
 import os
 
 # modelName = f'binaryVggVerySmall/binaryVGGVerySmall_prunedBT6_4'
-modelName = f'binaryVggVerySmall/binaryVGGVerySmall_prunedBT8_4'
-# modelName = f'binaryVggVerySmall/binaryVGGVerySmall_prunedBT10_4'
+# modelName = f'binaryVggVerySmall/binaryVGGVerySmall_prunedBT8_4'
+modelName = f'binaryVggVerySmall/binaryVGGVerySmall_prunedBT10_4'
 # modelName = f'binaryVggVerySmall/binaryVGGVerySmall_prunedBT12_4'
 # modelName = f'binaryVggSmall/binaryVGGSmall_prunedBT6_4'
 # modelName = f'binaryVggSmall/binaryVGGSmall_prunedBT8_4'
