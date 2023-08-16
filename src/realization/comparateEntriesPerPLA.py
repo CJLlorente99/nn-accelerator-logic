@@ -58,6 +58,7 @@ def main(prun):
         fillPLAESPRESSO(plasFolderNamePerEntryESPRESSO_2, 'optimizedPerEntryESPRESSO_2')
 
     for layer in ttSize:
+        df = pd.DataFrame.from_dict(ttSize[layer]).transpose()
         if prun: # Info between ESPRESSO and NotESPRESSOed
             # Number of entries as substraction from espresso version
             df['notOptimizedESPRESSOGain'] = df['notOptimized'] - df['notOptimizedESPRESSO']
