@@ -64,28 +64,24 @@ def main(prun):
             df['optimizedPerEntryESPRESSO_0Gain'] = df['notOptimized'] - df['optimizedPerEntryESPRESSO_0']
             df['optimizedPerEntryESPRESSO_1Gain'] = df['notOptimized'] - df['optimizedPerEntryESPRESSO_1']
             df['optimizedPerEntryESPRESSO_2Gain'] = df['notOptimized'] - df['optimizedPerEntryESPRESSO_2']
-            df['optimizedPerClassESPRESSOGain'] = df['notOptimized'] - df['optimizedPerClassESPRESSO']
 
             # Number of entries as percentage saved from notOptimized
             df['notOptimizedESPRESSOPer'] = (df['notOptimized'] - df['notOptimizedESPRESSO']) / df['notOptimized'] * 100
             df['optimizedPerEntryESPRESSO_0Per'] = (df['notOptimized'] - df['optimizedPerEntryESPRESSO_0']) / df['notOptimized'] * 100
             df['optimizedPerEntryESPRESSO_1Per'] = (df['notOptimized'] - df['optimizedPerEntryESPRESSO_1']) / df['notOptimized'] * 100
             df['optimizedPerEntryESPRESSO_2Per'] = (df['notOptimized'] - df['optimizedPerEntryESPRESSO_2']) / df['notOptimized'] * 100
-            df['optimizedPerClassESPRESSOPer'] = (df['notOptimized'] - df['optimizedPerClassESPRESSO']) / df['notOptimized'] * 100
 
             # Global performance (number of entries spared)
             notOptimizedEntriesSparedAbs = df['notOptimizedESPRESSOGain'].sum()
             optimizedPerEntry_0EntriesSparedAbs = df['optimizedPerEntryESPRESSO_0Gain'].sum()
             optimizedPerEntry_1EntriesSparedAbs = df['optimizedPerEntryESPRESSO_1Gain'].sum()
             optimizedPerEntry_2EntriesSparedAbs = df['optimizedPerEntryESPRESSO_2Gain'].sum()
-            optimizedPerClassEntriesSparedAbs = df['optimizedPerClassESPRESSOGain'].sum()
             originalNumberEntries = df['notOptimized'].sum()
 
             notOptimizedEntriesSparedPer = notOptimizedEntriesSparedAbs/originalNumberEntries * 100
             optimizedPerEntry_0EntriesSparedPer = optimizedPerEntry_0EntriesSparedAbs/originalNumberEntries * 100
             optimizedPerEntry_1EntriesSparedPer = optimizedPerEntry_1EntriesSparedAbs/originalNumberEntries * 100
             optimizedPerEntry_2EntriesSparedPer = optimizedPerEntry_2EntriesSparedAbs/originalNumberEntries * 100
-            optimizedPerClassEntriesSparedPer = optimizedPerClassEntriesSparedAbs/originalNumberEntries * 100
 
             infoStr = []
             infoStr.append(f'Original number of entries: {originalNumberEntries}')
@@ -93,7 +89,6 @@ def main(prun):
             infoStr.append(f'Entries spared following optimization per entry: {optimizedPerEntry_0EntriesSparedAbs} ({optimizedPerEntry_0EntriesSparedPer:.2f}%)')
             infoStr.append(f'Entries spared following optimization per entry: {optimizedPerEntry_1EntriesSparedAbs} ({optimizedPerEntry_1EntriesSparedPer:.2f}%)')
             infoStr.append(f'Entries spared following optimization per entry: {optimizedPerEntry_2EntriesSparedAbs} ({optimizedPerEntry_2EntriesSparedPer:.2f}%)')
-            infoStr.append(f'Entries spared following optimization per class: {optimizedPerClassEntriesSparedAbs} ({optimizedPerClassEntriesSparedPer:.2f}%)')
             infoStr = '\n'.join(infoStr)
             fname = f'img/plaSizeComparative/{modelName}/afterPruneESPRESSO/entriesSpared{layer}.txt'
             with open(fname, 'w') as f:
@@ -123,8 +118,8 @@ def main(prun):
             plt.close()
             
             fig = plt.figure()
-            df_sorted = df.sort_values('optimizedPerEntry_0ESPRESSOGain')
-            plt.bar(df.index, df_sorted['optimizedPerEntry_0ESPRESSOGain'], color='b')
+            df_sorted = df.sort_values('optimizedPerEntryESPRESSO_0Gain')
+            plt.bar(df.index, df_sorted['optimizedPerEntryESPRESSO_0Gain'], color='b')
             plt.title(f'Entries spared per Neuron in {layer} (PE_0)')
             plt.xlabel('Neuron')
             plt.ylabel('Entries spared')
@@ -134,8 +129,8 @@ def main(prun):
             plt.close()
 
             fig = plt.figure()
-            df_sorted = df.sort_values('optimizedPerEntry_0ESPRESSOPer')
-            plt.bar(df.index, df_sorted['optimizedPerEntry_0ESPRESSOPer'], color='b')
+            df_sorted = df.sort_values('optimizedPerEntryESPRESSO_0Per')
+            plt.bar(df.index, df_sorted['optimizedPerEntryESPRESSO_0Per'], color='b')
             plt.title(f'% Entries spared per Neuron in {layer} (PE_0)')
             plt.xlabel('Neuron')
             plt.ylabel(f'% Entries spared')
@@ -145,8 +140,8 @@ def main(prun):
             plt.close()
 
             fig = plt.figure()
-            df_sorted = df.sort_values('optimizedPerEntry_1ESPRESSOGain')
-            plt.bar(df.index, df_sorted['optimizedPerEntry_1ESPRESSOGain'], color='b')
+            df_sorted = df.sort_values('optimizedPerEntryESPRESSO_1Gain')
+            plt.bar(df.index, df_sorted['optimizedPerEntryESPRESSO_1Gain'], color='b')
             plt.title(f'Entries spared per Neuron in {layer} (PE_1)')
             plt.xlabel('Neuron')
             plt.ylabel('Entries spared')
@@ -156,8 +151,8 @@ def main(prun):
             plt.close()
 
             fig = plt.figure()
-            df_sorted = df.sort_values('optimizedPerEntry_1ESPRESSOPer')
-            plt.bar(df.index, df_sorted['optimizedPerEntry_1ESPRESSOPer'], color='b')
+            df_sorted = df.sort_values('optimizedPerEntryESPRESSO_1Per')
+            plt.bar(df.index, df_sorted['optimizedPerEntryESPRESSO_1Per'], color='b')
             plt.title(f'% Entries spared per Neuron in {layer} (PE_1)')
             plt.xlabel('Neuron')
             plt.ylabel(f'% Entries spared')
@@ -167,8 +162,8 @@ def main(prun):
             plt.close()
 
             fig = plt.figure()
-            df_sorted = df.sort_values('optimizedPerEntry_2ESPRESSOGain')
-            plt.bar(df.index, df_sorted['optimizedPerEntry_2ESPRESSOGain'], color='b')
+            df_sorted = df.sort_values('optimizedPerEntryESPRESSO_2Gain')
+            plt.bar(df.index, df_sorted['optimizedPerEntryESPRESSO_2Gain'], color='b')
             plt.title(f'Entries spared per Neuron in {layer} (PE_2)')
             plt.xlabel('Neuron')
             plt.ylabel('Entries spared')
@@ -178,8 +173,8 @@ def main(prun):
             plt.close()
 
             fig = plt.figure()
-            df_sorted = df.sort_values('optimizedPerEntry_2ESPRESSOPer')
-            plt.bar(df.index, df_sorted['optimizedPerEntry_2ESPRESSOPer'], color='b')
+            df_sorted = df.sort_values('optimizedPerEntryESPRESSO_2Per')
+            plt.bar(df.index, df_sorted['optimizedPerEntryESPRESSO_2Per'], color='b')
             plt.title(f'% Entries spared per Neuron in {layer} (PE_2)')
             plt.xlabel('Neuron')
             plt.ylabel(f'% Entries spared')
