@@ -47,7 +47,7 @@ def main(modelName, resizeFactor, atPruning, inputsAfterBTPruning, inputsAfterAT
     Importing CIFAR10 dataset
     '''
     print(f'DOWNLOAD DATASET\n')
-    train_dataset = datasets.CIFAR10(root='data', train=True, transform=Compose([
+    train_dataset = datasets.CIFAR10(root='/srv/data/image_dataset/CIFAR10/', train=True, transform=Compose([
             RandomHorizontalFlip(),
             RandomCrop(32, 4),
             ToTensor(),
@@ -55,7 +55,7 @@ def main(modelName, resizeFactor, atPruning, inputsAfterBTPruning, inputsAfterAT
             Resize(resizeFactor*32, antialias=False)]),
         download=False)
     
-    test_dataset = datasets.CIFAR10(root='data', train=False, transform=Compose([
+    test_dataset = datasets.CIFAR10(root='/srv/data/image_dataset/CIFAR10/', train=False, transform=Compose([
             ToTensor(),
             Normalize((0.485, 0.456, 0.406), (0.229, 0.224, 0.225)),
             Resize(resizeFactor*32, antialias=False)]),
@@ -155,13 +155,7 @@ def main(modelName, resizeFactor, atPruning, inputsAfterBTPruning, inputsAfterAT
     
     
 if __name__ == '__main__':
-    main('binaryVGGVerySmall', 4, False, 6, 6)
-    main('binaryVGGVerySmall', 4, False, 8, 8)
-    main('binaryVGGVerySmall', 4, False, 10, 10)
-    main('binaryVGGVerySmall', 4, False, 12, 12)
-    main('binaryVGGSmall', 4, False, 6, 6)
-    main('binaryVGGSmall', 4, False, 8, 8)
-    main('binaryVGGSmall', 4, False, 10, 10)
-    main('binaryVGGSmall', 4, False, 12, 12)
+    main('binaryVGGVerySmall', 4, True, 0, 0)
+    main('binaryVGGSmall', 4, True, 0, 0)
 
     
