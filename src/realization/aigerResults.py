@@ -155,24 +155,32 @@ plt.tight_layout()
 plt.savefig(f'img/aigerStats/{modelName}/totalComparisonLevel.png', bbox_inches='tight')
 
 with open(f'img/aigerStats/{modelName}/data.txt', 'w') as f:
-    totalAnd = totalAnd.subtract(totalAnd['ABC'], axis=0)
+    totalAnd.loc['total'] = totalAnd.sum(axis=0)
+    abcTotalAnd = totalAnd['ABC']
+    totalAnd = -totalAnd.subtract(totalAnd['ABC'], axis=0)
+    totalAnd = totalAnd.divide(abcTotalAnd, axis=0)*100
     totalAnd = totalAnd.transpose()
-    totalAnd['total'] = totalAnd.sum(axis=1)
-    totalAnd = totalAnd.sort_values(['total'])
+    totalAnd = totalAnd.sort_values(['total'], ascending=False)
 
-    totalLevel = totalLevel.subtract(totalLevel['ABC'], axis=0)
+    totalLevel.loc['total'] = totalLevel.sum(axis=0)
+    abcTotalLevel = totalLevel['ABC']
+    totalLevel = -totalLevel.subtract(totalLevel['ABC'], axis=0)
+    totalLevel = totalLevel.divide(abcTotalLevel, axis=0)*100
     totalLevel = totalLevel.transpose()
-    totalLevel['total'] = totalLevel.sum(axis=1)
-    totalLevel = totalLevel.sort_values(['total'])
+    totalLevel = totalLevel.sort_values(['total'], ascending=False)
 
     f.write('================================================================\n')
     f.write('AND RESULTS\n')
     f.write('================================================================\n')
+    f.write(abcTotalAnd.to_string())
+    f.write('\n================================================================\n')
     f.write(totalAnd.to_string())
     f.write('\n\n')
     f.write('================================================================\n')
     f.write('LEVEL RESULTS\n')
     f.write('================================================================\n')
+    f.write(abcTotalLevel.to_string())
+    f.write('\n================================================================\n')
     f.write(totalLevel.to_string())
 f.close()
 
