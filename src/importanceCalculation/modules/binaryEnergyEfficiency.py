@@ -161,7 +161,7 @@ class BinaryNeuralNetwork(nn.Module):
 		importanceSTE3 = np.abs(self.gradientsSTE3)
 		print('Importance STE3 calculated')
 
-		return [importanceSTE0, importanceSTE1, importanceSTE2, importanceSTE3]
+		return [importanceSTE1, importanceSTE2, importanceSTE3]
 
 	def saveActivations(self, baseFilename):
 		columnsInLayer1 = [f'{i}' for i in range(len(self.valueSTE0[0]))]
@@ -184,6 +184,12 @@ class BinaryNeuralNetwork(nn.Module):
 		pd.DataFrame(
 			self.valueSTE3, columns=columnsInLayer4).to_feather(
 			f'{baseFilename}Input4')
+		
+	def loadActivations(self, baseFilename):
+		self.valueSTE0 = pd.read_feather(f'{baseFilename}Input1').to_numpy()
+		self.valueSTE1 = pd.read_feather(f'{baseFilename}Input2').to_numpy()
+		self.valueSTE2 = pd.read_feather(f'{baseFilename}Input3').to_numpy()
+		self.valueSTE3 = pd.read_feather(f'{baseFilename}Input4').to_numpy()
 
 	def saveGradients(self, baseFilename: str):
 		columnsInLayer1 = [f'N{i}' for i in range(len(self.gradientsSTE0[0]))]
@@ -202,6 +208,12 @@ class BinaryNeuralNetwork(nn.Module):
 
 		aux = pd.DataFrame(self.gradientsSTE3, columns=columnsInLayer4)
 		aux.to_feather(f'{baseFilename}STE3')
+
+	def loadGradients(self, baseFilename):
+		self.gradientsSTE0 = pd.read_feather(f'{baseFilename}STE0').to_numpy()
+		self.gradientsSTE1 = pd.read_feather(f'{baseFilename}STE1').to_numpy()
+		self.gradientsSTE2 = pd.read_feather(f'{baseFilename}STE2').to_numpy()
+		self.gradientsSTE3 = pd.read_feather(f'{baseFilename}STE3').to_numpy()
 
 	def signToBinary(self):
 		self.input0[self.input0 == -1] = 0
