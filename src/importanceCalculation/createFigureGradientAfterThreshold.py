@@ -143,7 +143,7 @@ for modelName in ['eeb/eeb_prunedBT6_100ep_100npl', 'eeb/eeb_prunedBT8_100ep_100
     Plot STE3
     '''
 
-    df = pd.read_feather(ste1GradientFilename)
+    df = pd.read_feather(ste3GradientFilename)
     df[df.abs() < threshold] = 0
     df = df.reindex(targetsDf.index)
     aux = np.abs(df.to_numpy().T)
