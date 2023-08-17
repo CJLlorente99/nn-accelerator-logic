@@ -7,7 +7,7 @@ import pandas as pd
 import numpy as np
 import os
 
-vmin = 10e-6
+vmin = 10e-7
 vmax = 10e-1
 
 for modelName in ['eeb/eeb_prunedBT6_100ep_100npl', 'eeb/eeb_prunedBT8_100ep_100npl', 'eeb/eeb_prunedBT10_100ep_100npl', 'eeb/eeb_prunedBT12_100ep_100npl']:
@@ -49,7 +49,7 @@ for modelName in ['eeb/eeb_prunedBT6_100ep_100npl', 'eeb/eeb_prunedBT8_100ep_100
     xTicksLocations = np.arange(len(targetsDf)/20, len(targetsDf), len(targetsDf)/10)
     xTicksLabels = [f'Class{i}' for i in range(10)]
 
-    vLines = np.arange(len(targetsDf)/10, len(targetsDf) + len(targetsDf)/10, len(targetsDf)/10)
+    vLines = np.cumsum(targetsDf.value_counts().sort_index().values)
     xLines = np.arange(0.5, 20.5)
 
     '''
