@@ -140,7 +140,7 @@ for modelName in ['bnn/bnn_prunedBT6_100ep_4096npl', 'bnn/bnn_prunedBT8_100ep_40
     Plot STE3
     '''
 
-    df = pd.read_feather(ste1GradientFilename)
+    df = pd.read_feather(ste3GradientFilename)
     df = df.reindex(targetsDf.index)
     aux = np.abs(df.to_numpy().T)
 
