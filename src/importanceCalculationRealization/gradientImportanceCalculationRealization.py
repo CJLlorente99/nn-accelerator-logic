@@ -11,6 +11,7 @@ import os
 
 neuronPerLayer = 4096
 modelName = 'bnn/bnn_prunedBT6_100ep_4096npl'
+threshold = 10e-4
 
 pruned = True
 prunedBT = True  # True if BT, False if AT
@@ -110,7 +111,6 @@ print(f'Original length {model.valueSTE2.shape[0]}, only unique length {uniqueST
 
 # Apply threshold
 print(f'APPLY THRESHOLD\n')
-threshold = 10e-5
 for iImp in range(len(importanceList)):
     importanceList[iImp] = importanceList[iImp] > threshold
     # Save importance for minimization per entry
@@ -124,7 +124,7 @@ for iImp in range(len(importanceList)):
         if len(dup) != 0:
             importanceList[iImp][dup[0], :] = np.sum(importanceList[iImp][dup, :], axis=0)
     print(f'importance number {iImp} has shape {importanceList[iImp].shape}')
-    print(f'importance number {iImp} has {importanceList[iImp].sum().sum()} entries above threshold {threshold} out of {importanceList[iImp].size}')
+    print(f'importance number {iImp} has {importanceList[iImp].sum().sum()} ({(importanceList[iImp].sum().sum() / importanceList[iImp].size * 100):0.2f}%) entries above threshold {threshold} out of {importanceList[iImp].size}')
     
 # Intialize containers of importance per class
 print(f'INITIALIZE IMPORTANCE PER CLASS\n')
@@ -157,7 +157,7 @@ for iImp in range(len(importanceList)):
         aux = importancePerClass[iImp][i].sum(0) / len(importancePerClass[iImp][i])
         nEntries += len(importancePerClass[iImp][i]) * (aux > 0).sum()
         importancePerClass[iImp][i] = aux
-    print(f'importance number {iImp} has {nEntries} with relevant classes out of {totalEntries}')
+    print(f'importance number {iImp} has {nEntries} ({(nEntries / totalEntries * 100):.2f}%) with relevant classes out of {totalEntries}')
 
 # Save class-based importance for minimization per class
 for iImp in range(len(importanceList)):
