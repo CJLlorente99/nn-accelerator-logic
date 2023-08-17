@@ -143,7 +143,7 @@ for modelName in ['binaryVggVerySmall/binaryVGGVerySmall_prunedBT6_4', 'binaryVg
     Plot STE3
     '''
 
-    df = pd.read_feather(ste1GradientFilename)
+    df = pd.read_feather(ste3GradientFilename)
     df[df.abs() < threshold] = 0
     df = df.reindex(targetsDf.index)
     aux = np.abs(df.to_numpy().T)
