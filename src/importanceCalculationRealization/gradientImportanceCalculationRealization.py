@@ -23,9 +23,10 @@ prunedBT = True  # True if BT, False if AT
 # ! Do not change
 batch_size = 1
 
-for modelName in ['bnn/bnn_prunedBT6_100ep_4096npl', 'bnn/bnn_prunedBT8_100ep_4096npl', 'bnn/bnn_prunedBT10_100ep_4096npl', 'bnn/bnn_prunedBT12_100ep_4096npl']:
+# for modelName in ['bnn/bnn_prunedBT6_100ep_4096npl', 'bnn/bnn_prunedBT8_100ep_4096npl', 'bnn/bnn_prunedBT10_100ep_4096npl', 'bnn/bnn_prunedBT12_100ep_4096npl']:
+for modelName in ['bnn/bnn_prunedBT8_100ep_4096npl', 'bnn/bnn_prunedBT10_100ep_4096npl', 'bnn/bnn_prunedBT12_100ep_4096npl']:
 
-    
+    print(f'{modelName}')
     modelFilename = f'data/savedModels/{modelName}'
     
     '''
@@ -88,20 +89,6 @@ for modelName in ['bnn/bnn_prunedBT6_100ep_4096npl', 'bnn/bnn_prunedBT8_100ep_40
     # model.saveActivations(f'./data/activations/{modelName}/')
     # model.saveGradients(f'./data/gradients/{modelName}/')
 
-    # Only gradients are needed to compute importance (free activations)
-    del model.valueSTE0 
-    del model.valueSTE1
-    del model.valueSTE2
-    del model.valueSTE3
-
-    model.loadGradients(f'./data/gradients/{modelName}/')
-    importanceList = model.computeImportance(neuronPerLayer)
-
-    del model.gradientsSTE0
-    del model.gradientsSTE1
-    del model.gradientsSTE2
-    del model.gradientsSTE3
-
     # Function to get duplicates
     def getIdxDuplicates(arr):
         vals, inverse, count = np.unique(arr, axis=0, return_inverse=True,
@@ -113,6 +100,9 @@ for modelName in ['bnn/bnn_prunedBT6_100ep_4096npl', 'bnn/bnn_prunedBT8_100ep_40
         _, inverse_rows = np.unique(rows, return_index=True)
         res = np.split(cols, inverse_rows[1:])
         return res
+    
+    # Load activations to calculate dupllicated
+    model.loadActivations(f'./data/activations/{modelName}/')
 
     # Get info about the activations
     dupList = []
@@ -125,6 +115,21 @@ for modelName in ['bnn/bnn_prunedBT6_100ep_4096npl', 'bnn/bnn_prunedBT8_100ep_40
     dupList.append(getIdxDuplicates(model.valueSTE2))
     uniqueSTE2 = np.unique(model.valueSTE2, axis=0)
     print(f'Original length {model.valueSTE2.shape[0]}, only unique length {uniqueSTE2.shape[0]}, number of sample {sampleSize}')
+
+    # Only gradients are needed to compute importance (free activations)
+    del model.valueSTE0 
+    del model.valueSTE1
+    del model.valueSTE2
+    del model.valueSTE3
+
+    # Load gradients and compute importance
+    model.loadGradients(f'./data/gradients/{modelName}/')
+    importanceList = model.computeImportance(neuronPerLayer)
+
+    del model.gradientsSTE0
+    del model.gradientsSTE1
+    del model.gradientsSTE2
+    del model.gradientsSTE3
 
     # Apply threshold
     print(f'APPLY THRESHOLD\n')
@@ -197,6 +202,7 @@ for modelName in ['bnn/bnn_prunedBT6_100ep_4096npl', 'bnn/bnn_prunedBT8_100ep_40
     # Only activations are needed now
     model.loadActivations(f'./data/activations/{modelName}/')
 
+    ################################################################################
     # Create TT per layer (not optimized)
     for i in range(1, 4):
         if not os.path.exists(f'./data/plas/{modelName}/ABC/layer{i}/'):
@@ -264,91 +270,91 @@ for modelName in ['bnn/bnn_prunedBT6_100ep_4096npl', 'bnn/bnn_prunedBT8_100ep_40
         df.drop(f'OUT{neuron:04d}', inplace=True, axis=1)
 
     #################################################################################################
-    # Create PLAs per layer (optimized per class)
-    for i in range(1, 4):
-        if not os.path.exists(f'./data/plas/{modelName}/ESPRESSOOptimizedPerClass_0/layer{i}/'):
-            os.makedirs(f'./data/plas/{modelName}/ESPRESSOOptimizedPerClass_0/layer{i}/')
-        if not os.path.exists(f'./data/plas/{modelName}/ESPRESSOOptimizedPerClass_1/layer{i}/'):
-            os.makedirs(f'./data/plas/{modelName}/ESPRESSOOptimizedPerClass_1/layer{i}/')
-        if not os.path.exists(f'./data/plas/{modelName}/ESPRESSOOptimizedPerClass_2/layer{i}/'):
-            os.makedirs(f'./data/plas/{modelName}/ESPRESSOOptimizedPerClass_2/layer{i}/')
+    # # Create PLAs per layer (optimized per class)
+    # for i in range(1, 4):
+    #     if not os.path.exists(f'./data/plas/{modelName}/ESPRESSOOptimizedPerClass_0/layer{i}/'):
+    #         os.makedirs(f'./data/plas/{modelName}/ESPRESSOOptimizedPerClass_0/layer{i}/')
+    #     if not os.path.exists(f'./data/plas/{modelName}/ESPRESSOOptimizedPerClass_1/layer{i}/'):
+    #         os.makedirs(f'./data/plas/{modelName}/ESPRESSOOptimizedPerClass_1/layer{i}/')
+    #     if not os.path.exists(f'./data/plas/{modelName}/ESPRESSOOptimizedPerClass_2/layer{i}/'):
+    #         os.makedirs(f'./data/plas/{modelName}/ESPRESSOOptimizedPerClass_2/layer{i}/')
 
-    # Pruned info files
-    dfPrunedLayer = pd.read_csv(f'data/savedModels/{modelName}_prunedInfol1.csv')
-    print(f'data/savedModels/{modelName}_prunedInfol1.csv read')
+    # # Pruned info files
+    # dfPrunedLayer = pd.read_csv(f'data/savedModels/{modelName}_prunedInfol1.csv')
+    # print(f'data/savedModels/{modelName}_prunedInfol1.csv read')
 
-    # Layer 1
-    columnsTags = [f'IN{i}' for i in range(model.valueSTE0.shape[1])]
-    df = pd.DataFrame(model.valueSTE0, columns=columnsTags)
-    importancePerEntry = pd.read_csv(f'./data/importance/{modelName}/PerClasslayer0.csv')
-    df[df == -1] = 0
-    df = df.astype(int)
-    for neuron in range(model.valueSTE1.shape[1]):
-        dfImportance = importancePerEntry[f'N{neuron}']    
-        df[f'OUT{neuron:04d}'] = model.valueSTE1[:, neuron]
-        df.replace({f'OUT{neuron:04d}': -1}, 0, inplace=True)
-        aux = df.copy()
+    # # Layer 1
+    # columnsTags = [f'IN{i}' for i in range(model.valueSTE0.shape[1])]
+    # df = pd.DataFrame(model.valueSTE0, columns=columnsTags)
+    # importancePerEntry = pd.read_csv(f'./data/importance/{modelName}/PerClasslayer0.csv')
+    # df[df == -1] = 0
+    # df = df.astype(int)
+    # for neuron in range(model.valueSTE1.shape[1]):
+    #     dfImportance = importancePerEntry[f'N{neuron}']    
+    #     df[f'OUT{neuron:04d}'] = model.valueSTE1[:, neuron]
+    #     df.replace({f'OUT{neuron:04d}': -1}, 0, inplace=True)
+    #     aux = df.copy()
 
-        aux = aux[dfImportance > 0]
-        aux.reset_index(drop=True, inplace=True)
+    #     aux = aux[dfImportance > 0]
+    #     aux.reset_index(drop=True, inplace=True)
 
-        aux = pruneAndDrop(df, dfPrunedLayer, f'N{neuron:04d}')
+    #     aux = pruneAndDrop(df, dfPrunedLayer, f'N{neuron:04d}')
         
-        createPLAFileEspresso(aux, f'./data/plas/{modelName}/ESPRESSOOptimizedPerClass_0/layer1/N{neuron:04d}', conflictMode=0)
-        createPLAFileEspresso(aux, f'./data/plas/{modelName}/ESPRESSOOptimizedPerClass_1/layer1/N{neuron:04d}', conflictMode=1)
-        createPLAFileEspresso(aux, f'./data/plas/{modelName}/ESPRESSOOptimizedPerClass_2/layer1/N{neuron:04d}', conflictMode=2)
-        df.drop(f'OUT{neuron:04d}', inplace=True, axis=1)
+    #     createPLAFileEspresso(aux, f'./data/plas/{modelName}/ESPRESSOOptimizedPerClass_0/layer1/N{neuron:04d}', conflictMode=0)
+    #     createPLAFileEspresso(aux, f'./data/plas/{modelName}/ESPRESSOOptimizedPerClass_1/layer1/N{neuron:04d}', conflictMode=1)
+    #     createPLAFileEspresso(aux, f'./data/plas/{modelName}/ESPRESSOOptimizedPerClass_2/layer1/N{neuron:04d}', conflictMode=2)
+    #     df.drop(f'OUT{neuron:04d}', inplace=True, axis=1)
 
-    dfPrunedLayer = pd.read_csv(f'data/savedModels/{modelName}_prunedInfol2.csv')
-    print(f'data/savedModels/{modelName}_prunedInfol2.csv read')
+    # dfPrunedLayer = pd.read_csv(f'data/savedModels/{modelName}_prunedInfol2.csv')
+    # print(f'data/savedModels/{modelName}_prunedInfol2.csv read')
 
-    # Layer 2
-    columnsTags = [f'IN{i}' for i in range(model.valueSTE1.shape[1])]
-    df = pd.DataFrame(model.valueSTE1, columns=columnsTags)
-    importancePerEntryPre = pd.read_csv(f'./data/importance/{modelName}/PerClasslayer0.csv', dtype=int)
-    importancePerEntry = pd.read_csv(f'./data/importance/{modelName}/PerClasslayer1.csv')
-    df = pd.DataFrame(np.where(importancePerEntryPre == 0, 2, df), columns=columnsTags)
-    df[df == -1] = 0
-    df = df.astype(int)
-    for neuron in range(model.valueSTE2.shape[1]):
-        dfImportance = importancePerEntry[f'N{neuron}']    
-        df[f'OUT{neuron:04d}'] = model.valueSTE2[:, neuron]
-        df.replace({f'OUT{neuron:04d}': -1}, 0, inplace=True)
-        aux = df.copy()
+    # # Layer 2
+    # columnsTags = [f'IN{i}' for i in range(model.valueSTE1.shape[1])]
+    # df = pd.DataFrame(model.valueSTE1, columns=columnsTags)
+    # importancePerEntryPre = pd.read_csv(f'./data/importance/{modelName}/PerClasslayer0.csv', dtype=int)
+    # importancePerEntry = pd.read_csv(f'./data/importance/{modelName}/PerClasslayer1.csv')
+    # df = pd.DataFrame(np.where(importancePerEntryPre == 0, 2, df), columns=columnsTags)
+    # df[df == -1] = 0
+    # df = df.astype(int)
+    # for neuron in range(model.valueSTE2.shape[1]):
+    #     dfImportance = importancePerEntry[f'N{neuron}']    
+    #     df[f'OUT{neuron:04d}'] = model.valueSTE2[:, neuron]
+    #     df.replace({f'OUT{neuron:04d}': -1}, 0, inplace=True)
+    #     aux = df.copy()
 
-        aux = aux[dfImportance > 0]
-        aux.reset_index(drop=True, inplace=True)
+    #     aux = aux[dfImportance > 0]
+    #     aux.reset_index(drop=True, inplace=True)
 
-        aux = pruneAndDrop(df, dfPrunedLayer, f'N{neuron:04d}')
+    #     aux = pruneAndDrop(df, dfPrunedLayer, f'N{neuron:04d}')
         
-        createPLAFileEspresso(aux, f'./data/plas/{modelName}/ESPRESSOOptimizedPerClass_0/layer2/N{neuron:04d}', conflictMode=0)
-        createPLAFileEspresso(aux, f'./data/plas/{modelName}/ESPRESSOOptimizedPerClass_1/layer2/N{neuron:04d}', conflictMode=1)
-        createPLAFileEspresso(aux, f'./data/plas/{modelName}/ESPRESSOOptimizedPerClass_2/layer2/N{neuron:04d}', conflictMode=2)
-        df.drop(f'OUT{neuron:04d}', inplace=True, axis=1)
+    #     createPLAFileEspresso(aux, f'./data/plas/{modelName}/ESPRESSOOptimizedPerClass_0/layer2/N{neuron:04d}', conflictMode=0)
+    #     createPLAFileEspresso(aux, f'./data/plas/{modelName}/ESPRESSOOptimizedPerClass_1/layer2/N{neuron:04d}', conflictMode=1)
+    #     createPLAFileEspresso(aux, f'./data/plas/{modelName}/ESPRESSOOptimizedPerClass_2/layer2/N{neuron:04d}', conflictMode=2)
+    #     df.drop(f'OUT{neuron:04d}', inplace=True, axis=1)
 
-    dfPrunedLayer = pd.read_csv(f'data/savedModels/{modelName}_prunedInfol3.csv')
-    print(f'data/savedModels/{modelName}_prunedInfol3.csv read')
+    # dfPrunedLayer = pd.read_csv(f'data/savedModels/{modelName}_prunedInfol3.csv')
+    # print(f'data/savedModels/{modelName}_prunedInfol3.csv read')
 
-    # Layer 3
-    columnsTags = [f'IN{i}' for i in range(model.valueSTE2.shape[1])]
-    df = pd.DataFrame(model.valueSTE2, columns=columnsTags)
-    importancePerEntryPre = pd.read_csv(f'./data/importance/{modelName}/PerClasslayer1.csv', dtype=int)
-    importancePerEntry = pd.read_csv(f'./data/importance/{modelName}/PerClasslayer2.csv')
-    df = pd.DataFrame(np.where(importancePerEntryPre == 0, 2, df), columns=columnsTags)
-    df[df == -1] = 0
-    df = df.astype(int)
-    for neuron in range(model.valueSTE3.shape[1]):
-        dfImportance = importancePerEntry[f'N{neuron}']    
-        df[f'OUT{neuron:04d}'] = model.valueSTE3[:, neuron]
-        df.replace({f'OUT{neuron:04d}': -1}, 0, inplace=True)
-        aux = df.copy()
+    # # Layer 3
+    # columnsTags = [f'IN{i}' for i in range(model.valueSTE2.shape[1])]
+    # df = pd.DataFrame(model.valueSTE2, columns=columnsTags)
+    # importancePerEntryPre = pd.read_csv(f'./data/importance/{modelName}/PerClasslayer1.csv', dtype=int)
+    # importancePerEntry = pd.read_csv(f'./data/importance/{modelName}/PerClasslayer2.csv')
+    # df = pd.DataFrame(np.where(importancePerEntryPre == 0, 2, df), columns=columnsTags)
+    # df[df == -1] = 0
+    # df = df.astype(int)
+    # for neuron in range(model.valueSTE3.shape[1]):
+    #     dfImportance = importancePerEntry[f'N{neuron}']    
+    #     df[f'OUT{neuron:04d}'] = model.valueSTE3[:, neuron]
+    #     df.replace({f'OUT{neuron:04d}': -1}, 0, inplace=True)
+    #     aux = df.copy()
 
-        aux = aux[dfImportance > 0]
-        aux.reset_index(drop=True, inplace=True)
+    #     aux = aux[dfImportance > 0]
+    #     aux.reset_index(drop=True, inplace=True)
 
-        aux = pruneAndDrop(df, dfPrunedLayer, f'N{neuron:04d}')
+    #     aux = pruneAndDrop(df, dfPrunedLayer, f'N{neuron:04d}')
         
-        createPLAFileEspresso(aux, f'./data/plas/{modelName}/ESPRESSOOptimizedPerClass_0/layer3/N{neuron:04d}', conflictMode=0)
-        createPLAFileEspresso(aux, f'./data/plas/{modelName}/ESPRESSOOptimizedPerClass_1/layer3/N{neuron:04d}', conflictMode=1)
-        createPLAFileEspresso(aux, f'./data/plas/{modelName}/ESPRESSOOptimizedPerClass_2/layer3/N{neuron:04d}', conflictMode=2)
-        df.drop(f'OUT{neuron:04d}', inplace=True, axis=1)
+    #     createPLAFileEspresso(aux, f'./data/plas/{modelName}/ESPRESSOOptimizedPerClass_0/layer3/N{neuron:04d}', conflictMode=0)
+    #     createPLAFileEspresso(aux, f'./data/plas/{modelName}/ESPRESSOOptimizedPerClass_1/layer3/N{neuron:04d}', conflictMode=1)
+    #     createPLAFileEspresso(aux, f'./data/plas/{modelName}/ESPRESSOOptimizedPerClass_2/layer3/N{neuron:04d}', conflictMode=2)
+    #     df.drop(f'OUT{neuron:04d}', inplace=True, axis=1)

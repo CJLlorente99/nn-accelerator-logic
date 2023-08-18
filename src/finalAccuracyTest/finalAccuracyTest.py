@@ -148,25 +148,25 @@ if __name__ == "__main__":
                 # try:
                 # Train
                 # Import dataset
-                print(f'IMPORT DATASET\n')
-                data = datasets.MNIST(
-                    root='/srv/data/image_dataset/MNIST',
-                    train=True,
-                    download=False,
-                    transform=Compose([
-                            ToTensor(),
-                            ToBlackAndWhite(),
-                            ToSign()
-                        ])
-                    )
+                # print(f'IMPORT DATASET\n')
+                # data = datasets.MNIST(
+                #     root='/srv/data/image_dataset/MNIST',
+                #     train=True,
+                #     download=False,
+                #     transform=Compose([
+                #             ToTensor(),
+                #             ToBlackAndWhite(),
+                #             ToSign()
+                #         ])
+                #     )
 
-                dataloader = DataLoader(data, batch_size=batch_size)
+                # dataloader = DataLoader(data, batch_size=batch_size)
 
-                simulatedFilenameL1 = f'data/inputSimulated/{modelFilename}/{subFolder}/trainlayer2'
-                simulatedFilenameL2 = f'data/inputSimulated/{modelFilename}/{subFolder}/trainlayer3'
-                simulatedFilenameL3 = f'data/inputSimulated/{modelFilename}/{subFolder}/trainlayer4'
-                inputFilename = f'data/inputs/trainInput'
-                key = 'train'
+                # simulatedFilenameL1 = f'data/inputSimulated/{modelFilename}/{subFolder}/trainlayer2'
+                # simulatedFilenameL2 = f'data/inputSimulated/{modelFilename}/{subFolder}/trainlayer3'
+                # simulatedFilenameL3 = f'data/inputSimulated/{modelFilename}/{subFolder}/trainlayer4'
+                # inputFilename = f'data/inputs/trainInput'
+                # key = 'train'
 
                 correctInput = {'train': 0, 'test': 0}
                 correctL1 = {'train': 0, 'test': 0}
@@ -179,34 +179,34 @@ if __name__ == "__main__":
                 count = {'train': 0, 'test': 0}
                 numLines = {'train': 0, 'test': 0}
 
-                check(simulatedFilenameL1, simulatedFilenameL2, simulatedFilenameL3, inputFilename, data, dataloader, key)
+                # check(simulatedFilenameL1, simulatedFilenameL2, simulatedFilenameL3, inputFilename, data, dataloader, key)
 
-                # Print Results
-                print('/n================================================================================================')
-                print('TRAIN RESULTS\n')
-                print(f'Correct Input {correctInput[key]}/{numLines[key]} {correctInput[key]/numLines[key]*100}%')
-                print(f'Correct L1 {correctL1[key]}/{numLines[key]} {correctL1[key]/numLines[key]*100}%')
-                print(f"Train Error from L1: /n Accuracy: {(100 * correctAllModelFromL1[key] / numLines[key]):>0.2f}%/n")
-                print(f'Correct L2 {correctL2[key]}/{numLines[key]} {correctL2[key]/numLines[key]*100}%')
-                print(f"Train Error from L2: /n Accuracy: {(100 * correctAllModelFromL2[key] / numLines[key]):>0.2f}%/n")
-                print(f'Correct L3 {correctL3[key]}/{numLines[key]} {correctL3[key]/numLines[key]*100}%')
-                print(f"Train Error from L3: /n Accuracy: {(100 * correctAllModelFromL3[key] / numLines[key]):>0.2f}%/n")
-                print(f"Train Error Original: /n Accuracy: {(100 * correctAllModel[key] / numLines[key]):>0.2f}%/n")
-                print('================================================================================================\n')
+                # # Print Results
+                # print('/n================================================================================================')
+                # print('TRAIN RESULTS\n')
+                # print(f'Correct Input {correctInput[key]}/{numLines[key]} {correctInput[key]/numLines[key]*100}%')
+                # print(f'Correct L1 {correctL1[key]}/{numLines[key]} {correctL1[key]/numLines[key]*100}%')
+                # print(f"Train Error from L1: /n Accuracy: {(100 * correctAllModelFromL1[key] / numLines[key]):>0.2f}%/n")
+                # print(f'Correct L2 {correctL2[key]}/{numLines[key]} {correctL2[key]/numLines[key]*100}%')
+                # print(f"Train Error from L2: /n Accuracy: {(100 * correctAllModelFromL2[key] / numLines[key]):>0.2f}%/n")
+                # print(f'Correct L3 {correctL3[key]}/{numLines[key]} {correctL3[key]/numLines[key]*100}%')
+                # print(f"Train Error from L3: /n Accuracy: {(100 * correctAllModelFromL3[key] / numLines[key]):>0.2f}%/n")
+                # print(f"Train Error Original: /n Accuracy: {(100 * correctAllModel[key] / numLines[key]):>0.2f}%/n")
+                # print('================================================================================================\n')
 
-                text = []
-                text.append('/n================================================================================================')
-                text.append('TRAIN RESULTS\n')
-                text.append(f'Correct Input {correctInput[key]}/{numLines[key]} {correctInput[key]/numLines[key]*100}%')
-                text.append(f'Correct L1 {correctL1[key]}/{numLines[key]} {correctL1[key]/numLines[key]*100}%')
-                text.append(f"Train Error from L1: /n Accuracy: {(100 * correctAllModelFromL1[key] / numLines[key]):>0.2f}%/n")
-                text.append(f'Correct L2 {correctL2[key]}/{numLines[key]} {correctL2[key]/numLines[key]*100}%')
-                text.append(f"Train Error from L2: /n Accuracy: {(100 * correctAllModelFromL2[key] / numLines[key]):>0.2f}%/n")
-                text.append(f'Correct L3 {correctL3[key]}/{numLines[key]} {correctL3[key]/numLines[key]*100}%')
-                text.append(f"Train Error from L3: /n Accuracy: {(100 * correctAllModelFromL3[key] / numLines[key]):>0.2f}%/n")
-                text.append(f"Train Error Original: /n Accuracy: {(100 * correctAllModel[key] / numLines[key]):>0.2f}%/n")
-                text.append('================================================================================================\n')
-                f.write('/n'.join(text))
+                # text = []
+                # text.append('/n================================================================================================')
+                # text.append('TRAIN RESULTS\n')
+                # text.append(f'Correct Input {correctInput[key]}/{numLines[key]} {correctInput[key]/numLines[key]*100}%')
+                # text.append(f'Correct L1 {correctL1[key]}/{numLines[key]} {correctL1[key]/numLines[key]*100}%')
+                # text.append(f"Train Error from L1: /n Accuracy: {(100 * correctAllModelFromL1[key] / numLines[key]):>0.2f}%/n")
+                # text.append(f'Correct L2 {correctL2[key]}/{numLines[key]} {correctL2[key]/numLines[key]*100}%')
+                # text.append(f"Train Error from L2: /n Accuracy: {(100 * correctAllModelFromL2[key] / numLines[key]):>0.2f}%/n")
+                # text.append(f'Correct L3 {correctL3[key]}/{numLines[key]} {correctL3[key]/numLines[key]*100}%')
+                # text.append(f"Train Error from L3: /n Accuracy: {(100 * correctAllModelFromL3[key] / numLines[key]):>0.2f}%/n")
+                # text.append(f"Train Error Original: /n Accuracy: {(100 * correctAllModel[key] / numLines[key]):>0.2f}%/n")
+                # text.append('================================================================================================\n')
+                # f.write('/n'.join(text))
 
                 # Test
                 # Import dataset
