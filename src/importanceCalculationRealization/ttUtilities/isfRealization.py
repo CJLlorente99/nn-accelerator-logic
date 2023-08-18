@@ -60,7 +60,7 @@ def generateABCInput(df: pd.DataFrame, filename: str):
 
 
 def createPLAFileEspresso(df: pd.DataFrame, outputFilename: str, conflictMode=-1):
-			
+	df = df.copy()
 	# Deal with conflict of orthogonality between On and Off set
 	if conflictMode != -1:
 		# Get rows with DC (2)
@@ -81,11 +81,9 @@ def createPLAFileEspresso(df: pd.DataFrame, outputFilename: str, conflictMode=-1
 					aux = dup.copy()
 					aux[(df == row).all(axis=1)] = False # All but the row will be true
 					df.drop(df.index[aux], axis=0, inplace=True)
-					# ! When 2 or more DC are present
 				# 3) Remove all
 				elif conflictMode == 2:
 					df.drop(df.index[dup], axis=0, inplace=True)
-					# ! Sometimes incurs in empty pla (everything has a DC)
 	generateEspressoInput(df, outputFilename)
 
 def createPLAFileABC(df: pd.DataFrame, outputFilename: str):
