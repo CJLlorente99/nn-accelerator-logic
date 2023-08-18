@@ -5,6 +5,8 @@ import os
 
 for modelName in ['eeb/eeb_prunedBT6_100ep_100npl', 'eeb/eeb_prunedBT8_100ep_100npl', 'eeb/eeb_prunedBT10_100ep_100npl', 'eeb/eeb_prunedBT12_100ep_100npl']:
 
+    print(f'{modelName}')
+
     if not os.path.exists(f'img/aigerStats/{modelName}'):
         os.makedirs(f'img/aigerStats/{modelName}')
 
@@ -38,7 +40,7 @@ for modelName in ['eeb/eeb_prunedBT6_100ep_100npl', 'eeb/eeb_prunedBT8_100ep_100
             data[layer][subfolder]['nAnd'][neuron] = nAnd
             data[layer][subfolder]['nLevel'][neuron] = nLevel
 
-            print(f'{subfolder}/{layer}/{neuron} done')
+            # print(f'{subfolder}/{layer}/{neuron} done')
 
     dfAnd = {}
     dfLevel = {}
@@ -54,7 +56,7 @@ for modelName in ['eeb/eeb_prunedBT6_100ep_100npl', 'eeb/eeb_prunedBT8_100ep_100
             dfAnd[layer] = pd.concat([dfAnd[layer], auxAnd], axis=1)
             dfLevel[layer] = pd.concat([dfLevel[layer], auxLevel], axis=1)
 
-            print(f'Appended {layer}/{subfolder}')
+            # print(f'Appended {layer}/{subfolder}')
         dfAnd[layer] = dfAnd[layer].sort_values(['ABC'])
         # dfLevel[layer] = dfLevel[layer].reindex(dfAnd[layer].index)
         dfLevel[layer] = dfLevel[layer].sort_values(['ABC'])
@@ -76,6 +78,7 @@ for modelName in ['eeb/eeb_prunedBT6_100ep_100npl', 'eeb/eeb_prunedBT8_100ep_100
         ax.legend(loc='lower center', bbox_to_anchor=(0.5,-0.25), ncol=1)
         plt.tight_layout()
         plt.savefig(f'img/aigerStats/{modelName}/{layer}_ABC_ESPRESSO_and.png', bbox_inches='tight')
+        plt.close(fig)
 
         fig, axes = plt.subplots(nrows=1, ncols=1)
         ax = dfLevel[layer][['ABC', 'ESPRESSO']].plot.area(stacked=False, title='Levels')
@@ -85,6 +88,7 @@ for modelName in ['eeb/eeb_prunedBT6_100ep_100npl', 'eeb/eeb_prunedBT8_100ep_100
         ax.legend(loc='lower center', bbox_to_anchor=(0.5,-0.25), ncol=1)
         plt.tight_layout()
         plt.savefig(f'img/aigerStats/{modelName}/{layer}_ABC_ESPRESSO_level.png', bbox_inches='tight')
+        plt.close(fig)
 
         # Plot 2
         fig, axes = plt.subplots(nrows=1, ncols=1)
@@ -96,6 +100,7 @@ for modelName in ['eeb/eeb_prunedBT6_100ep_100npl', 'eeb/eeb_prunedBT8_100ep_100
         ax.legend(loc='lower center', bbox_to_anchor=(0.5,-0.25), ncol=1)
         plt.tight_layout()
         plt.savefig(f'img/aigerStats/{modelName}/{layer}_ESPRESSO_ESPRESSOOptimizedPerEntry_2_and.png', bbox_inches='tight')
+        plt.close(fig)
 
         fig, axes = plt.subplots(nrows=1, ncols=1)
         ax = dfLevel[layer][['ESPRESSO', 'ESPRESSOOptimizedPerEntry_2']].plot.area(stacked=False, title='Levels')
@@ -105,6 +110,7 @@ for modelName in ['eeb/eeb_prunedBT6_100ep_100npl', 'eeb/eeb_prunedBT8_100ep_100
         ax.legend(loc='lower center', bbox_to_anchor=(0.5,-0.25), ncol=1)
         plt.tight_layout()
         plt.savefig(f'img/aigerStats/{modelName}/{layer}_ESPRESSO_ESPRESSOOptimizedPerEntry_2_level.png', bbox_inches='tight')
+        plt.close(fig)
 
         # Plot 3
         fig, axes = plt.subplots(nrows=1, ncols=1)
@@ -116,6 +122,7 @@ for modelName in ['eeb/eeb_prunedBT6_100ep_100npl', 'eeb/eeb_prunedBT8_100ep_100
         ax.legend(loc='lower center', bbox_to_anchor=(0.5,-0.25), ncol=1)
         plt.tight_layout()
         plt.savefig(f'img/aigerStats/{modelName}/{layer}_ESPRESSOOptimizedPerEntry_0_ESPRESSOOptimizedPerEntry_2_and.png', bbox_inches='tight')
+        plt.close(fig)
 
         fig, axes = plt.subplots(nrows=1, ncols=1)
         ax = dfLevel[layer][['ESPRESSOOptimizedPerEntry_2', 'ESPRESSOOptimizedPerEntry_0']].plot.area(stacked=False, title='Levels')
@@ -125,6 +132,7 @@ for modelName in ['eeb/eeb_prunedBT6_100ep_100npl', 'eeb/eeb_prunedBT8_100ep_100
         ax.legend(loc='lower center', bbox_to_anchor=(0.5,-0.25), ncol=1)
         plt.tight_layout()
         plt.savefig(f'img/aigerStats/{modelName}/{layer}_ESPRESSOOptimizedPerEntry_0_ESPRESSOOptimizedPerEntry_2_level.png', bbox_inches='tight')
+        plt.close(fig)
 
     totalAnd.columns = data.keys()
     totalAnd = totalAnd.transpose()
@@ -140,6 +148,7 @@ for modelName in ['eeb/eeb_prunedBT6_100ep_100npl', 'eeb/eeb_prunedBT8_100ep_100
     ax.legend(loc='lower center', bbox_to_anchor=(0.5,-0.25), ncol=2)
     plt.tight_layout()
     plt.savefig(f'img/aigerStats/{modelName}/totalComparisonAnd.png', bbox_inches='tight')
+    plt.close(fig)
 
     fig, axes = plt.subplots(nrows=1, ncols=1)
     ax = totalLevel[['ABC', 'ESPRESSO', 'ESPRESSOOptimizedPerEntry_2', 'ESPRESSOOptimizedPerEntry_0']].plot.bar(title='Levels')
@@ -149,6 +158,7 @@ for modelName in ['eeb/eeb_prunedBT6_100ep_100npl', 'eeb/eeb_prunedBT8_100ep_100
     ax.legend(loc='lower center', bbox_to_anchor=(0.5,-0.25), ncol=2)
     plt.tight_layout()
     plt.savefig(f'img/aigerStats/{modelName}/totalComparisonLevel.png', bbox_inches='tight')
+    plt.close(fig)
 
     with open(f'img/aigerStats/{modelName}/data.txt', 'w') as f:
         totalAnd.loc['total'] = totalAnd.sum(axis=0)
@@ -179,5 +189,7 @@ for modelName in ['eeb/eeb_prunedBT6_100ep_100npl', 'eeb/eeb_prunedBT8_100ep_100
         f.write('\n================================================================\n')
         f.write(totalLevel.to_string())
     f.close()
+
+    print(f'{modelName} erfolgreich')
 
         
