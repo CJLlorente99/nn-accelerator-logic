@@ -14,6 +14,9 @@ def generateEspressoInput(df: pd.DataFrame, filename: str):
 	inTags = [col for col in df.columns if col.startswith('IN')]
 	outTag = [col for col in df.columns if col.startswith('OUT')]
 
+	emptyString = ['-' for _ in range(len(inTags))]
+	emptyString = ''.join(emptyString) + ' 0'
+
 	with open(f'{filename}.pla', 'w') as f:
 		# Write header of PLA file
 		f.write(f'.i {len(inTags)}\n')  # Number of input neurons
@@ -22,6 +25,9 @@ def generateEspressoInput(df: pd.DataFrame, filename: str):
 		f.write(f'.ilb {tags}\n')  # Names of the input variables
 		f.write(f'.ob {outTag[0]}\n')  # Name of the output variable
 		f.write(f'.type fr\n')  # .pla contains ON-Set and OFF-Set
+		if len(df) == 0:
+			f.write('.p 1\n')
+			f.write(f'{emptyString}\n')
 		for index, row in df.iterrows():
 			text = ''.join(row[inTags].to_string(header=False, index=False).split('\n'))
 			text = text.replace('2', '-')
