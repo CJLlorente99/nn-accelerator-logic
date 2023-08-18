@@ -97,6 +97,11 @@ for modelName in ['bnn/bnn_prunedBT6_100ep_4096npl', 'bnn/bnn_prunedBT8_100ep_40
     model.loadGradients(f'./data/gradients/{modelName}/')
     importanceList = model.computeImportance(neuronPerLayer)
 
+    del model.gradientsSTE0
+    del model.gradientsSTE1
+    del model.gradientsSTE2
+    del model.gradientsSTE3
+
     # Function to get duplicates
     def getIdxDuplicates(arr):
         vals, inverse, count = np.unique(arr, axis=0, return_inverse=True,
@@ -187,10 +192,6 @@ for modelName in ['bnn/bnn_prunedBT6_100ep_4096npl', 'bnn/bnn_prunedBT8_100ep_40
         print(f'File data/importance/{modelName}/PerClasslayer{iImp}.csv created')
 
     # Get rid of everything that won't be used
-    del model.gradientsSTE0
-    del model.gradientsSTE1
-    del model.gradientsSTE2
-    del model.gradientsSTE3
     del importanceList
 
     # Only activations are needed now
