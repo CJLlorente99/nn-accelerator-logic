@@ -15,8 +15,8 @@ def generateEspressoInput(df: pd.DataFrame, filename: str):
 	inTags = [col for col in df.columns if col.startswith('IN')]
 	outTag = [col for col in df.columns if col.startswith('OUT')]
 
-	if len(df) == 0:
-		inTags = ['DUMMYIN']
+	emptyString = ['-' for _ in range(len(inTags))]
+	emptyString = ''.join(emptyString) + ' 0'
 
 
 	with open(f'{filename}.pla', 'w') as f:
@@ -28,7 +28,8 @@ def generateEspressoInput(df: pd.DataFrame, filename: str):
 		f.write(f'.ob {outTag[0]}\n')  # Name of the output variable
 		f.write(f'.type fr\n')  # .pla contains ON-Set and OFF-Set
 		if len(df) == 0:
-			f.write('- 0\n')
+			f.write('.p 1\n')
+			f.write(f'{emptyString}\n')
 		for index, row in df.iterrows():
 			text = ''.join(row[inTags].to_string(header=False, index=False).split('\n'))
 			text = text.replace('2', '-')
@@ -48,8 +49,8 @@ def generateABCInput(df: pd.DataFrame, filename: str):
 	inTags = [col for col in df.columns if col.startswith('IN')]
 	outTag = [col for col in df.columns if col.startswith('OUT')]
 
-	if len(df) == 0:
-		inTags = 'DUMMYIN'
+	emptyString = ['-' for _ in range(len(inTags))]
+	emptyString = ''.join(emptyString) + ' 0'
 
 	with open(f'{filename}.pla', 'w') as f:
 		# Write header of PLA file
@@ -61,7 +62,7 @@ def generateABCInput(df: pd.DataFrame, filename: str):
 		# f.write(f'.ob {neuron}\n')  # Name of the output variable
 		if len(df) == 0:
 			f.write('.p 1\n')
-			f.write('- 0\n')
+			f.write(f'{emptyString}\n')
 		else:
 			f.write(f'.p {len(df)}\n')
 		for index, row in df.iterrows():
@@ -99,7 +100,6 @@ def createPLAFileEspresso(df: pd.DataFrame, outputFilename: str, conflictMode=-1
 				# 3) Remove all
 				elif conflictMode == 2:
 					df.drop(df.index[dup], axis=0, inplace=True)
-					# ! Sometimes incurs in empty pla (everything has a DC)
 	generateEspressoInput(df, outputFilename)
 
 def createPLAFileABC(df: pd.DataFrame, outputFilename: str):
