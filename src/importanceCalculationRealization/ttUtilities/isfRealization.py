@@ -74,7 +74,7 @@ def generateABCInput(df: pd.DataFrame, filename: str):
 
 
 def createPLAFileEspresso(df: pd.DataFrame, outputFilename: str, conflictMode=-1):
-			
+	df = df.copy()
 	# Deal with conflict of orthogonality between On and Off set
 	if conflictMode != -1:
 		# Get rows with DC (2)
