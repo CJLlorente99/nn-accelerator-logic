@@ -20,7 +20,7 @@ resizeFactor = 4
 # for modelName in ['binaryVggSmall/binaryVGGSmall_prunedBT6_4', 'binaryVggSmall/binaryVGGSmall_prunedBT8_4',
 #                   'binaryVggSmall/binaryVGGSmall_prunedBT10_4', 'binaryVggSmall/binaryVGGSmall_prunedBT12_4']:
     
-for modelName in ['binaryVggVerySmall/binaryVGGVerySmall_prunedBT6_4', 'binaryVggVerySmall/binaryVGGVerySmall_prunedBT8_4',
+for modelName in ['binaryVggVerySmall/binaryVGGVerySmall_prunedBT8_4',
                   'binaryVggVerySmall/binaryVGGVerySmall_prunedBT10_4', 'binaryVggVerySmall/binaryVGGVerySmall_prunedBT12_4']:
 
     modelFilename = f'data/savedModels/{modelName}'
@@ -52,7 +52,7 @@ for modelName in ['binaryVggVerySmall/binaryVGGVerySmall_prunedBT6_4', 'binaryVg
     # ! not even neccessary to load the model
 
     # Load activations
-    model.loadActivations(f'./data/activations/{modelName}')
+    model.loadActivations(f'./data/activations/{modelName}/')
 
     # Create TT per layer (not optimized)
     for i in range(1, 4):
@@ -101,6 +101,8 @@ for modelName in ['binaryVggVerySmall/binaryVGGVerySmall_prunedBT6_4', 'binaryVg
         df.drop(f'OUT{neuron:04d}', inplace=True, axis=1)
 
     # Load pruning data
+    dfPrunedLayer = pd.read_csv(f'data/savedModels/{modelName}_prunedInfo2.csv')
+    print(f'data/savedModels/{modelName}_prunedInfo2.csv read')
 
     # Layer 3
     columnsTags = [f'IN{i}' for i in range(model.valueSTEL1.shape[1])]
@@ -186,8 +188,8 @@ for modelName in ['binaryVggVerySmall/binaryVGGVerySmall_prunedBT6_4', 'binaryVg
         df.drop(f'OUT{neuron:04d}', inplace=True, axis=1)
 
     # Load pruning data
-    dfPrunedLayer = pd.read_csv(f'data/savedModels/{modelName}_prunedInfo3.csv')
-    print(f'data/savedModels/{modelName}_prunedInfo3.csv read')
+    dfPrunedLayer = pd.read_csv(f'data/savedModels/{modelName}_prunedInfo2.csv')
+    print(f'data/savedModels/{modelName}_prunedInfo2.csv read')
 
     # Layer 3
     columnsTags = [f'IN{i}' for i in range(model.valueSTEL1.shape[1])]

@@ -16,7 +16,7 @@ device = 'cuda' if torch.cuda.is_available() else 'cpu'
 prunedBT = True
 perGradientSampling = 1
 resizeFactor = 4
-threshold = 10e-5
+threshold = 10e-8
 
 # for modelName in ['binaryVggSmall/binaryVGGSmall_prunedBT6_4', 'binaryVggSmall/binaryVGGSmall_prunedBT8_4',
 #                   'binaryVggSmall/binaryVGGSmall_prunedBT10_4', 'binaryVggSmall/binaryVGGSmall_prunedBT12_4']:
@@ -59,28 +59,31 @@ for modelName in ['binaryVggVerySmall/binaryVGGVerySmall_prunedBT6_4', 'binaryVg
     Enumeration for realization and importance calculation
     """
 
-    model.registerHooks()
-    model.eval()
+    # model.registerHooks()
+    # model.eval()
 
-    start = 0
-    for i in range(start, sampleSize):
-        X, y = train_dataloader.dataset[i]
-        model.zero_grad()
-        pred = model(X[None, :, :, :])
-        pred[0, y].backward()
+    # start = 0
+    # for i in range(start, sampleSize):
+    #     X, y = train_dataloader.dataset[i]
+    #     model.zero_grad()
+    #     pred = model(X[None, :, :, :])
+    #     pred[0, y].backward()
 
-        if (i+1) % 500 == 0:
-            print(f'Get Gradients and Activation Values [{i + 1 :>5d}/{sampleSize :>5d}]')
+    #     if (i+1) % 500 == 0:
+    #         print(f'Get Gradients and Activation Values [{i + 1 :>5d}/{sampleSize :>5d}]')
 
-    # Folder for gradients and activations
-    if not os.path.exists(f'./data/activation/{modelName}'):
-        os.makedirs(f'./data/activation/{modelName}')
-    if not os.path.exists(f'./data/gradients/{modelName}'):
-        os.makedirs(f'./data/gradients/{modelName}')
+    # # Folder for gradients and activations
+    # if not os.path.exists(f'./data/activation/{modelName}'):
+    #     os.makedirs(f'./data/activation/{modelName}')
+    # if not os.path.exists(f'./data/gradients/{modelName}'):
+    #     os.makedirs(f'./data/gradients/{modelName}')
 
-    model.listToArray()
-    model.saveActivations()
-    model.saveGradients()
+    # model.listToArray()
+    # model.saveActivations(f'./data/activation/{modelName}/')
+    # model.saveGradients(f'./data/gradients/{modelName}/')
+
+    model.loadGradients(f'./data/gradients/{modelName}/')
+    model.loadActivations(f'./data/activations/{modelName}/')
 
     # Compute importance
     importanceList = model.computeImportance()
