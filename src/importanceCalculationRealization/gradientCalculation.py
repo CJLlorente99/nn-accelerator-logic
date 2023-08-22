@@ -20,8 +20,7 @@ resizeFactor = 4
 # for modelName in ['binaryVggSmall/binaryVGGSmall_prunedBT6_4', 'binaryVggSmall/binaryVGGSmall_prunedBT8_4',
 #                   'binaryVggSmall/binaryVGGSmall_prunedBT10_4', 'binaryVggSmall/binaryVGGSmall_prunedBT12_4']:
     
-for modelName in ['binaryVggVerySmall/binaryVGGVerySmall_prunedBT8_4',
-                  'binaryVggVerySmall/binaryVGGVerySmall_prunedBT10_4', 'binaryVggVerySmall/binaryVGGVerySmall_prunedBT12_4']:
+for modelName in ['binaryVggVerySmall/binaryVGGVerySmall_prunedBT10_4', 'binaryVggVerySmall/binaryVGGVerySmall_prunedBT12_4']:
 
     modelFilename = f'data/savedModels/{modelName}'
 
@@ -123,9 +122,6 @@ for modelName in ['binaryVggVerySmall/binaryVGGVerySmall_prunedBT8_4',
     ###########################################################################################3
     # Create TT per layer (optimized per class)
     for i in range(1, 4):
-        if not os.path.exists(f'./data/plas/{modelName}/ABCOptimizedPerClass/layer{i}/'):
-            os.makedirs(f'./data/plas/{modelName}/ABCOptimizedPerClass/layer{i}/')
-
         if not os.path.exists(f'./data/plas/{modelName}/ESPRESSOOptimizedPerClass_0/layer{i}/'):
             os.makedirs(f'./data/plas/{modelName}/ESPRESSOOptimizedPerClass_0/layer{i}/')
         if not os.path.exists(f'./data/plas/{modelName}/ESPRESSOOptimizedPerClass_1/layer{i}/'):
