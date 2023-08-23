@@ -53,71 +53,71 @@ for modelName in ['binaryVggVerySmall/binaryVGGVerySmall_prunedBT10_4', 'binaryV
     # Load activations
     model.loadActivations(f'./data/activations/{modelName}/')
 
-    # Create TT per layer (not optimized)
-    for i in range(1, 4):
-        if not os.path.exists(f'./data/plas/{modelName}/ABC/layer{i}/'):
-            os.makedirs(f'./data/plas/{modelName}/ABC/layer{i}/')
-        if not os.path.exists(f'./data/plas/{modelName}/ESPRESSO/layer{i}/'):
-            os.makedirs(f'./data/plas/{modelName}/ESPRESSO/layer{i}/')
+    # # Create TT per layer (not optimized)
+    # for i in range(1, 4):
+    #     if not os.path.exists(f'./data/plas/{modelName}/ABC/layer{i}/'):
+    #         os.makedirs(f'./data/plas/{modelName}/ABC/layer{i}/')
+    #     if not os.path.exists(f'./data/plas/{modelName}/ESPRESSO/layer{i}/'):
+    #         os.makedirs(f'./data/plas/{modelName}/ESPRESSO/layer{i}/')
 
-    # Load pruning data
-    dfPrunedLayer = pd.read_csv(f'data/savedModels/{modelName}_prunedInfo0.csv')
-    print(f'data/savedModels/{modelName}_prunedInfo0.csv read')
+    # # Load pruning data
+    # dfPrunedLayer = pd.read_csv(f'data/savedModels/{modelName}_prunedInfo0.csv')
+    # print(f'data/savedModels/{modelName}_prunedInfo0.csv read')
 
-    # Layer 1
-    columnsTags = [f'IN{i}' for i in range(model.valueSTE42.shape[1])]
-    df = pd.DataFrame(model.valueSTE42, columns=columnsTags)
-    df[df == -1] = 0
-    df = df.astype(int)
-    for neuron in range(model.valueSTEL0.shape[1]):
-        df[f'OUT{neuron:04d}'] = model.valueSTEL0[:, neuron]
-        df.replace({f'OUT{neuron:04d}': -1}, 0, inplace=True)
+    # # Layer 1
+    # columnsTags = [f'IN{i}' for i in range(model.valueSTE42.shape[1])]
+    # df = pd.DataFrame(model.valueSTE42, columns=columnsTags)
+    # df[df == -1] = 0
+    # df = df.astype(int)
+    # for neuron in range(model.valueSTEL0.shape[1]):
+    #     df[f'OUT{neuron:04d}'] = model.valueSTEL0[:, neuron]
+    #     df.replace({f'OUT{neuron:04d}': -1}, 0, inplace=True)
 
-        aux = pruneAndDrop(df, dfPrunedLayer, f'N{neuron:04d}')
+    #     aux = pruneAndDrop(df, dfPrunedLayer, f'N{neuron:04d}')
 
-        createPLAFileABC(aux, f'./data/plas/{modelName}/ABC/layer1/N{neuron:04d}')
-        createPLAFileEspresso(aux, f'./data/plas/{modelName}/ESPRESSO/layer1/N{neuron:04d}')
-        df.drop(f'OUT{neuron:04d}', inplace=True, axis=1)
+    #     createPLAFileABC(aux, f'./data/plas/{modelName}/ABC/layer1/N{neuron:04d}')
+    #     createPLAFileEspresso(aux, f'./data/plas/{modelName}/ESPRESSO/layer1/N{neuron:04d}')
+    #     df.drop(f'OUT{neuron:04d}', inplace=True, axis=1)
 
-    # Load pruning data
-    dfPrunedLayer = pd.read_csv(f'data/savedModels/{modelName}_prunedInfo1.csv')
-    print(f'data/savedModels/{modelName}_prunedInfo1.csv read')
+    # # Load pruning data
+    # dfPrunedLayer = pd.read_csv(f'data/savedModels/{modelName}_prunedInfo1.csv')
+    # print(f'data/savedModels/{modelName}_prunedInfo1.csv read')
 
-    # Layer 2
-    columnsTags = [f'IN{i}' for i in range(model.valueSTEL0.shape[1])]
-    df = pd.DataFrame(model.valueSTEL0, columns=columnsTags)
-    df[df == -1] = 0
-    df = df.astype(int)
-    for neuron in range(model.valueSTEL1.shape[1]):
-        df[f'OUT{neuron:04d}'] = model.valueSTEL1[:, neuron]
-        df.replace({f'OUT{neuron:04d}': -1}, 0, inplace=True)
-        aux = df.copy()
+    # # Layer 2
+    # columnsTags = [f'IN{i}' for i in range(model.valueSTEL0.shape[1])]
+    # df = pd.DataFrame(model.valueSTEL0, columns=columnsTags)
+    # df[df == -1] = 0
+    # df = df.astype(int)
+    # for neuron in range(model.valueSTEL1.shape[1]):
+    #     df[f'OUT{neuron:04d}'] = model.valueSTEL1[:, neuron]
+    #     df.replace({f'OUT{neuron:04d}': -1}, 0, inplace=True)
+    #     aux = df.copy()
 
-        aux = pruneAndDrop(df, dfPrunedLayer, f'N{neuron:04d}')
+    #     aux = pruneAndDrop(df, dfPrunedLayer, f'N{neuron:04d}')
 
-        createPLAFileABC(aux, f'./data/plas/{modelName}/ABC/layer2/N{neuron:04d}')
-        createPLAFileEspresso(aux, f'./data/plas/{modelName}/ESPRESSO/layer2/N{neuron:04d}')
-        df.drop(f'OUT{neuron:04d}', inplace=True, axis=1)
+    #     createPLAFileABC(aux, f'./data/plas/{modelName}/ABC/layer2/N{neuron:04d}')
+    #     createPLAFileEspresso(aux, f'./data/plas/{modelName}/ESPRESSO/layer2/N{neuron:04d}')
+    #     df.drop(f'OUT{neuron:04d}', inplace=True, axis=1)
 
-    # Load pruning data
-    dfPrunedLayer = pd.read_csv(f'data/savedModels/{modelName}_prunedInfo2.csv')
-    print(f'data/savedModels/{modelName}_prunedInfo2.csv read')
+    # # Load pruning data
+    # dfPrunedLayer = pd.read_csv(f'data/savedModels/{modelName}_prunedInfo2.csv')
+    # print(f'data/savedModels/{modelName}_prunedInfo2.csv read')
 
-    # Layer 3
-    columnsTags = [f'IN{i}' for i in range(model.valueSTEL1.shape[1])]
-    df = pd.DataFrame(model.valueSTEL1, columns=columnsTags)
-    df[df == -1] = 0
-    df = df.astype(int)
-    for neuron in range(model.valueSTEL2.shape[1]):
-        df[f'OUT{neuron:04d}'] = model.valueSTEL2[:, neuron]
-        df.replace({f'OUT{neuron:04d}': -1}, 0, inplace=True)
-        aux = df.copy()
+    # # Layer 3
+    # columnsTags = [f'IN{i}' for i in range(model.valueSTEL1.shape[1])]
+    # df = pd.DataFrame(model.valueSTEL1, columns=columnsTags)
+    # df[df == -1] = 0
+    # df = df.astype(int)
+    # for neuron in range(model.valueSTEL2.shape[1]):
+    #     df[f'OUT{neuron:04d}'] = model.valueSTEL2[:, neuron]
+    #     df.replace({f'OUT{neuron:04d}': -1}, 0, inplace=True)
+    #     aux = df.copy()
 
-        aux = pruneAndDrop(df, dfPrunedLayer, f'N{neuron:04d}')
+    #     aux = pruneAndDrop(df, dfPrunedLayer, f'N{neuron:04d}')
 
-        createPLAFileABC(aux, f'./data/plas/{modelName}/ABC/layer3/N{neuron:04d}')
-        createPLAFileEspresso(aux, f'./data/plas/{modelName}/ESPRESSO/layer3/N{neuron:04d}')
-        df.drop(f'OUT{neuron:04d}', inplace=True, axis=1)
+    #     createPLAFileABC(aux, f'./data/plas/{modelName}/ABC/layer3/N{neuron:04d}')
+    #     createPLAFileEspresso(aux, f'./data/plas/{modelName}/ESPRESSO/layer3/N{neuron:04d}')
+    #     df.drop(f'OUT{neuron:04d}', inplace=True, axis=1)
 
     ###########################################################################################3
     # Create TT per layer (optimized per class)
@@ -139,7 +139,7 @@ for modelName in ['binaryVggVerySmall/binaryVGGVerySmall_prunedBT10_4', 'binaryV
     importancePerEntry = pd.read_csv(f'./data/importance/{modelName}/PerClasslayer0.csv')
     df[df == -1] = 0
     df = df.astype(int)
-    for neuron in range(model.valueSTEL0.shape[1]):
+    for neuron in range(3367, model.valueSTEL0.shape[1]):
         dfImportance = importancePerEntry[f'N{neuron}']    
         df[f'OUT{neuron:04d}'] = model.valueSTEL0[:, neuron]
         df.replace({f'OUT{neuron:04d}': -1}, 0, inplace=True)
