@@ -20,7 +20,7 @@ resizeFactor = 4
 # for modelName in ['binaryVggSmall/binaryVGGSmall_prunedBT6_4', 'binaryVggSmall/binaryVGGSmall_prunedBT8_4',
 #                   'binaryVggSmall/binaryVGGSmall_prunedBT10_4', 'binaryVggSmall/binaryVGGSmall_prunedBT12_4']:
     
-for modelName in ['binaryVggVerySmall/binaryVGGVerySmall_prunedBT10_4', 'binaryVggVerySmall/binaryVGGVerySmall_prunedBT12_4']:
+for modelName in ['binaryVggVerySmall/binaryVGGVerySmall_prunedBT12_4']:
 
     modelFilename = f'data/savedModels/{modelName}'
 
