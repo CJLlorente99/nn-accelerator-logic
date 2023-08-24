@@ -3,8 +3,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 import os
 
-for modelName in ['binaryVggSmall/binaryVGGSmall_prunedBT6_4', 'binaryVggSmall/binaryVGGSmall_prunedBT8_4', 'binaryVggSmall/binaryVGGSmall_prunedBT10_4', 'binaryVggSmall/binaryVGGSmall_prunedBT12_4',
-                  'binaryVggVerySmall/binaryVGGVerySmall_prunedBT6_4', 'binaryVggVerySmall/binaryVGGVerySmall_prunedBT8_4',
+for modelName in ['binaryVggVerySmall/binaryVGGVerySmall_prunedBT6_4', 'binaryVggVerySmall/binaryVGGVerySmall_prunedBT8_4',
                   'binaryVggVerySmall/binaryVGGVerySmall_prunedBT10_4', 'binaryVggVerySmall/binaryVGGVerySmall_prunedBT12_4']:
     
     print(f'{modelName}')
@@ -17,10 +16,10 @@ for modelName in ['binaryVggSmall/binaryVGGSmall_prunedBT6_4', 'binaryVggSmall/b
     count.sort()
 
     fig = plt.figure()
-    counts, _, _ = plt.hist(count, color='b', bins=np.arange(4070, 4097), ec='black')
+    counts, _, _ = plt.hist(4096 - count, color='b', bins=np.arange(-0.5, 21.5), ec='black')
     plt.ylim([0, counts.max()+1])
     plt.ylabel('Frequency')
-    new_list = range(4070, 4097)
+    new_list = range(-1, 20)
     plt.xticks(new_list, rotation=45)
     plt.xlabel('Number of times used as input')
     plt.title(f'Layer 1 Sparsity')
@@ -33,10 +32,10 @@ for modelName in ['binaryVggSmall/binaryVGGSmall_prunedBT6_4', 'binaryVggSmall/b
     count.sort()
 
     fig = plt.figure()
-    counts, _, _ = plt.hist(count, color='b', bins=np.arange(4070, 4097), ec='black')
+    counts, _, _ = plt.hist(4096 - count, color='b', bins=np.arange(-0.5, 21.5), ec='black')
     plt.ylim([0, counts.max()+1])
     plt.ylabel('Frequency')
-    new_list = range(4070, 4097)
+    new_list = range(-1, 20)
     plt.xticks(new_list, rotation=45)
     plt.xlabel('Number of times used as input')
     plt.title(f'Layer 2 Sparsity')
@@ -49,10 +48,10 @@ for modelName in ['binaryVggSmall/binaryVGGSmall_prunedBT6_4', 'binaryVggSmall/b
     count.sort()
 
     fig = plt.figure()
-    counts, _, _ = plt.hist(count, color='b', bins=np.arange(970, 1001), ec='black')
+    counts, _, _ = plt.hist(1000 - count, color='b', bins=np.arange(-0.5, 21.5), ec='black')
     plt.ylim([0, counts.max()+1])
     plt.ylabel('Frequency')
-    new_list = range(970, 1001)
+    new_list = range(-1, 20)
     plt.xticks(new_list, rotation=45)
     plt.xlabel('Number of times used as input')
     plt.title(f'Layer 3 Sparsity')
