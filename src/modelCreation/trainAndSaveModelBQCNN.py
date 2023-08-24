@@ -4,7 +4,7 @@ from modelsCommon.auxTransformations import *
 from torchvision import datasets
 from torchvision.transforms import ToTensor, Compose, Normalize, RandomHorizontalFlip, RandomCrop, Resize
 from torch.utils.data import DataLoader
-from modules.binaryFullVggVerySmall import binaryFullBVGGVerySmall
+from modules.binaryBQCNN import BQCNN
 import torch.optim as optim
 import torch.nn as nn
 import sys
@@ -20,7 +20,7 @@ def main(modelName, resizeFactor, inputsAfterBTPruning):
     device = 'cuda' if torch.cuda.is_available() else 'cpu'
     print(device)
     
-    model = binaryFullBVGGVerySmall(resizeFactor, inputsAfterBTPruning).to(device)
+    model = BQCNN().to(device)
     
     '''
     Importing CIFAR10 dataset
