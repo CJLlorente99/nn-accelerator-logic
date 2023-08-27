@@ -22,7 +22,8 @@ training_data = datasets.MNIST(
     )
 
 
-for modelName in ['bnn/bnn_prunedBT6_100ep_4096npl', 'bnn/bnn_prunedBT8_100ep_4096npl', 'bnn/bnn_prunedBT10_100ep_4096npl', 'bnn/bnn_prunedBT12_100ep_4096npl']:
+# for modelName in ['bnn/bnn_prunedBT6_100ep_4096npl', 'bnn/bnn_prunedBT8_100ep_4096npl', 'bnn/bnn_prunedBT10_100ep_4096npl', 'bnn/bnn_prunedBT12_100ep_4096npl']:
+for modelName in ['bnn/bnn_prunedBT12_100ep_4096npl_10e-4']:
     print(f'{modelName}')
 
 
@@ -58,7 +59,7 @@ for modelName in ['bnn/bnn_prunedBT6_100ep_4096npl', 'bnn/bnn_prunedBT8_100ep_40
             aux = importancePerClass[iImp][i].sum(0) / len(importancePerClass[iImp][i])
             nEntries += len(importancePerClass[iImp][i]) * (aux > 0).sum()
             importancePerClass[iImp][i] = aux
-        print(f'importance number {iImp} has {nEntries} with relevant classes out of {totalEntries}')
+        print(f'importance number {iImp} has {nEntries} ({nEntries / totalEntries * 100}%) with relevant classes out of {totalEntries}')
 
     # Group all importances in same array
     for iImp in range(len(importanceList)):
@@ -92,4 +93,4 @@ for modelName in ['bnn/bnn_prunedBT6_100ep_4096npl', 'bnn/bnn_prunedBT8_100ep_40
         plt.title(f'Layer {imp} Number of Important Classes')
         fig.savefig(f'img/importance/{modelName}/importanClassesLayer{imp}.png', transparent=True)
 
-        print(f'{modelName} erfolgreich')
+    print(f'{modelName} erfolgreich')
