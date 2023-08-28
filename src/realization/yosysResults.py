@@ -63,6 +63,10 @@ for modelName in ['eeb/eeb_prunedBT6_100ep_100npl', 'eeb/eeb_prunedBT8_100ep_100
         for layer in dfCellsData:
             dfCellsData[layer].to_excel(writer, sheet_name=layer)
 
+    with pd.ExcelWriter(f'img/yosysStats/{modelName}/generalData.xlsx') as writer:
+        for layer in dfGeneralData:
+            dfGeneralData[layer][['area', 'num_wires']].to_excel(writer, sheet_name=layer)
+
     # Plot comparative
     aux = pd.concat([dfGeneralData['layer1']['area'], dfGeneralData['layer2']['area'], dfGeneralData['layer3']['area']], axis=1)
     aux.columns = ['layer1', 'layer2', 'layer3']
