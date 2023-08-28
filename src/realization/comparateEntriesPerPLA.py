@@ -6,7 +6,7 @@ import numpy as np
 
 dataFolder = 'data'
 
-for modelName in ['bnn/bnn_prunedBT6_100ep_4096npl']:
+for modelName in ['bnn/bnn_prunedBT6_100ep_4096npl', 'bnn/bnn_prunedBT8_100ep_4096npl', 'bnn/bnn_prunedBT10_100ep_4096npl', 'bnn/bnn_prunedBT12_100ep_4096npl']:
     stringData = re.search(f'BT(.*)_100ep', modelName)
     maxTTSize = 2**int(stringData.group(1))
     if not os.path.exists(f'img/plaSizeComparative/{modelName}/afterPruneESPRESSO'):
@@ -15,7 +15,6 @@ for modelName in ['bnn/bnn_prunedBT6_100ep_4096npl']:
     plasFolderNameABC = f'{dataFolder}/plas/{modelName}/ABC'
     plasFolderName = f'{dataFolder}/plas/{modelName}/ESPRESSO'
     plasFolderNamePerClass_0 = f'{dataFolder}/plas/{modelName}/ESPRESSOOptimizedPerClass_0'
-    plasFolderNamePerClass_1 = f'{dataFolder}/plas/{modelName}/ESPRESSOOptimizedPerClass_1'
     plasFolderNamePerClass_2 = f'{dataFolder}/plas/{modelName}/ESPRESSOOptimizedPerClass_2'
     pruned = True
     prunedBaseFilename = f'{dataFolder}/savedModels/{modelName}_prunedInfol'
@@ -56,7 +55,6 @@ for modelName in ['bnn/bnn_prunedBT6_100ep_4096npl']:
 
     fillPLAESPRESSO(plasFolderName, 'notOptimizedESPRESSO')
     fillPLAESPRESSO(plasFolderNamePerClass_0, 'optimizedPerClassESPRESSO_0')
-    fillPLAESPRESSO(plasFolderNamePerClass_1, 'optimizedPerClassESPRESSO_1')
     fillPLAESPRESSO(plasFolderNamePerClass_2, 'optimizedPerClassESPRESSO_2')
 
     for layer in ttSize:
@@ -65,32 +63,27 @@ for modelName in ['bnn/bnn_prunedBT6_100ep_4096npl']:
         # Number of entries as substraction from espresso version
         df['notOptimizedESPRESSOGain'] = df['notOptimized'] - df['notOptimizedESPRESSO']
         df['optimizedPerClassESPRESSO_0Gain'] = df['notOptimized'] - df['optimizedPerClassESPRESSO_0']
-        df['optimizedPerClassESPRESSO_1Gain'] = df['notOptimized'] - df['optimizedPerClassESPRESSO_1']
         df['optimizedPerClassESPRESSO_2Gain'] = df['notOptimized'] - df['optimizedPerClassESPRESSO_2']
 
         # Number of entries as percentage saved from notOptimized
         df['notOptimizedESPRESSOPer'] = (df['notOptimized'] - df['notOptimizedESPRESSO']) / df['notOptimized'] * 100
         df['optimizedPerClassESPRESSO_0Per'] = (df['notOptimized'] - df['optimizedPerClassESPRESSO_0']) / df['notOptimized'] * 100
-        df['optimizedPerClassESPRESSO_1Per'] = (df['notOptimized'] - df['optimizedPerClassESPRESSO_1']) / df['notOptimized'] * 100
         df['optimizedPerClassESPRESSO_2Per'] = (df['notOptimized'] - df['optimizedPerClassESPRESSO_2']) / df['notOptimized'] * 100
 
         # Global performance (number of entries spared)
         notOptimizedEntriesSparedAbs = df['notOptimizedESPRESSOGain'].sum()
         optimizedPerClass_0EntriesSparedAbs = df['optimizedPerClassESPRESSO_0Gain'].sum()
-        optimizedPerClass_1EntriesSparedAbs = df['optimizedPerClassESPRESSO_1Gain'].sum()
         optimizedPerClass_2EntriesSparedAbs = df['optimizedPerClassESPRESSO_2Gain'].sum()
         originalNumberEntries = df['notOptimized'].sum()
 
         notOptimizedEntriesSparedPer = notOptimizedEntriesSparedAbs/originalNumberEntries * 100
         optimizedPerClass_0EntriesSparedPer = optimizedPerClass_0EntriesSparedAbs/originalNumberEntries * 100
-        optimizedPerClass_1EntriesSparedPer = optimizedPerClass_1EntriesSparedAbs/originalNumberEntries * 100
         optimizedPerClass_2EntriesSparedPer = optimizedPerClass_2EntriesSparedAbs/originalNumberEntries * 100
 
         infoStr = []
         infoStr.append(f'Original number of entries: {originalNumberEntries}')
         infoStr.append(f'Entries spared following No Opt: {notOptimizedEntriesSparedAbs} ({notOptimizedEntriesSparedPer:.2f}%)')
         infoStr.append(f'Entries spared following optimization per class (0): {optimizedPerClass_0EntriesSparedAbs} ({optimizedPerClass_0EntriesSparedPer:.2f}%)')
-        infoStr.append(f'Entries spared following optimization per class (1): {optimizedPerClass_1EntriesSparedAbs} ({optimizedPerClass_1EntriesSparedPer:.2f}%)')
         infoStr.append(f'Entries spared following optimization per class (2): {optimizedPerClass_2EntriesSparedAbs} ({optimizedPerClass_2EntriesSparedPer:.2f}%)')
         infoStr = '\n'.join(infoStr)
         fname = f'img/plaSizeComparative/{modelName}/afterPruneESPRESSO/entriesSpared{layer}.txt'
@@ -139,28 +132,6 @@ for modelName in ['bnn/bnn_prunedBT6_100ep_4096npl']:
         plt.ylabel('Frequency')
         plt.xticks(np.arange(0, 110, 10))
         fname = f'img/plaSizeComparative/{modelName}/afterPruneESPRESSO/perEntriesSparedPC_0{layer}.png'
-        plt.savefig(fname)
-        plt.close()
-
-        fig = plt.figure()
-        df_sorted = df.sort_values('optimizedPerClassESPRESSO_1Gain')
-        plt.hist(df_sorted['optimizedPerClassESPRESSO_1Gain'], color='b', ec='black')
-        plt.title(f'Entries spared per Neuron in {layer} (PC_1)')
-        plt.xlabel('Entries spared')
-        plt.ylabel('Frequency')
-        plt.xticks(np.arange(0, maxTTSize+1, maxTTSize/10).astype(int), rotation=45)
-        fname = f'img/plaSizeComparative/{modelName}/afterPruneESPRESSO/absEntriesSparedPC_1{layer}.png'
-        plt.savefig(fname)
-        plt.close()
-
-        fig = plt.figure()
-        df_sorted = df.sort_values('optimizedPerClassESPRESSO_1Per')
-        plt.hist(df_sorted['optimizedPerClassESPRESSO_1Per'], color='b', ec='black')
-        plt.title(f'% Entries spared per Neuron in {layer} (PC_1)')
-        plt.xlabel(f'% Entries spared')
-        plt.ylabel('Frequency')
-        plt.xticks(np.arange(0, 110, 10))
-        fname = f'img/plaSizeComparative/{modelName}/afterPruneESPRESSO/perEntriesSparedPC_1{layer}.png'
         plt.savefig(fname)
         plt.close()
 
