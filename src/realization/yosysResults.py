@@ -5,7 +5,7 @@ import json
 
 data = {}
 
-for modelName in ['bnn/bnn_prunedBT6_100ep_4096npl', 'bnn/bnn_prunedBT8_100ep_4096npl', 'bnn/bnn_prunedBT10_100ep_4096npl', 'bnn/bnn_prunedBT12_100ep_4096npl']:
+for modelName in ['bnn/bnn_prunedBT6_100ep_4096npl', 'bnn/bnn_prunedBT8_100ep_4096npl', 'bnn/bnn_prunedBT10_100ep_4096npl']:
 
     print(f'{modelName}')
 
@@ -62,6 +62,10 @@ for modelName in ['bnn/bnn_prunedBT6_100ep_4096npl', 'bnn/bnn_prunedBT8_100ep_40
     with pd.ExcelWriter(f'img/yosysStats/{modelName}/cellsData.xlsx') as writer:
         for layer in dfCellsData:
             dfCellsData[layer].to_excel(writer, sheet_name=layer)
+
+    with pd.ExcelWriter(f'img/yosysStats/{modelName}/generalData.xlsx') as writer:
+        for layer in dfGeneralData:
+            dfGeneralData[layer][['area', 'num_wires']].to_excel(writer, sheet_name=layer)
 
     # Plot comparative
     aux = pd.concat([dfGeneralData['layer1']['area'], dfGeneralData['layer2']['area'], dfGeneralData['layer3']['area']], axis=1)
