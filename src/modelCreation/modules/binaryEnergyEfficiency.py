@@ -7,38 +7,39 @@ import torch
 import pandas as pd
 import heapq
 import torch.nn.utils.prune as prune
-from modelsCommon.customPruning import random_pruning_per_neuron
+from modelsCommon.customPruning import random_pruning_per_neuron, ordered_pruning_per_neuron
 
 
 class BinaryNeuralNetwork(nn.Module):
-	def __init__(self, neuronPerLayer=100, connectionsToPrune=0):
+	def __init__(self, connectionsToPrune=0):
 		super(BinaryNeuralNetwork, self).__init__()
 		self.flatten = nn.Flatten()
 
-		self.l0 = nn.Linear(28 * 28, neuronPerLayer)
-		self.bn0 = nn.BatchNorm1d(neuronPerLayer)
+		self.l0 = nn.Linear(28 * 28, 100)
+		self.bn0 = nn.BatchNorm1d(100)
 		self.ste0 = STEFunction()
 
-		self.l1 = nn.Linear(neuronPerLayer, neuronPerLayer)
-		self.bn1 = nn.BatchNorm1d(neuronPerLayer)
+		self.l1 = nn.Linear(100, 100)
+		self.bn1 = nn.BatchNorm1d(100)
 		self.ste1 = STEFunction()
 
-		self.l2 = nn.Linear(neuronPerLayer, neuronPerLayer)
-		self.bn2 = nn.BatchNorm1d(neuronPerLayer)
+		self.l2 = nn.Linear(100, 100)
+		self.bn2 = nn.BatchNorm1d(100)
 		self.ste2 = STEFunction()
 
-		self.l3 = nn.Linear(neuronPerLayer, neuronPerLayer)
-		self.bn3 = nn.BatchNorm1d(neuronPerLayer)
+		self.l3 = nn.Linear(100, 100)
+		self.bn3 = nn.BatchNorm1d(100)
 		self.ste3 = STEFunction()
 
-		self.l4 = nn.Linear(neuronPerLayer, 10)
+		self.l4 = nn.Linear(100, 10)
 		self.bn4 = nn.BatchNorm1d(10)
 
 		# Regular pruning
 		if connectionsToPrune != 0:
-			self.l1 = random_pruning_per_neuron(self.l1, name="weight", connectionsToPrune=connectionsToPrune)
-			self.l2 = random_pruning_per_neuron(self.l2, name="weight", connectionsToPrune=connectionsToPrune)
-			self.l3 = random_pruning_per_neuron(self.l3, name="weight", connectionsToPrune=connectionsToPrune)
+			self.l0 = ordered_pruning_per_neuron(self.l0, name="weight", connectionsToPrune=784-connectionsToPrune)
+			self.l1 = random_pruning_per_neuron(self.l1, name="weight", connectionsToPrune=100-connectionsToPrune)
+			self.l2 = random_pruning_per_neuron(self.l2, name="weight", connectionsToPrune=100-connectionsToPrune)
+			self.l3 = random_pruning_per_neuron(self.l3, name="weight", connectionsToPrune=100-connectionsToPrune)
 
 		# Lists for hook data
 		self.gradientsSTE0 = []

@@ -3,7 +3,6 @@ from torchvision import datasets
 from torchvision.transforms import ToTensor, Compose
 from torch.utils.data import DataLoader
 from modules.binaryEnergyEfficiency import BinaryNeuralNetwork
-from modules.binaryBNN import BNNBinaryNeuralNetwork
 import torch.nn as nn
 import pandas as pd
 import numpy as np
@@ -12,11 +11,11 @@ import torch.nn.functional as F
 import os
 
 batch_size = 1
-neuronPerLayer = 4096
-modelName = 'bnn/bnn_prunedBT14_100ep_4096npl'
+neuronPerLayer = 100
+modelName = 'eeb/eeb_prunedBT12_100ep_100npl_all'
 modelFilename = f'data\savedModels\{modelName}'
-outputFilenameTrain = f'data/inputs/{modelName}/trainlayer1'
-outputFilenameTest = f'data/inputs/{modelName}/testlayer1'
+outputFilenameTrain = f'data/inputs/{modelName}/trainlayer0'
+outputFilenameTest = f'data/inputs/{modelName}/testlayer0'
 prunedBT = True
 
 
@@ -67,11 +66,7 @@ Instantiate NN models
 '''
 print(f'MODEL INSTANTIATION\n')
 
-if 'eeb' in modelFilename:
-    model = BinaryNeuralNetwork(neuronPerLayer).to(device) if not prunedBT else BinaryNeuralNetwork(neuronPerLayer, 1).to(device)
-elif 'bnn' in modelFilename:
-    model = BNNBinaryNeuralNetwork(neuronPerLayer).to(device) if not prunedBT else BNNBinaryNeuralNetwork(neuronPerLayer, 1).to(device)
-model.load_state_dict(torch.load(modelFilename, map_location=torch.device(device)))
+model = BinaryNeuralNetwork(1).to(device)
 
 '''
 Load the simulated inputs to the last layer (provided by minimized network)
@@ -83,15 +78,15 @@ aux = []
 count = 0
 for X, y in train_dataloader:
     X = torch.flatten(X, start_dim=1)
-    predL0 = model.forwardOneLayer(X , 0)
-    x = predL0.detach().cpu().numpy()
+    # predL0 = model.forwardOneLayer(X , 0)
+    x = X.detach().cpu().numpy()
     x[x < 0] = 0
     aux.append(x.astype(int)[0])
     count += 1
     if count % 5000 == 0:
         print(f'Training forward [{count:>5d}/{len(training_data.targets):>5d}]')
 
-columns = [f'N{i:04d}' for i in range(neuronPerLayer)]
+columns = [f'N{i:04d}' for i in range(x.shape[1])]
 df = pd.DataFrame(np.array(aux), columns=columns)
 df.to_csv(f'{outputFilenameTrain}.csv')
 print(f'{outputFilenameTrain} created successfully')
@@ -100,15 +95,15 @@ aux = []
 count = 0
 for X, y in test_dataloader:
     X = torch.flatten(X, start_dim=1)
-    predL0 = model.forwardOneLayer(X , 0)
-    x = predL0.detach().cpu().numpy()
+    # predL0 = model.forwardOneLayer(X , 0)
+    x = X.detach().cpu().numpy()
     x[x < 0] = 0
     aux.append(x.astype(int)[0])
     count += 1
     if count % 5000 == 0:
         print(f'Test forward [{count:>5d}/{len(test_data.targets):>5d}]')
 
-columns = [f'N{i:04d}' for i in range(neuronPerLayer)]
+columns = [f'N{i:04d}' for i in range(x.shape[1])]
 df = pd.DataFrame(np.array(aux), columns=columns)
 df.to_csv(f'{outputFilenameTest}.csv')
 print(f'{outputFilenameTest} created successfully')
