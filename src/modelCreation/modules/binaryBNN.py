@@ -15,38 +15,39 @@ epsilon = 1e-4
 
 
 class BNNBinaryNeuralNetwork(nn.Module):
-	def __init__(self, neuronPerLayer=100, connectionsToPrune=-1):
+	def __init__(self, connectionsToPrune=-1):
 		super(BNNBinaryNeuralNetwork, self).__init__()
 		self.flatten = nn.Flatten()
 
-		self.l0 = nn.Linear(28 * 28, neuronPerLayer)
-		self.bn0 = nn.BatchNorm1d(neuronPerLayer, momentum=alpha, eps=epsilon)
+		self.l0 = nn.Linear(28 * 28, 4096)
+		self.bn0 = nn.BatchNorm1d(4096, momentum=alpha, eps=epsilon)
 		self.ste0 = STEFunction()
 		self.d0 = nn.Dropout(0.2)
 
-		self.l1 = nn.Linear(neuronPerLayer, neuronPerLayer)
-		self.bn1 = nn.BatchNorm1d(neuronPerLayer, momentum=alpha, eps=epsilon)
+		self.l1 = nn.Linear(4096, 4096)
+		self.bn1 = nn.BatchNorm1d(4096, momentum=alpha, eps=epsilon)
 		self.ste1 = STEFunction()
 		self.d1 = nn.Dropout(0.5)
 
-		self.l2 = nn.Linear(neuronPerLayer, neuronPerLayer)
-		self.bn2 = nn.BatchNorm1d(neuronPerLayer, momentum=alpha, eps=epsilon)
+		self.l2 = nn.Linear(4096, 4096)
+		self.bn2 = nn.BatchNorm1d(4096, momentum=alpha, eps=epsilon)
 		self.ste2 = STEFunction()
 		self.d2 = nn.Dropout(0.5)
 
-		self.l3 = nn.Linear(neuronPerLayer, neuronPerLayer)
-		self.bn3 = nn.BatchNorm1d(neuronPerLayer, momentum=alpha, eps=epsilon)
+		self.l3 = nn.Linear(4096, 4096)
+		self.bn3 = nn.BatchNorm1d(4096, momentum=alpha, eps=epsilon)
 		self.ste3 = STEFunction()
 		self.d3 = nn.Dropout(0.5)
 
-		self.l4 = nn.Linear(neuronPerLayer, 10)
+		self.l4 = nn.Linear(4096, 10)
 		self.bn4 = nn.BatchNorm1d(10)
 
 		# Regular pruning
 		if connectionsToPrune != 0:
-			self.l1 = random_pruning_per_neuron(self.l1, name="weight", connectionsToPrune=connectionsToPrune)
-			self.l2 = random_pruning_per_neuron(self.l2, name="weight", connectionsToPrune=connectionsToPrune)
-			self.l3 = random_pruning_per_neuron(self.l3, name="weight", connectionsToPrune=connectionsToPrune)
+			self.l0 = random_pruning_per_neuron(self.l0, name="weight", connectionsToPrune=784 - connectionsToPrune)
+			self.l1 = random_pruning_per_neuron(self.l1, name="weight", connectionsToPrune=4096 - connectionsToPrune)
+			self.l2 = random_pruning_per_neuron(self.l2, name="weight", connectionsToPrune=4096 - connectionsToPrune)
+			self.l3 = random_pruning_per_neuron(self.l3, name="weight", connectionsToPrune=4096 - connectionsToPrune)
 
 		# Lists for hook data
 		self.gradientsSTE0 = []
@@ -170,7 +171,7 @@ class BNNBinaryNeuralNetwork(nn.Module):
 		self.valueSTE2 = np.array(self.valueSTE2).squeeze().reshape(len(self.valueSTE2), neuronPerLayer)
 		self.valueSTE3 = np.array(self.valueSTE3).squeeze().reshape(len(self.valueSTE3), neuronPerLayer)
 
-	def computeImportance(self, neuronPerLayer):
+	def computeImportance(self):
 		# CAREFUL, as values are either +1 or -1, importance is equal to gradient
 		importanceSTE0 = np.abs(self.gradientsSTE0)
 		print('Importance STE0 calculated')

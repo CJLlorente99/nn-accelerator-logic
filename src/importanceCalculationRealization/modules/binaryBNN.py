@@ -12,38 +12,39 @@ epsilon = 1e-4
 
 
 class BNNBinaryNeuralNetwork(nn.Module):
-	def __init__(self, neuronPerLayer=100, connectionsToPrune=0):
+	def __init__(self, connectionsToPrune=0):
 		super(BNNBinaryNeuralNetwork, self).__init__()
 		self.flatten = nn.Flatten()
 
-		self.l0 = nn.Linear(28 * 28, neuronPerLayer)
-		self.bn0 = nn.BatchNorm1d(neuronPerLayer, momentum=alpha, eps=epsilon)
+		self.l0 = nn.Linear(28 * 28, 4096)
+		self.bn0 = nn.BatchNorm1d(4096, momentum=alpha, eps=epsilon)
 		self.ste0 = STEFunction()
 		self.d0 = nn.Dropout(0.2)
 
-		self.l1 = nn.Linear(neuronPerLayer, neuronPerLayer)
-		self.bn1 = nn.BatchNorm1d(neuronPerLayer, momentum=alpha, eps=epsilon)
+		self.l1 = nn.Linear(4096, 4096)
+		self.bn1 = nn.BatchNorm1d(4096, momentum=alpha, eps=epsilon)
 		self.ste1 = STEFunction()
 		self.d1 = nn.Dropout(0.5)
 
-		self.l2 = nn.Linear(neuronPerLayer, neuronPerLayer)
-		self.bn2 = nn.BatchNorm1d(neuronPerLayer, momentum=alpha, eps=epsilon)
+		self.l2 = nn.Linear(4096, 4096)
+		self.bn2 = nn.BatchNorm1d(4096, momentum=alpha, eps=epsilon)
 		self.ste2 = STEFunction()
 		self.d2 = nn.Dropout(0.5)
 
-		self.l3 = nn.Linear(neuronPerLayer, neuronPerLayer)
-		self.bn3 = nn.BatchNorm1d(neuronPerLayer, momentum=alpha, eps=epsilon)
+		self.l3 = nn.Linear(4096, 4096)
+		self.bn3 = nn.BatchNorm1d(4096, momentum=alpha, eps=epsilon)
 		self.ste3 = STEFunction()
 		self.d3 = nn.Dropout(0.5)
 
-		self.l4 = nn.Linear(neuronPerLayer, 10)
+		self.l4 = nn.Linear(4096, 10)
 		self.bn4 = nn.BatchNorm1d(10)
 
 		# Regular pruning
 		if connectionsToPrune != 0:
-			self.l1 = random_pruning_per_neuron(self.l1, name="weight", connectionsToPrune=connectionsToPrune)
-			self.l2 = random_pruning_per_neuron(self.l2, name="weight", connectionsToPrune=connectionsToPrune)
-			self.l3 = random_pruning_per_neuron(self.l3, name="weight", connectionsToPrune=connectionsToPrune)
+			self.l0 = random_pruning_per_neuron(self.l0, name="weight", connectionsToPrune=784 - connectionsToPrune)
+			self.l1 = random_pruning_per_neuron(self.l1, name="weight", connectionsToPrune=4096 - connectionsToPrune)
+			self.l2 = random_pruning_per_neuron(self.l2, name="weight", connectionsToPrune=4096 - connectionsToPrune)
+			self.l3 = random_pruning_per_neuron(self.l3, name="weight", connectionsToPrune=4096 - connectionsToPrune)
 
 		# Lists for hook data
 		self.gradientsSTE0 = []
@@ -102,7 +103,7 @@ class BNNBinaryNeuralNetwork(nn.Module):
 		self.ste2.register_forward_hook(self.forward_hook_ste2)
 		self.ste3.register_forward_hook(self.forward_hook_ste3)
 
-		# self.l0.register_forward_hook(self.forward_hook_l0)
+		self.l0.register_forward_hook(self.forward_hook_l0)
 
 		if not self.legacyImportance:
 			# Register hooks
@@ -155,9 +156,9 @@ class BNNBinaryNeuralNetwork(nn.Module):
 				val_output[0][self.neuronSwitchedOff[1]] = 0
 
 	def listToArray(self, neuronPerLayer):
-		# self.input0 = np.array(self.input0).squeeze().reshape(len(self.input0), 28 * 28)
+		self.input0 = np.array(self.input0).squeeze().reshape(len(self.input0), 28 * 28)
 
-		# self.gradientsSTE0 = np.array(self.gradientsSTE0).squeeze().reshape(len(self.gradientsSTE0), neuronPerLayer)
+		self.gradientsSTE0 = np.array(self.gradientsSTE0).squeeze().reshape(len(self.gradientsSTE0), neuronPerLayer)
 		self.gradientsSTE1 = np.array(self.gradientsSTE1).squeeze().reshape(len(self.gradientsSTE1), neuronPerLayer)
 		self.gradientsSTE2 = np.array(self.gradientsSTE2).squeeze().reshape(len(self.gradientsSTE2), neuronPerLayer)
 		self.gradientsSTE3 = np.array(self.gradientsSTE3).squeeze().reshape(len(self.gradientsSTE3), neuronPerLayer)
@@ -169,7 +170,7 @@ class BNNBinaryNeuralNetwork(nn.Module):
 
 	def computeImportance(self, neuronPerLayer):
 		# CAREFUL, as values are either +1 or -1, importance is equal to gradient
-		# importanceSTE0 = np.abs(self.gradientsSTE0)
+		importanceSTE0 = np.abs(self.gradientsSTE0)
 		print('Importance STE0 calculated')
 		importanceSTE1 = np.abs(self.gradientsSTE1)
 		print('Importance STE1 calculated')
@@ -178,14 +179,19 @@ class BNNBinaryNeuralNetwork(nn.Module):
 		importanceSTE3 = np.abs(self.gradientsSTE3)
 		print('Importance STE3 calculated')
 		
-		# return [importanceSTE0, importanceSTE1, importanceSTE2, importanceSTE3]
-		return [importanceSTE1, importanceSTE2, importanceSTE3]
+		return [importanceSTE0, importanceSTE1, importanceSTE2, importanceSTE3]
+		# return [importanceSTE1, importanceSTE2, importanceSTE3]
 
 	def saveActivations(self, baseFilename):
+		columnsInLayer0 = [f'N{i}' for i in range(len(self.input0[0]))]
 		columnsInLayer1 = [f'N{i}' for i in range(len(self.valueSTE0[0]))]
 		columnsInLayer2 = [f'N{i}' for i in range(len(self.valueSTE1[0]))]
 		columnsInLayer3 = [f'N{i}' for i in range(len(self.valueSTE2[0]))]
 		columnsInLayer4 = [f'N{i}' for i in range(len(self.valueSTE3[0]))]
+
+		pd.DataFrame(
+			self.input0, columns=columnsInLayer0).to_feather(
+			f'{baseFilename}Input0')
 
 		pd.DataFrame(
 			self.valueSTE0, columns=columnsInLayer1).to_feather(
@@ -204,15 +210,20 @@ class BNNBinaryNeuralNetwork(nn.Module):
 			f'{baseFilename}Input4')
 		
 	def loadActivations(self, baseFilename):
+		self.input0 = pd.read_feather(f'{baseFilename}Input0').to_numpy()
 		self.valueSTE0 = pd.read_feather(f'{baseFilename}Input1').to_numpy()
 		self.valueSTE1 = pd.read_feather(f'{baseFilename}Input2').to_numpy()
 		self.valueSTE2 = pd.read_feather(f'{baseFilename}Input3').to_numpy()
 		self.valueSTE3 = pd.read_feather(f'{baseFilename}Input4').to_numpy()
 
 	def saveGradients(self, baseFilename: str):
+		columnsInLayer1 = [f'N{i}' for i in range(len(self.gradientsSTE0[0]))]
 		columnsInLayer2 = [f'N{i}' for i in range(len(self.gradientsSTE1[0]))]
 		columnsInLayer3 = [f'N{i}' for i in range(len(self.gradientsSTE2[0]))]
 		columnsInLayer4 = [f'N{i}' for i in range(len(self.gradientsSTE3[0]))]
+
+		aux = pd.DataFrame(self.gradientsSTE0, columns=columnsInLayer1)
+		aux.to_feather(f'{baseFilename}STE0')
 
 		aux = pd.DataFrame(self.gradientsSTE1, columns=columnsInLayer2)
 		aux.to_feather(f'{baseFilename}STE1')
@@ -224,6 +235,7 @@ class BNNBinaryNeuralNetwork(nn.Module):
 		aux.to_feather(f'{baseFilename}STE3')
 
 	def loadGradients(self, baseFilename):
+		self.gradientsSTE0 = pd.read_feather(f'{baseFilename}STE0').to_numpy()
 		self.gradientsSTE1 = pd.read_feather(f'{baseFilename}STE1').to_numpy()
 		self.gradientsSTE2 = pd.read_feather(f'{baseFilename}STE2').to_numpy()
 		self.gradientsSTE3 = pd.read_feather(f'{baseFilename}STE3').to_numpy()

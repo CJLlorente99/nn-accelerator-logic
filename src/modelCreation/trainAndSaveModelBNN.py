@@ -67,7 +67,7 @@ def main(atPruning, inputsAfterBeforeTrainingPrune, inputsAfterAfterTrainingPrun
     '''
     print(f'MODEL INSTANTIATION\n')
 
-    model = BNNBinaryNeuralNetwork(neuronPerLayer, neuronPerLayer - inputsAfterBeforeTrainingPrune).to(device)
+    model = BNNBinaryNeuralNetwork(inputsAfterBeforeTrainingPrune).to(device)
 
     '''
     Train and test
@@ -123,6 +123,16 @@ def main(atPruning, inputsAfterBeforeTrainingPrune, inputsAfterAfterTrainingPrun
 
         torch.save(model.state_dict(), f'savedModels/bnn_prunedAT{inputsAfterAfterTrainingPrune}_{epochs}ep_{neuronPerLayer}npl')
     else:
+        # Input layer
+        weightMask = list(model.l0.named_buffers())[0][1]
+        idxs = []
+        for iNeuron in range(len(weightMask)):
+            weights = weightMask[iNeuron].detach().cpu().numpy()
+            idxs.append(np.where(weights == 0)[0])
+        columnTags = [f'N{i:04}' for i in range(len(weightMask))]
+        df = pd.DataFrame(np.array(idxs).T, columns=columnTags)
+        df.to_csv(f'savedModels/bnn_prunedBT{inputsAfterBeforeTrainingPrune}_{epochs}ep_{neuronPerLayer}npl_all_prunedInfol{0}.csv', index=False)
+
         # First layer
         weightMask = list(model.l1.named_buffers())[0][1]
         idxs = []
@@ -131,7 +141,7 @@ def main(atPruning, inputsAfterBeforeTrainingPrune, inputsAfterAfterTrainingPrun
             idxs.append(np.where(weights == 0)[0])
         columnTags = [f'N{i:04}' for i in range(len(weightMask))]
         df = pd.DataFrame(np.array(idxs).T, columns=columnTags)
-        df.to_csv(f'savedModels/bnn_prunedBT{inputsAfterBeforeTrainingPrune}_{epochs}ep_{neuronPerLayer}npl_prunedInfol{1}.csv', index=False)
+        df.to_csv(f'savedModels/bnn_prunedBT{inputsAfterBeforeTrainingPrune}_{epochs}ep_{neuronPerLayer}npl_all_prunedInfol{1}.csv', index=False)
 
         # Second layer
         weightMask = list(model.l2.named_buffers())[0][1]
@@ -141,7 +151,7 @@ def main(atPruning, inputsAfterBeforeTrainingPrune, inputsAfterAfterTrainingPrun
             idxs.append(np.where(weights == 0)[0])
         columnTags = [f'N{i:04}' for i in range(len(weightMask))]
         df = pd.DataFrame(np.array(idxs).T, columns=columnTags)
-        df.to_csv(f'savedModels/bnn_prunedBT{inputsAfterBeforeTrainingPrune}_{epochs}ep_{neuronPerLayer}npl_prunedInfol{2}.csv', index=False)
+        df.to_csv(f'savedModels/bnn_prunedBT{inputsAfterBeforeTrainingPrune}_{epochs}ep_{neuronPerLayer}npl_all_prunedInfol{2}.csv', index=False)
 
         # Third layer
         weightMask = list(model.l3.named_buffers())[0][1]
@@ -151,29 +161,20 @@ def main(atPruning, inputsAfterBeforeTrainingPrune, inputsAfterAfterTrainingPrun
             idxs.append(np.where(weights == 0)[0])
         columnTags = [f'N{i:04}' for i in range(len(weightMask))]
         df = pd.DataFrame(np.array(idxs).T, columns=columnTags)
-        df.to_csv(f'savedModels/bnn_prunedBT{inputsAfterBeforeTrainingPrune}_{epochs}ep_{neuronPerLayer}npl_prunedInfol{3}.csv', index=False)
+        df.to_csv(f'savedModels/bnn_prunedBT{inputsAfterBeforeTrainingPrune}_{epochs}ep_{neuronPerLayer}npl_all_prunedInfol{3}.csv', index=False)
 
         metrics = '\n'.join(testReturn(test_dataloader, train_dataloader, model, criterion))
         print(metrics)
-        with open(f'savedModels/bnn_prunedBT{inputsAfterBeforeTrainingPrune}_{epochs}ep_{neuronPerLayer}npl.txt', 'w') as f:
+        with open(f'savedModels/bnn_prunedBT{inputsAfterBeforeTrainingPrune}_{epochs}ep_{neuronPerLayer}npl_all.txt', 'w') as f:
             f.write(metrics)
             f.write('\n')
             f.write(f'epochs {epochs}\n')
             f.write(f'batch {batch_size}\n')
             f.close()
 
-        torch.save(model.state_dict(), f'savedModels/bnn_prunedBT{inputsAfterBeforeTrainingPrune}_{epochs}ep_{neuronPerLayer}npl')
+        torch.save(model.state_dict(), f'savedModels/bnn_prunedBT{inputsAfterBeforeTrainingPrune}_{epochs}ep_{neuronPerLayer}npl_all')
 
 if __name__ == '__main__':
-    main(False, 6, 6)
-    main(True, 6, 6)
-    main(False, 8, 8)
-    main(True, 8, 8)
-    main(False, 10, 10)
-    main(True, 10, 10)
     main(False, 12, 12)
-    main(True, 12, 12)
-    main(False, 18, 18)
-    main(True, 18, 18)
 
 
