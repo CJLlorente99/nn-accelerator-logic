@@ -5,7 +5,7 @@ import json
 
 data = {}
 
-for modelName in ['eeb/eeb_prunedBT6_100ep_100npl', 'eeb/eeb_prunedBT8_100ep_100npl', 'eeb/eeb_prunedBT10_100ep_100npl', 'eeb/eeb_prunedBT12_100ep_100npl']:
+for modelName in ['eeb/eeb_prunedBT12_100ep_100npl_all']:
 
     print(f'{modelName}')
 
@@ -15,17 +15,18 @@ for modelName in ['eeb/eeb_prunedBT6_100ep_100npl', 'eeb/eeb_prunedBT8_100ep_100
     for subfolder in ['ESPRESSO', 'ESPRESSOOptimizedPerEntry_0', 'ESPRESSOOptimizedPerEntry_2']:
         print(f'{modelName} {subfolder}')
 
-        data[subfolder] = {'layer1' : None,
+        data[subfolder] = {'layer0' : None,
+                           'layer1' : None,
                            'layer2' : None,
                            'layer3' : None}
 
+        layer0Filename = f'data/plas/{modelName}/{subfolder}/layer0_stats.txt'
         layer1Filename = f'data/plas/{modelName}/{subfolder}/layer1_stats.txt'
         layer2Filename = f'data/plas/{modelName}/{subfolder}/layer2_stats.txt'
         layer3Filename = f'data/plas/{modelName}/{subfolder}/layer3_stats.txt'
 
         i = 0
-        for layerFilename in [layer1Filename, layer2Filename, layer3Filename]:    
-            i += 1
+        for layerFilename in [layer0Filename, layer1Filename, layer2Filename, layer3Filename]:    
             with open(layerFilename, 'r') as f:
                 flag = False
                 jsonString = []
@@ -42,14 +43,17 @@ for modelName in ['eeb/eeb_prunedBT6_100ep_100npl', 'eeb/eeb_prunedBT8_100ep_100
                     jsonString.append(line)
             
             data[subfolder][f'layer{i}'] = json.loads(''.join(jsonString[1:]))
+            i += 1
 
     # Group cells and area
     jsonKeys = data[subfolder]['layer1']['design'].keys()
-    dfGeneralData = {'layer1' : pd.DataFrame(),
+    dfGeneralData = {'layer0' : pd.DataFrame(),
+                     'layer1' : pd.DataFrame(),
                      'layer2' : pd.DataFrame(),
                      'layer3' : pd.DataFrame()}
     
-    dfCellsData = {'layer1' : pd.DataFrame(),
+    dfCellsData = {'layer0' : pd.DataFrame(),
+                   'layer1' : pd.DataFrame(),
                    'layer2' : pd.DataFrame(),
                    'layer3' : pd.DataFrame()}
     
@@ -68,8 +72,8 @@ for modelName in ['eeb/eeb_prunedBT6_100ep_100npl', 'eeb/eeb_prunedBT8_100ep_100
             dfGeneralData[layer][['area', 'num_wires']].to_excel(writer, sheet_name=layer)
 
     # Plot comparative
-    aux = pd.concat([dfGeneralData['layer1']['area'], dfGeneralData['layer2']['area'], dfGeneralData['layer3']['area']], axis=1)
-    aux.columns = ['layer1', 'layer2', 'layer3']
+    aux = pd.concat([dfGeneralData['layer0']['area'], dfGeneralData['layer1']['area'], dfGeneralData['layer2']['area'], dfGeneralData['layer3']['area']], axis=1)
+    aux.columns = ['layer0', 'layer1', 'layer2', 'layer3']
     aux = aux.transpose()
     fig, axes = plt.subplots(nrows=1, ncols=1)
     fig.suptitle('YOSYS synthesis results')
@@ -82,8 +86,8 @@ for modelName in ['eeb/eeb_prunedBT6_100ep_100npl', 'eeb/eeb_prunedBT8_100ep_100
     plt.savefig(f'img/yosysStats/{modelName}/areaComparison.png', bbox_inches='tight')
     plt.close(fig)
 
-    aux = pd.concat([dfGeneralData['layer1']['num_cells'], dfGeneralData['layer2']['num_cells'], dfGeneralData['layer3']['num_cells']], axis=1)
-    aux.columns = ['layer1', 'layer2', 'layer3']
+    aux = pd.concat([dfGeneralData['layer0']['num_cells'], dfGeneralData['layer1']['num_cells'], dfGeneralData['layer2']['num_cells'], dfGeneralData['layer3']['num_cells']], axis=1)
+    aux.columns = ['layer0', 'layer1', 'layer2', 'layer3']
     aux = aux.transpose()
     fig, axes = plt.subplots(nrows=1, ncols=1)
     fig.suptitle('YOSYS synthesis results')
@@ -96,8 +100,8 @@ for modelName in ['eeb/eeb_prunedBT6_100ep_100npl', 'eeb/eeb_prunedBT8_100ep_100
     plt.savefig(f'img/yosysStats/{modelName}/numCellsComparison.png', bbox_inches='tight')
     plt.close(fig)
 
-    aux = pd.concat([dfGeneralData['layer1']['num_wires'], dfGeneralData['layer2']['num_wires'], dfGeneralData['layer3']['num_wires']], axis=1)
-    aux.columns = ['layer1', 'layer2', 'layer3']
+    aux = pd.concat([dfGeneralData['layer0']['num_wires'], dfGeneralData['layer1']['num_wires'], dfGeneralData['layer2']['num_wires'], dfGeneralData['layer3']['num_wires']], axis=1)
+    aux.columns = ['layer0', 'layer1', 'layer2', 'layer3']
     aux = aux.transpose()
     fig, axes = plt.subplots(nrows=1, ncols=1)
     fig.suptitle('YOSYS synthesis results')

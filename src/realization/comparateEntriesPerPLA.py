@@ -6,7 +6,7 @@ import re
 
 dataFolder = 'data'
 
-for modelName in ['eeb/eeb_prunedBT6_100ep_100npl', 'eeb/eeb_prunedBT8_100ep_100npl', 'eeb/eeb_prunedBT10_100ep_100npl', 'eeb/eeb_prunedBT12_100ep_100npl']:
+for modelName in ['eeb/eeb_prunedBT12_100ep_100npl_all']:
     stringData = re.search(f'BT(.*)_100ep', modelName)
     maxTTSize = 2**int(stringData.group(1))
     if not os.path.exists(f'img/plaSizeComparative/{modelName}/afterPruneESPRESSO'):
@@ -22,7 +22,7 @@ for modelName in ['eeb/eeb_prunedBT6_100ep_100npl', 'eeb/eeb_prunedBT8_100ep_100
     width = {}
 
     def fillPLAABC(folderName, key):
-        for layer in [f'layer{i}' for i in range(1, 4)]:
+        for layer in [f'layer{i}' for i in range(4)]:
             files = os.scandir(f'{folderName}/{layer}')
             if not layer in ttSize.keys():
                 ttSize[layer] = {}
@@ -39,7 +39,7 @@ for modelName in ['eeb/eeb_prunedBT6_100ep_100npl', 'eeb/eeb_prunedBT8_100ep_100
     fillPLAABC(plasFolderNameABC, 'notOptimized')
 
     def fillPLAESPRESSO(folderName, key):
-        for layer in [f'layer{i}' for i in range(1, 4)]:
+        for layer in [f'layer{i}' for i in range(4)]:
             files = os.scandir(f'{folderName}/{layer}_espresso')
             if not layer in ttSize.keys():
                 ttSize[layer] = {}

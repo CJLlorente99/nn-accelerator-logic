@@ -11,10 +11,11 @@ vmin = 10e-7
 vmax = 10e-1
 threshold = 10e-5
 
-for modelName in ['eeb/eeb_prunedBT6_100ep_100npl', 'eeb/eeb_prunedBT8_100ep_100npl', 'eeb/eeb_prunedBT10_100ep_100npl', 'eeb/eeb_prunedBT12_100ep_100npl']:
+for modelName in ['eeb/eeb_prunedBT12_100ep_100npl_all']:
 
     print(f'{modelName}')
 
+    ste0GradientFilename = f'data/gradients/{modelName}/STE0'
     ste1GradientFilename = f'data/gradients/{modelName}/STE1'
     ste2GradientFilename = f'data/gradients/{modelName}/STE2'
     ste3GradientFilename = f'data/gradients/{modelName}/STE3'
@@ -52,6 +53,49 @@ for modelName in ['eeb/eeb_prunedBT6_100ep_100npl', 'eeb/eeb_prunedBT8_100ep_100
 
     vLines = np.cumsum(targetsDf.value_counts().sort_index().values)
     xLines = np.arange(0.5, 20.5)
+
+    '''
+    Plot STE0
+    '''
+
+    df = pd.read_feather(ste0GradientFilename)
+    df[df.abs() < threshold] = 0
+    df = df.reindex(targetsDf.index)
+    aux = np.abs(df.to_numpy().T)
+
+    fig = plt.figure()
+    ax = fig.add_subplot(111)
+    plt.imshow(aux, cmap='hot', interpolation='nearest', norm=matplotlib.colors.LogNorm(vmin=vmin, vmax=vmax))
+    plt.vlines(vLines, ymin=-0.5, ymax=99.5, color='blue')
+    plt.xlabel('MNIST train images, grouped by category')
+    plt.ylabel('Neuron index')
+    plt.colorbar()
+    plt.title(f'Layer 0 Gradients per Training Sample and Neuron')
+    ax.set_xticks(xTicksLocations, xTicksLabels)
+    plt.xticks(rotation=45)
+    plt.ylim((-0.5, 99.5))
+    forceAspect(ax,aspect=1)
+    plt.tight_layout()
+    fig.savefig(f'img/gradientHeatmapThreshold/{modelName}/STE0.png', transparent=True)
+    plt.close(fig)
+
+    fig = plt.figure()
+    ax = fig.add_subplot(111)
+    plt.imshow(aux[:20,:], cmap='hot', interpolation='nearest', norm=matplotlib.colors.LogNorm(vmin=vmin, vmax=vmax))
+    plt.vlines(vLines, ymin=-0.5, ymax=19.5, color='blue')
+    plt.hlines(xLines, xmin=0, xmax=len(targetsDf), color='blue')
+    plt.xlabel('MNIST train images, grouped by category')
+    plt.ylabel('Neuron index')
+    plt.colorbar()
+    plt.title(f'Layer 0 Gradients per Training Sample and Neuron (20 Neurons)')
+    ax.set_xticks(xTicksLocations, xTicksLabels)
+    ax.set_yticks(np.arange(0, 20, 1))
+    plt.xticks(rotation=45)
+    plt.ylim((-0.5, 19.5))
+    forceAspect(ax,aspect=1)
+    plt.tight_layout()
+    fig.savefig(f'img/gradientHeatmapThreshold/{modelName}/STE0detail.png', transparent=True)
+    plt.close(fig)
 
     '''
     Plot STE1
